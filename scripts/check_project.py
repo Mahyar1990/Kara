@@ -15,6 +15,11 @@ def main():
         ast.parse(script.read_text(), filename=str(script))
     lock = json.loads((ROOT / "infra/dify.lock.json").read_text())
     assert re.fullmatch(r"[a-f0-9]{40}", lock["commit"]), "Dify commit must be pinned"
+    assert (ROOT / "infra/compose.local.yaml").is_file(), "Local Compose configuration is required"
+    shared = subprocess.run(
+        ["git", "check-ignore", "--quiet", "infra/compose.local.yaml"], cwd=ROOT,
+    )
+    assert shared.returncode == 1, "Shared Compose configuration must not be ignored"
     for path in [ROOT / "README.md", ROOT / "CONTRIBUTING.md", *list((ROOT / "docs").glob("*.md"))]:
         text = path.read_text()
         assert text.count("```") % 2 == 0, f"Unclosed code fence: {path}"

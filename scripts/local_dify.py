@@ -10,6 +10,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -81,7 +82,7 @@ def prepare():
         "EXPOSE_NGINX_SSL_PORT": values["DIFY_HTTPS_PORT"],
         "CELERY_WORKER_AMOUNT": "1",
         "SERVER_WORKER_AMOUNT": "1",
-        "COMPOSE_PROFILES": "postgresql,weaviate,websocket",
+        "COMPOSE_PROFILES": "postgresql,weaviate,collaboration",
         "NEXT_PUBLIC_SOCKET_URL": f"ws://localhost:{values['DIFY_HTTP_PORT']}",
         "SECRET_KEY": secrets.token_hex(32),
         "DB_PASSWORD": secrets.token_hex(24),
@@ -148,6 +149,23 @@ def compose(args, capture=False):
                capture_output=capture, text=True)
 
 
+def wait_for_api(timeout=300):
+    """Allow the first app import and migrations to finish before reporting ready."""
+    url = f"http://127.0.0.1:{settings()['DIFY_HTTP_PORT']}/console/api/ping"
+    deadline = time.monotonic() + timeout
+    print("Waiting for Dify API readiness...", flush=True)
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=5) as response:
+                if json.load(response).get("result") == "pong":
+                    print("Dify API is ready.", flush=True)
+                    return
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+            pass
+        time.sleep(2)
+    raise RuntimeError("Dify did not become ready within 5 minutes; inspect make logs")
+
+
 def doctor():
     verify_checkout()
     if not shutil.which("docker"):
@@ -186,6 +204,7 @@ def main():
         prepare()
         compose(["config", "--quiet"])
         compose(["up", "-d", "--quiet-pull"])
+        wait_for_api()
         print(f"Dify: http://localhost:{settings()['DIFY_HTTP_PORT']}")
     elif action == "down":
         compose(["down"])

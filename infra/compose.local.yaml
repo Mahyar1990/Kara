@@ -1,0 +1,15 @@
+# Compose 2.24.4+ supports !override and optional env_file entries.
+services:
+  nginx:
+    ports: !override
+      - "127.0.0.1:${EXPOSE_NGINX_PORT:-8080}:80"
+      - "127.0.0.1:${EXPOSE_NGINX_SSL_PORT:-8443}:443"
+  plugin_daemon:
+    ports: !override
+      - "127.0.0.1:${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}:5003"
+  web:
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+  weaviate:
+    environment:
+      DISABLE_TELEMETRY: "true"

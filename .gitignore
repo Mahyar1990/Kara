@@ -5,6 +5,7 @@
 !.env.local.example
 *.local.json
 *.local.yaml
+!infra/compose.local.yaml
 *.local.yml
 .DS_Store
 __pycache__/
@@ -14,4 +15,3 @@ node_modules/
 reports/
 logs/
 workflows/private/
-
