@@ -1,0 +1,11 @@
+image: python:3.13-slim
+
+stages:
+  - validate
+
+validate-project:
+  stage: validate
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git
+  script:
+    - python scripts/check_project.py

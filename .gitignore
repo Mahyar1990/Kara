@@ -1,0 +1,17 @@
+.runtime/
+.env
+.env.*
+!.env.example
+!.env.local.example
+*.local.json
+*.local.yaml
+*.local.yml
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+reports/
+logs/
+workflows/private/
+
