@@ -16,6 +16,17 @@ def main():
     lock = json.loads((ROOT / "infra/dify.lock.json").read_text())
     assert re.fullmatch(r"[a-f0-9]{40}", lock["commit"]), "Dify commit must be pinned"
     assert (ROOT / "infra/compose.local.yaml").is_file(), "Local Compose configuration is required"
+    web = ROOT / "infra/web"
+    package = json.loads((web / "package.json").read_text())
+    package_lock = json.loads((web / "package-lock.json").read_text())
+    assert package["dependencies"] == package_lock["packages"][""]["dependencies"]
+    for filename in ("fa-overrides.json", "literal-translations.json", "technical-values.json"):
+        json.loads((web / filename).read_text())
+    for namespace, messages in json.loads((web / "fa-overrides.json").read_text()).items():
+        assert namespace and messages
+        assert all(isinstance(v, str) and re.search(r"[\u0600-\u06ff]", v) for v in messages.values())
+    for message in json.loads((web / "literal-translations.json").read_text()).values():
+        assert re.search(r"[\u0600-\u06ff]", message), "Interface literal must be Persian"
     shared = subprocess.run(
         ["git", "check-ignore", "--quiet", "infra/compose.local.yaml"], cwd=ROOT,
     )

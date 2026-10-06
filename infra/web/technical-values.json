@@ -1,0 +1,58 @@
+{
+  "agent-v-2": {
+    "roster.dateTimeFormat": "YYYY/MM/DD HH:mm:ss"
+  },
+  "app-log": {
+    "dateTimeFormat": "MM/DD/YYYY hh:mm:ss A"
+  },
+  "app-overview": {
+    "overview.appInfo.customize.way1.step1Operation": "Dify-WebClient"
+  },
+  "app": {
+    "tracing.arize.title": "Arize",
+    "tracing.databricks.title": "Databricks",
+    "tracing.langfuse.title": "Langfuse",
+    "tracing.langsmith.title": "LangSmith",
+    "tracing.mlflow.title": "MLflow",
+    "tracing.phoenix.title": "Phoenix"
+  },
+  "billing": {
+    "plansCommon.apiRateLimitUnit": "{{count,number}}"
+  },
+  "common": {
+    "operation.noSearchCount": "0 {{content}}",
+    "userProfile.discord": "Discord"
+  },
+  "dataset-documents": {
+    "metadata.dateTimeFormat": "D MMMM YYYY hh:mm A",
+    "segment.dateTimeFormat": "MM/DD/YYYY HH:mm"
+  },
+  "dataset-hit-testing": {
+    "dateTimeFormat": "MM/DD/YYYY hh:mm A"
+  },
+  "dataset": {
+    "newKnowledge.rootUrlPlaceholder": "https://docs.example.com"
+  },
+  "education": {
+    "notice.dateFormat": "MM/DD/YYYY"
+  },
+  "skill": {
+    "skillManagement.detail.builder.model": "GPT-4o",
+    "skillManagement.detail.versionMeta": "{{hash}} · {{time}}",
+    "skillManagement.detail.versionPublishedMeta": "{{time}} · {{name}}"
+  },
+  "time": {
+    "dateFormats.display": "MMMM D, YYYY",
+    "dateFormats.displayWithTime": "MMMM D, YYYY hh:mm A"
+  },
+  "tools": {
+    "createTool.authHeaderPrefix.types.bearer": "Bearer",
+    "createTool.importFromUrlPlaceHolder": "https://...",
+    "mcp.modal.headerKeyPlaceholder": "Authorization"
+  },
+  "workflow": {
+    "nodes.humanInput.deliveryMethod.types.discord.title": "Discord",
+    "nodes.humanInput.deliveryMethod.types.slack.title": "Slack",
+    "nodes.humanInput.deliveryMethod.types.teams.title": "Teams"
+  }
+}

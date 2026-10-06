@@ -1,0 +1,11 @@
+{
+  "name": "company-agent-persian-web-build",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@fontsource-variable/vazirmatn": "5.2.8",
+    "postcss-rtlcss": "5.7.1",
+    "postcss-selector-parser": "7.1.5",
+    "typescript": "5.9.3"
+  }
+}

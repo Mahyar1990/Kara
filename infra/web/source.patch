@@ -1,0 +1,541 @@
+--- a/web/app/(shareLayout)/webapp-reset-password/reset-password-layout.tsx
++++ b/web/app/(shareLayout)/webapp-reset-password/reset-password-layout.tsx
+@@ -26,7 +26,7 @@
+         </div>
+         {!systemFeatures.branding.enabled && (
+           <div className="px-8 py-6 system-xs-regular text-text-tertiary">
+-            © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++            © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+           </div>
+         )}
+       </div>
+--- a/web/app/(shareLayout)/webapp-signin/layout.tsx
++++ b/web/app/(shareLayout)/webapp-signin/layout.tsx
+@@ -27,7 +27,7 @@
+           </div>
+           {systemFeatures.branding.enabled === false && (
+             <div className="px-8 py-6 system-xs-regular text-text-tertiary">
+-              © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++              © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+             </div>
+           )}
+         </div>
+--- a/web/app/account/oauth/authorize/layout.tsx
++++ b/web/app/account/oauth/authorize/layout.tsx
+@@ -22,7 +22,7 @@
+         </div>
+         {systemFeatures.branding.enabled === false && (
+           <div className="px-8 py-6 system-xs-regular text-text-tertiary">
+-            © {copyrightYear} LangGenius, Inc. All rights reserved.
++            © {copyrightYear} LangGenius, Inc. تمامی حقوق محفوظ است.
+           </div>
+         )}
+       </div>
+--- a/web/app/activate/page.tsx
++++ b/web/app/activate/page.tsx
+@@ -19,7 +19,7 @@
+         <ActivateForm />
+         {!systemFeatures.branding.enabled && (
+           <div className="px-8 py-6 text-sm font-normal text-text-tertiary">
+-            © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++            © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+           </div>
+         )}
+       </div>
+--- a/web/app/device/layout.tsx
++++ b/web/app/device/layout.tsx
+@@ -19,7 +19,7 @@
+         </div>
+         {systemFeatures.branding.enabled === false && (
+           <div className="px-8 py-6 system-xs-regular text-text-tertiary">
+-            © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++            © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+           </div>
+         )}
+       </div>
+--- a/web/app/forgot-password/page.tsx
++++ b/web/app/forgot-password/page.tsx
+@@ -24,7 +24,7 @@
+         {token ? <ChangePasswordForm /> : <ForgotPasswordForm />}
+         {!systemFeatures.branding.enabled && (
+           <div className="px-8 py-6 text-sm font-normal text-text-tertiary">
+-            © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++            © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+           </div>
+         )}
+       </div>
+--- a/web/app/install/page.tsx
++++ b/web/app/install/page.tsx
+@@ -19,7 +19,7 @@
+         <InstallForm />
+         {!systemFeatures.branding.enabled && (
+           <div className="mt-auto px-8 py-6 text-sm font-normal text-text-tertiary">
+-            © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++            © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+           </div>
+         )}
+       </div>
+--- a/web/app/layout.tsx
++++ b/web/app/layout.tsx
+@@ -1,5 +1,6 @@
+ import type { ThemeProviderProps } from 'next-themes'
+ import type { Metadata, Viewport } from '@/next'
++import { DirectionProvider } from '@base-ui/react/direction-provider'
+ import { ToastHost } from '@langgenius/dify-ui/toast'
+ import { TooltipProvider } from '@langgenius/dify-ui/tooltip'
+ import { HydrationBoundary } from '@tanstack/react-query'
+@@ -26,6 +27,7 @@
+ import '@/service/console/server'
+ import './styles/globals.css'
+ import './styles/markdown.css'
++import './styles/persian.css'
+ 
+ export const viewport: Viewport = {
+   width: 'device-width',
+@@ -68,11 +70,12 @@
+   if (nonce !== undefined) themeProviderProps.nonce = nonce
+ 
+   return (
+-    <html lang={locale ?? 'en'} className="h-full" suppressHydrationWarning>
++    <html lang={locale ?? 'fa-IR'} dir="rtl" className="h-full" suppressHydrationWarning>
+       <head>
+         <ReactScanLoader />
+       </head>
+       <body className="h-full bg-background-body" {...datasetMap}>
++        <DirectionProvider direction="rtl">
+         <CloudAnalytics />
+         <div className="isolate h-full">
+           <JotaiProvider>
+@@ -96,6 +99,7 @@
+           </JotaiProvider>
+           <AgentationLoader />
+         </div>
++        </DirectionProvider>
+       </body>
+     </html>
+   )
+--- a/web/app/reset-password/reset-password-layout.tsx
++++ b/web/app/reset-password/reset-password-layout.tsx
+@@ -26,7 +26,7 @@
+         </div>
+         {!systemFeatures.branding.enabled && (
+           <div className="px-8 py-6 system-xs-regular text-text-tertiary">
+-            © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++            © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+           </div>
+         )}
+       </div>
+--- a/web/app/signin/layout.tsx
++++ b/web/app/signin/layout.tsx
+@@ -22,7 +22,7 @@
+           </main>
+           {systemFeatures.branding.enabled === false && (
+             <footer className="px-8 py-6 system-xs-regular text-text-tertiary">
+-              © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++              © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+             </footer>
+           )}
+         </div>
+--- a/web/app/signup/signup-layout.tsx
++++ b/web/app/signup/signup-layout.tsx
+@@ -20,7 +20,7 @@
+         </div>
+         {systemFeatures.branding.enabled === false && (
+           <div className="px-8 py-6 system-xs-regular text-text-tertiary">
+-            © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
++            © {new Date().getFullYear()} LangGenius, Inc. تمامی حقوق محفوظ است.
+           </div>
+         )}
+       </div>
+--- a/web/i18n-config/client.ts
++++ b/web/i18n-config/client.ts
+@@ -27,6 +27,7 @@
+ 
+ export const changeLanguage = async (lng?: Locale) => {
+   if (!lng) return
++  lng = 'fa-IR'
+   const i18n = getI18n()
+   await i18n.changeLanguage(lng)
+ }
+--- a/web/i18n-config/index.ts
++++ b/web/i18n-config/index.ts
+@@ -5,13 +5,14 @@
+ import { LanguagesSupported } from '@/i18n-config/language'
+ 
+ export const i18n = {
+-  defaultLocale: 'en-US',
++  defaultLocale: 'fa-IR',
+   locales: LanguagesSupported,
+ } as const
+ 
+ export type { Locale }
+ 
+ export const setLocaleOnClient = async (locale: Locale, reloadPage = true) => {
++  locale = 'fa-IR'
+   Cookies.set(LOCALE_COOKIE_NAME, locale, { expires: 365 })
+   await changeLanguage(locale)
+   if (reloadPage) location.reload()
+--- a/web/i18n-config/language.ts
++++ b/web/i18n-config/language.ts
+@@ -16,7 +16,7 @@
+   // Plugin metadata supports only en_US, zh_Hans, ja_JP, and pt_BR; otherwise use en_US.
+   if (['zh-Hans', 'ja-JP', 'pt-BR'].includes(locale)) return locale.replace('-', '_') as Locale
+ 
+-  return LanguagesSupported[0]!.replace('-', '_') as Locale
++  return 'en_US'
+ }
+ 
+ const DOC_LANGUAGE: Record<string, DocLanguage | undefined> = {
+--- a/web/i18n-config/languages.ts
++++ b/web/i18n-config/languages.ts
+@@ -5,139 +5,139 @@
+       name: 'English (United States)',
+       prompt_name: 'English',
+       example: 'Hello, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'zh-Hans',
+       name: '简体中文',
+       prompt_name: 'Chinese Simplified',
+       example: '你好，Dify！',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'zh-Hant',
+       name: '繁體中文',
+       prompt_name: 'Chinese Traditional',
+       example: '你好，Dify！',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'pt-BR',
+       name: 'Português (Brasil)',
+       prompt_name: 'Portuguese',
+       example: 'Olá, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'es-ES',
+       name: 'Español (España)',
+       prompt_name: 'Spanish',
+       example: '¡Hola, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'fr-FR',
+       name: 'Français (France)',
+       prompt_name: 'French',
+       example: 'Bonjour, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'de-DE',
+       name: 'Deutsch (Deutschland)',
+       prompt_name: 'German',
+       example: 'Hallo, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'ja-JP',
+       name: '日本語 (日本)',
+       prompt_name: 'Japanese',
+       example: 'こんにちは、Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'ko-KR',
+       name: '한국어 (대한민국)',
+       prompt_name: 'Korean',
+       example: '안녕하세요, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'lo-LA',
+       name: 'ລາວ (ລາວ)',
+       prompt_name: 'Lao',
+       example: 'ສະບາຍດີ, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'ru-RU',
+       name: 'Русский (Россия)',
+       prompt_name: 'Russian',
+       example: ' Привет, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'it-IT',
+       name: 'Italiano (Italia)',
+       prompt_name: 'Italian',
+       example: 'Ciao, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'th-TH',
+       name: 'ไทย (ประเทศไทย)',
+       prompt_name: 'Thai',
+       example: 'สวัสดี Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'uk-UA',
+       name: 'Українська (Україна)',
+       prompt_name: 'Ukrainian',
+       example: 'Привет, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'vi-VN',
+       name: 'Tiếng Việt (Việt Nam)',
+       prompt_name: 'Vietnamese',
+       example: 'Xin chào, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'ro-RO',
+       name: 'Română (România)',
+       prompt_name: 'Romanian',
+       example: 'Salut, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'pl-PL',
+       name: 'Polski (Polish)',
+       prompt_name: 'Polish',
+       example: 'Cześć, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'hi-IN',
+       name: 'Hindi (India)',
+       prompt_name: 'Hindi',
+       example: 'नमस्ते, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'tr-TR',
+       name: 'Türkçe',
+       prompt_name: 'Türkçe',
+       example: 'Selam!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'fa-IR',
+-      name: 'Farsi (Iran)',
+-      prompt_name: 'Farsi',
+-      example: 'سلام, دیفای!',
++      name: 'فارسی (ایران)',
++      prompt_name: 'فارسی',
++      example: 'سلام، Dify!',
+       supported: true,
+     },
+     {
+@@ -145,28 +145,28 @@
+       name: 'Slovensko (Slovenija)',
+       prompt_name: 'Slovensko',
+       example: 'Zdravo, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'id-ID',
+       name: 'Bahasa Indonesia',
+       prompt_name: 'Indonesian',
+       example: 'Halo, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'nl-NL',
+       name: 'Nederlands (Nederland)',
+       prompt_name: 'Dutch',
+       example: 'Hallo, Dify!',
+-      supported: true,
++      supported: false,
+     },
+     {
+       value: 'ar-TN',
+       name: 'العربية (تونس)',
+       prompt_name: 'Tunisian Arabic',
+       example: 'مرحبا، Dify!',
+-      supported: true,
++      supported: false,
+     },
+   ],
+ } as const
+--- a/web/i18n-config/server.ts
++++ b/web/i18n-config/server.ts
+@@ -1,21 +1,16 @@
+ import type { i18n as I18nInstance, Resource, ResourceLanguage } from 'i18next'
+ import type { Locale } from '.'
+ import type { Namespace, NamespaceInFileName } from './resources'
+-import { match } from '@formatjs/intl-localematcher'
+ import { camelCase } from 'es-toolkit/string'
+ import { createInstance } from 'i18next'
+ import resourcesToBackend from 'i18next-resources-to-backend'
+-import Negotiator from 'negotiator'
+ import { cache } from 'react'
+ import { initReactI18next } from 'react-i18next/initReactI18next'
+-import { cookies, headers } from '@/next/headers'
+ import { serverOnlyContext } from '@/utils/server-only-context'
+-import { i18n } from '.'
+ import { loadI18nResource } from './load-resource'
+ import { namespacesInFileName } from './resources'
+ import { getInitOptions } from './settings'
+ 
+-const [getLocaleCache, setLocaleCache] = serverOnlyContext<Locale | null>(null)
+ const [getI18nInstance, setI18nInstance] = serverOnlyContext<I18nInstance | null>(null)
+ 
+ const getOrCreateI18next = async (lng: Locale) => {
+@@ -49,38 +44,8 @@
+   }
+ }
+ 
+-export const getLocaleOnServer = async (): Promise<Locale> => {
+-  const cached = getLocaleCache()
+-  if (cached) return cached
+-
+-  const locales: string[] = i18n.locales
+-
+-  let languages: string[] | undefined
+-  // get locale from cookie
+-  const localeCookie = (await cookies()).get('locale')
+-  languages = localeCookie?.value ? [localeCookie.value] : []
+-
+-  if (!languages.length) {
+-    // Negotiator expects plain object so we need to transform headers
+-    const negotiatorHeaders: Record<string, string> = {}
+-    ;(await headers()).forEach((value, key) => (negotiatorHeaders[key] = value))
+-    // Use negotiator and intl-localematcher to get best locale
+-    languages = new Negotiator({ headers: negotiatorHeaders }).languages()
+-  }
+-
+-  // Validate languages
+-  if (
+-    !Array.isArray(languages) ||
+-    languages.length === 0 ||
+-    !languages.every((lang) => typeof lang === 'string' && /^[\w-]+$/.test(lang))
+-  )
+-    languages = [i18n.defaultLocale]
+-
+-  // match locale
+-  const matchedLocale = match(languages, locales, i18n.defaultLocale) as Locale
+-  setLocaleCache(matchedLocale)
+-  return matchedLocale
+-}
++// Company console language is Persian regardless of browser or older account preferences.
++export const getLocaleOnServer = async (): Promise<Locale> => 'fa-IR'
+ 
+ export const getResources = cache(async (lng: Locale): Promise<Resource> => {
+   const messages = {} as ResourceLanguage
+--- a/web/i18n-config/settings.ts
++++ b/web/i18n-config/settings.ts
+@@ -5,7 +5,7 @@
+   return {
+     // We do not have en for fallback
+     load: 'currentOnly',
+-    fallbackLng: 'en-US',
++    fallbackLng: 'fa-IR',
+     partialBundledLanguages: true,
+     defaultNS,
+     enableSelector: 'optimize',
+--- a/web/next.config.ts
++++ b/web/next.config.ts
+@@ -38,6 +38,7 @@
+     ]
+   },
+   output: 'standalone',
++  experimental: { cpus: 1, webpackMemoryOptimizations: true },
+   compiler: {
+     removeConsole: isDev ? false : { exclude: ['warn', 'error'] },
+   },
+--- a/web/postcss.config.mjs
++++ b/web/postcss.config.mjs
+@@ -1,5 +1,6 @@
+ export default {
+   plugins: {
+     '@tailwindcss/postcss': {},
++    '../.company-web/rtl-postcss.cjs': {},
+   },
+ }
+--- a/web/app/components/workflow/nodes/_base/node.tsx
++++ b/web/app/components/workflow/nodes/_base/node.tsx
+@@ -158,7 +158,7 @@
+   }, [data._loopIndex, data._runningStatus, t])
+ 
+   const nodeContent = (
+-    <div
++    <div dir="rtl"
+       className={cn(
+         'relative flex rounded-2xl border',
+         showSelectedBorder
+--- a/web/app/components/base/chat/chat/answer/human-input-content/utils.ts
++++ b/web/app/components/base/chat/chat/answer/human-input-content/utils.ts
+@@ -16,6 +16,7 @@
+   isSelectFormInput,
+   UserActionButtonType,
+ } from '@/app/components/workflow/nodes/human-input/types'
++import 'dayjs/locale/fa'
+ import 'dayjs/locale/en'
+ import 'dayjs/locale/zh-cn'
+ import 'dayjs/locale/ja'
+@@ -172,13 +173,14 @@
+ }
+ 
+ const localeMap: Record<string, string> = {
++  'fa-IR': 'fa',
+   'en-US': 'en',
+   'zh-Hans': 'zh-cn',
+   'ja-JP': 'ja',
+   'nl-NL': 'nl',
+ }
+ 
+-export const getRelativeTime = (utcTimestamp: string | number, locale: Locale = 'en-US') => {
++export const getRelativeTime = (utcTimestamp: string | number, locale: Locale = 'fa-IR') => {
+   const dayjsLocale = localeMap[locale] ?? 'en'
+ 
+   return dayjs.utc(utcTimestamp).locale(dayjsLocale).fromNow()
+--- a/web/app/components/base/emoji-picker/Inner.tsx
++++ b/web/app/components/base/emoji-picker/Inner.tsx
+@@ -13,6 +13,12 @@
+ import { backgroundColors, defaultEmojiBackground } from './constants'
+ 
+ init({ data })
++
++const categoryNames: Record<string, string> = {
++  frequent: 'پراستفاده', people: 'چهره‌ها و افراد', nature: 'حیوانات و طبیعت',
++  foods: 'خوراکی‌ها', activity: 'فعالیت‌ها', places: 'سفر و مکان‌ها',
++  objects: 'اشیا', symbols: 'نمادها', flags: 'پرچم‌ها', custom: 'سفارشی',
++}
+ 
+ type IEmojiPickerInnerProps = {
+   emoji?: string
+@@ -99,7 +105,7 @@
+         {categories.map((category, index: number) => {
+           return (
+             <div key={`category-${index}`} className="flex flex-col">
+-              <p className="mb-1 system-xs-medium-uppercase text-text-primary">{category.id}</p>
++              <p className="mb-1 system-xs-medium-uppercase text-text-primary">{categoryNames[category.id] || 'شکلک‌ها'}</p>
+               <div className="grid size-full grid-cols-8 gap-1">
+                 {category.emojis.map((emoji, index: number) => {
+                   return (

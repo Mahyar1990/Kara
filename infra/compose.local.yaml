@@ -8,8 +8,11 @@ services:
     ports: !override
       - "127.0.0.1:${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}:5003"
   web:
+    image: company-agent/dify-web:1.17.1-fa
+    pull_policy: never
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
+      EXPERIMENTAL_ENABLE_VINEXT: "false"
   weaviate:
     environment:
       DISABLE_TELEMETRY: "true"

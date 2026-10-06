@@ -1,0 +1,35 @@
+/*rtl:begin:ignore*/
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/vazirmatn-arabic-wght-normal.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html[lang='fa-IR'] {
+  --font-sans: 'Vazirmatn', Tahoma, Arial, sans-serif;
+  direction: rtl;
+}
+
+body { text-align: start; }
+
+/* Preserve technical values. Persian placeholders still read naturally. */
+input:is([type='email'], [type='url'], [type='password'], [autocomplete='new-password']) {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: plaintext;
+}
+input::placeholder, textarea::placeholder { direction: rtl; text-align: start; }
+
+pre, code, kbd, samp, .monaco-editor, .react-flow {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+.react-flow__node { direction: rtl; text-align: start; }
+
+/* Directional navigation glyphs; status icons, logos and charts are unchanged. */
+:is(.i-ri-arrow-left-line, .i-ri-arrow-right-line, .i-ri-arrow-left-s-line,
+    .i-ri-arrow-right-s-line):dir(rtl) { transform: scaleX(-1); }
+/*rtl:end:ignore*/

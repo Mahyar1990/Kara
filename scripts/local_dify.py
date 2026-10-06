@@ -2,6 +2,7 @@
 """Prepare and operate the pinned, private local Dify deployment."""
 
 import argparse
+from html.parser import HTMLParser
 import json
 import os
 from pathlib import Path
@@ -171,6 +172,17 @@ def doctor():
     if not shutil.which("docker"):
         raise RuntimeError("Docker client is missing")
     run(["docker", "info", "--format", "Docker server: {{.ServerVersion}}"])
+    from persian_web import fingerprint
+    web_container = compose(["ps", "-q", "web"], capture=True).stdout.strip()
+    if not web_container:
+        raise RuntimeError("Web service is not running; run make up")
+    web_revision = run(
+        ["docker", "inspect", web_container, "--format",
+         '{{index .Config.Labels "company-agent.localization"}}'],
+        capture_output=True, text=True,
+    ).stdout.strip()
+    if web_revision != fingerprint():
+        raise RuntimeError("Running web customization is outdated; run make up")
     # Capture the resolved config to validate bindings without printing credentials.
     resolved = json.loads(compose(["config", "--format", "json"], capture=True).stdout)
     for name, service in resolved["services"].items():
@@ -181,7 +193,18 @@ def doctor():
     url = f"http://127.0.0.1:{settings()['DIFY_HTTP_PORT']}/install"
     try:
         with urllib.request.urlopen(url, timeout=15) as response:
+            markup = response.read().decode("utf-8")
+            class DocumentDirection(HTMLParser):
+                attributes = {}
+                def handle_starttag(self, tag, attrs):
+                    if tag == "html":
+                        self.attributes = dict(attrs)
+            document = DocumentDirection()
+            document.feed(markup)
+            if document.attributes.get("lang") != "fa-IR" or document.attributes.get("dir") != "rtl":
+                raise RuntimeError("Persian RTL web image is not active; run make up")
             print(f"Dify web check: HTTP {response.status}; {url}")
+            print("Dify localization check: fa-IR / rtl")
         with urllib.request.urlopen(
             f"http://127.0.0.1:{settings()['DIFY_HTTP_PORT']}/console/api/ping",
             timeout=15,
@@ -203,6 +226,15 @@ def main():
     elif action == "up":
         prepare()
         compose(["config", "--quiet"])
+        from persian_web import build_image, image_is_current
+        if not image_is_current():
+            print("Building the Persian web interface; pausing local services to free memory.", flush=True)
+            compose(["stop"])
+            try:
+                build_image()
+            except Exception:
+                compose(["start"])
+                raise
         compose(["up", "-d", "--quiet-pull"])
         wait_for_api()
         print(f"Dify: http://localhost:{settings()['DIFY_HTTP_PORT']}")
