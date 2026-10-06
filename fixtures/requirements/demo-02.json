@@ -1,0 +1,14 @@
+{
+  "sample_id": "DEMO-02",
+  "title": "بهتر شدن جستجو",
+  "request": "جستجوی اسناد را بهتر کنید؛ کاربران از نتیجهٔ فعلی راضی نیستند.",
+  "sources": [],
+  "expected": {
+    "analysis_state": "needs_clarification",
+    "po_decision": "unreviewed",
+    "development_ready": false
+  },
+  "synthetic": true,
+  "jira_key": null,
+  "product": "کلاسور"
+}

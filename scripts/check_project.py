@@ -31,6 +31,15 @@ def main():
         ["git", "check-ignore", "--quiet", "infra/compose.local.yaml"], cwd=ROOT,
     )
     assert shared.returncode == 1, "Shared Compose configuration must not be ignored"
+    examples = list((ROOT / "fixtures/requirements").glob("*.json"))
+    assert len(examples) == 3, "Three requirement fixtures are required"
+    for path in examples:
+        sample = json.loads(path.read_text())
+        assert sample["synthetic"] is True and sample["jira_key"] is None
+        assert sample["product"] == "کلاسور" and sample["request"]
+        assert sample["expected"]["po_decision"] == "unreviewed"
+    for name in ("requirement-analyst.md", "technical-planner.md"):
+        assert len((ROOT / "prompts" / name).read_text()) > 1000
     for path in [ROOT / "README.md", ROOT / "CONTRIBUTING.md", *list((ROOT / "docs").glob("*.md"))]:
         text = path.read_text()
         assert text.count("```") % 2 == 0, f"Unclosed code fence: {path}"
@@ -48,7 +57,7 @@ def main():
     tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, check=True,
                              capture_output=True, text=True).stdout.splitlines()
     assert not any(p.startswith(".runtime/") or p == ".env.local" for p in tracked)
-    print("Project checks passed: pinned Dify, platform content, links and Git exclusions.")
+    print("Project checks passed: pinned version, fixtures, prompts, links and Git exclusions.")
 
 
 if __name__ == "__main__":
