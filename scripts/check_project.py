@@ -40,7 +40,8 @@ def main():
         assert sample["expected"]["po_decision"] == "unreviewed"
     for name in ("requirement-analyst.md", "technical-planner.md"):
         assert len((ROOT / "prompts" / name).read_text()) > 1000
-    for path in [ROOT / "README.md", ROOT / "CONTRIBUTING.md", *list((ROOT / "docs").glob("*.md"))]:
+    for path in [ROOT / "README.md", ROOT / "CONTRIBUTING.md", *list((ROOT / "docs").glob("*.md")),
+                 *list((ROOT / "workflows").rglob("*.md"))]:
         text = path.read_text()
         assert text.count("```") % 2 == 0, f"Unclosed code fence: {path}"
         for link in re.findall(r"\]\(([^)]+)\)", text):

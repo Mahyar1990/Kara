@@ -133,6 +133,17 @@ class PortableWorkflowTests(unittest.TestCase):
         self.assertEqual([(edge["source"], edge["target"]) for edge in graph["edges"]],
                          [("start", "prepare"), ("prepare", "analyst"), ("analyst", "finalize"), ("finalize", "end")])
 
+    def test_contract_and_run_metadata_match_the_prompt_being_reviewed(self):
+        prompt = (ROOT / "prompts/requirement-analyst.md").read_text()
+        contract = (ROOT / "docs/klassor-requirement-analysis-contract.md").read_text()
+        intro, template = prompt.split("قالب الزامی خروجی:\n", 1)
+        contract_intro = contract.split("```text\n", 1)[1].split("```", 1)[0]
+        contract_template = contract.split("## قالب خروجی برای مالک محصول\n\n", 1)[1].split("## دستورالعمل اولیهٔ ایجنت تحلیلگر", 1)[0]
+        self.assertEqual(intro.strip(), contract_intro.strip())
+        self.assertEqual(template.strip(), contract_template.strip())
+        envelope = json.loads(prepare(title="عنوان", request_text="درخواست")["input_json"])
+        self.assertEqual(envelope["prompt_revision"], builder.manifest(builder.build())["prompt_revision"])
+
 
 if __name__ == "__main__":
     unittest.main()
