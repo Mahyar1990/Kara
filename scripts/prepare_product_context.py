@@ -255,10 +255,18 @@ def render(context):
 
 
 def write_private(mapping, context):
-    folder = ROOT / ".runtime/products" / context["product_id"]
     files = {"sources.local.json": json.dumps(mapping, ensure_ascii=False, indent=2) + "\n",
              "technical-context.local.json": json.dumps(context, ensure_ascii=False, indent=2) + "\n",
              "technical-context.local.md": render(context)}
+    return write_private_files(context["product_id"], files)
+
+
+def write_private_files(product, files):
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", product):
+        raise ValueError("شناسهٔ محصول معتبر نیست")
+    if any(Path(name).name != name or not name.endswith((".local.json", ".local.md")) for name in files):
+        raise ValueError("نام خروجی خصوصی معتبر نیست")
+    folder = ROOT / ".runtime/products" / product
     for name in files:
         result = git(ROOT, "check-ignore", "-q", str(folder / name))
         if result.returncode != 0:
