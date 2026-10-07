@@ -113,8 +113,8 @@ def build():
 
 def manifest(workflow):
     prompt = (ROOT / "prompts/requirement-analyst.md").read_bytes()
-    return {"workflow_revision": "0.3", "dify_version": "1.17.1", "dsl_version": workflow["version"],
-            "prompt_path": "prompts/requirement-analyst.md", "prompt_revision": "0.3",
+    return {"workflow_revision": "0.4", "dify_version": "1.17.1", "dsl_version": workflow["version"],
+            "prompt_path": "prompts/requirement-analyst.md", "prompt_revision": "0.4",
             "prompt_sha256": hashlib.sha256(prompt).hexdigest(),
             "workflow_sha256": hashlib.sha256(dump(workflow).encode()).hexdigest(),
             "model_binding": "private local copy; no credentials in DSL", "human_decision": "unreviewed"}
