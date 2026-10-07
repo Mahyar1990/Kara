@@ -1,6 +1,6 @@
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 
-.PHONY: setup up down status logs doctor check check-model prepare-analysis
+.PHONY: setup up down status logs doctor check check-model prepare-analysis prepare-review
 
 setup:
 	$(PYTHON) scripts/local_dify.py setup
@@ -23,6 +23,7 @@ doctor:
 check:
 	$(PYTHON) scripts/check_project.py
 	$(PYTHON) scripts/build_klassor_analysis.py --check
+	$(PYTHON) scripts/build_klassor_review.py --check
 	$(PYTHON) -m unittest discover -s scripts -p 'test_*.py'
 
 check-model:
@@ -30,3 +31,6 @@ check-model:
 
 prepare-analysis:
 	$(PYTHON) scripts/build_klassor_analysis.py --local
+
+prepare-review:
+	$(PYTHON) scripts/build_klassor_review.py --local

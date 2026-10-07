@@ -6,6 +6,8 @@ from pathlib import Path
 import runpy
 import unittest
 
+import build_klassor_review as builder
+
 ROOT = Path(__file__).resolve().parents[1]
 review = runpy.run_path(str(ROOT / "workflows/klassor-review/decision.py"))
 prepare = runpy.run_path(str(ROOT / "workflows/klassor-analysis/prepare.py"))["main"]
@@ -101,6 +103,45 @@ class ProductReviewTests(unittest.TestCase):
             self.decide(context_json=json.dumps(changed))
         with self.assertRaises(ValueError):
             self.decide("automatic_approval")
+
+
+class ReviewWorkflowTests(unittest.TestCase):
+    def test_exact_sources_and_action_routes_are_versioned(self):
+        import yaml
+        workflow = builder.build()
+        folder = ROOT / "workflows/klassor-review"
+        self.assertEqual(yaml.safe_load((folder / "workflow.yml").read_text()), workflow)
+        self.assertEqual(json.loads((folder / "manifest.json").read_text()), builder.manifest(workflow))
+        nodes = {node["id"]: node["data"] for node in workflow["workflow"]["graph"]["nodes"]}
+        self.assertEqual(nodes["analyst"]["prompt_template"][0]["text"], (ROOT / "prompts/requirement-analyst.md").read_text())
+        self.assertEqual(nodes["prepare"]["code"], (ROOT / "workflows/klassor-analysis/prepare.py").read_text())
+        self.assertEqual(nodes["human_review"]["delivery_methods"],
+                         [{"id": builder.WEB_DELIVERY_ID, "type": "webapp", "enabled": True, "config": {}}])
+        import uuid
+        self.assertEqual(str(uuid.UUID(builder.WEB_DELIVERY_ID)), builder.WEB_DELIVERY_ID)
+        paths = {(edge["sourceHandle"], edge["target"]) for edge in workflow["workflow"]["graph"]["edges"]
+                 if edge["source"] == "human_review"}
+        self.assertEqual(paths, {("approve", "record_approve"), ("request_changes", "record_request_changes"),
+                                 ("reject", "record_reject"), ("__timeout", "record_timeout")})
+        for action in ("approve", "request_changes", "reject", "timeout"):
+            namespace = {}
+            exec(nodes["record_" + action]["code"], namespace)
+            self.assertIn('"' + action + '"', nodes["record_" + action]["code"].split("def main(")[-1])
+            self.assertEqual(set(nodes["record_" + action]["outputs"]), {"result_json"})
+        self.assertEqual(nodes["review_result"]["variables"],
+                         [["record_" + action, "result_json"] for action in ("approve", "request_changes", "reject", "timeout")])
+        self.assertEqual(len([node for node in nodes.values() if node["type"] == "end"]), 1)
+        self.assertEqual(set(nodes["review_output"]["outputs"]), set(builder.OUTPUTS))
+        self.assertEqual(workflow["workflow"]["environment_variables"], [])
+
+    def test_harness_cannot_select_real_requests_and_uses_no_model(self):
+        workflow = builder.build(harness=True)
+        nodes = workflow["workflow"]["graph"]["nodes"]
+        self.assertNotIn("llm", {node["data"]["type"] for node in nodes})
+        fields = nodes[0]["data"]["variables"]
+        mode = next(field for field in fields if field["variable"] == "review_kind")
+        self.assertEqual(mode["options"], [review["TRIAL"]])
+        self.assertEqual(mode["default"], review["TRIAL"])
 
 
 if __name__ == "__main__":

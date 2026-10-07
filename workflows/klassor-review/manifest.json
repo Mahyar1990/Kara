@@ -1,0 +1,12 @@
+{
+  "workflow_revision": "0.1",
+  "review_revision": "0.1",
+  "dify_version": "1.17.1",
+  "dsl_version": "0.7.0",
+  "analyst_prompt_revision": "0.4",
+  "analyst_prompt_sha256": "30a8fbfcda292dde1b1c2505120276ec404c32e98e25e513a8c3e079b1bd3c43",
+  "decision_code_sha256": "04e67ef9e2440abde2636acc802ce627d17b75b96f099240298e872eabb23295",
+  "workflow_sha256": "f12f17a5cdeaaae1d8bf574c60b3266a1740c74ca12d46e079a7541fa839eec3",
+  "default_review_kind": "نمونهٔ آزمایشی",
+  "human_input_delivery": "webapp"
+}
