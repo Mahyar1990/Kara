@@ -118,6 +118,8 @@ make check
 - [آماده‌سازی زمینهٔ فنی محلی](docs/product-technical-context.md)
 - [راه‌اندازی فرایند تحلیل درخواست کلاسور](workflows/klassor-analysis/README.md)
 - [تحلیل و بررسی مالک محصول](workflows/klassor-review/README.md)
+- [برنامه‌ریز فنی پس از بررسی انسانی](workflows/klassor-planning/README.md)
+- [نتیجهٔ اجرای ساختگی برنامه‌ریز](docs/klassor-planning-evaluation.md)
 - [نتیجهٔ آزمون فرم و تصمیم مالک محصول](docs/klassor-product-review-evaluation.md)
 
 ## منابع فنی
