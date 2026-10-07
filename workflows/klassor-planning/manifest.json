@@ -1,0 +1,12 @@
+{
+  "workflow_revision": "0.1",
+  "planner_prompt_revision": "0.4",
+  "dify_version": "1.17.1",
+  "dsl_version": "0.7.0",
+  "workflow_sha256": "8e4ba190a21df5ac2f5aefdda1a1c808eecb78ac59d77c8e8e57574a798471af",
+  "gate_sha256": "9bc8fda867510dfb145352202e180b6443fcc78cd6f13ddff16eb205359f455f",
+  "prompt_sha256": "f140980dfe9d57f69e510b84a7dd0aba2f05b222f803bf25e66effe940ac539d",
+  "development_enabled": false,
+  "merge_enabled": false,
+  "default_review_kind": "نمونهٔ آزمایشی"
+}
