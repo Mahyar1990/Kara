@@ -44,6 +44,7 @@ make down
 
 - [محیط محلی](docs/local-development.md)
 - [رابط فارسی و راست‌به‌چپ](docs/persian-interface.md)
+- [اتصال خصوصی مدل](docs/company-model-connection.md)
 
 ## منابع
 

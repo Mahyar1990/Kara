@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: setup up down status logs doctor check
+.PHONY: setup up down status logs doctor check check-model
 
 setup:
 	$(PYTHON) scripts/local_dify.py setup
@@ -22,3 +22,7 @@ doctor:
 
 check:
 	$(PYTHON) scripts/check_project.py
+	$(PYTHON) -m unittest discover -s scripts -p 'test_company_model.py'
+
+check-model:
+	$(PYTHON) scripts/check_company_model.py
