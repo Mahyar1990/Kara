@@ -62,6 +62,8 @@ def build(harness=False, bundle=None, model=analysis.MODEL_PLACEHOLDER):
     edges.remove(incoming)
     edges.extend([review.edge(origin, bound), review.edge(bound, by_id['review_prepare'])])
     nodes.append(bound)
+    by_id['review_output']['data']['code'] = ('import json\n\ndef main(result_json):\n'
+        '    result = json.loads(result_json)\n    return {key: result[key] for key in ' + repr(review.OUTPUTS) + '}\n')
     human = by_id['human_review']
     human['data']['form_content'] += '\n### بررسی منابع قبل از ارسال به مدل\n\n{{#bound_context.source_summary#}}\n\n{{#$output.source_review#}}\n'
     human['data']['inputs'].append({'type': 'select', 'output_variable_name': 'source_review',

@@ -1755,7 +1755,8 @@ workflow:
           import json
 
           def main(result_json):
-              return json.loads(result_json)
+              result = json.loads(result_json)
+              return {key: result[key] for key in ['report', 'requirement', 'analysis_ref', 'human_decision', 'decision_record_json', 'next_analysis_inputs_json', 'revision_proposal', 'next_step']}
         variables:
         - variable: result_json
           value_selector:

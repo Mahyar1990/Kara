@@ -26,3 +26,14 @@ class PlanningWorkflowTests(unittest.TestCase):
     def test_large_context_rejected(self):
         with self.assertRaises(ValueError):
             planning.build(bundle={'data':'ب'*110000})
+
+    def test_review_display_has_only_declared_outputs(self):
+        workflow = planning.build()
+        node = next(n for n in workflow['workflow']['graph']['nodes'] if n['id']=='review_output')
+        namespace = {}
+        exec(node['data']['code'], namespace)
+        data = {key:'sample' for key in planning.review.OUTPUTS}
+        data.update(source_review='reviewed', reviewed_agent_context_id='private-context')
+        result = namespace['main'](planning.json.dumps(data))
+        self.assertEqual(set(result), set(node['data']['outputs']))
+        self.assertNotIn('source_review', result)
