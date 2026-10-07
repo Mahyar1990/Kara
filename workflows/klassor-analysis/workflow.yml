@@ -223,7 +223,7 @@ workflow:
           name: __LOCAL_CHAT_MODEL__
           mode: chat
           completion_params:
-            max_tokens: 4096
+            max_tokens: 16384
         prompt_template:
         - role: system
           text: |
@@ -340,6 +340,7 @@ workflow:
         vision:
           enabled: false
         structured_output_enabled: false
+        reasoning_format: separated
         retry_config:
           enabled: false
           max_retries: 1

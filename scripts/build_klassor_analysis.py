@@ -75,10 +75,11 @@ def build():
         }),
         node("analyst", "llm", "تحلیل نیازمندی کلاسور", 2, {
             "model": {"provider": PROVIDER, "name": MODEL_PLACEHOLDER, "mode": "chat",
-                      "completion_params": {"max_tokens": 4096}},
+                      "completion_params": {"max_tokens": 16384}},
             "prompt_template": [{"role": "system", "text": prompt}, {"role": "user", "text": USER_PROMPT}],
             "context": {"enabled": False, "variable_selector": []},
             "vision": {"enabled": False}, "structured_output_enabled": False,
+            "reasoning_format": "separated",
             "retry_config": {"enabled": False, "max_retries": 1, "retry_interval": 1000},
         }),
         node("finalize", "code", "آماده‌سازی برای تصمیم مالک محصول", 3, {
@@ -112,7 +113,7 @@ def build():
 
 def manifest(workflow):
     prompt = (ROOT / "prompts/requirement-analyst.md").read_bytes()
-    return {"workflow_revision": "0.1", "dify_version": "1.17.1", "dsl_version": workflow["version"],
+    return {"workflow_revision": "0.2", "dify_version": "1.17.1", "dsl_version": workflow["version"],
             "prompt_path": "prompts/requirement-analyst.md", "prompt_revision": "0.2",
             "prompt_sha256": hashlib.sha256(prompt).hexdigest(),
             "workflow_sha256": hashlib.sha256(dump(workflow).encode()).hexdigest(),
