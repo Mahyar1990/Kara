@@ -117,6 +117,7 @@ make check
 - [قرارداد برنامه‌ریز و بستهٔ توسعه](docs/klassor-technical-planning-contract.md)
 - [راه‌اندازی فرایند تحلیل درخواست کلاسور](workflows/klassor-analysis/README.md)
 - [تحلیل و بررسی مالک محصول](workflows/klassor-review/README.md)
+- [نتیجهٔ آزمون فرم و تصمیم مالک محصول](docs/klassor-product-review-evaluation.md)
 
 ## منابع فنی
 
