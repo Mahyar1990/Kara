@@ -185,6 +185,12 @@ def doctor():
         raise RuntimeError("Running web customization is outdated; run make up")
     # Capture the resolved config to validate bindings without printing credentials.
     resolved = json.loads(compose(["config", "--format", "json"], capture=True).stdout)
+    sandbox_key = resolved["services"]["sandbox"]["environment"].get("API_KEY")
+    for name in ("api", "worker", "worker_beat"):
+        execution_key = resolved["services"][name]["environment"].get("CODE_EXECUTION_API_KEY")
+        if not sandbox_key or execution_key != sandbox_key:
+            raise RuntimeError(f"Sandbox authentication mismatch: {name}")
+    print("Dify sandbox check: matching private credentials")
     for name, service in resolved["services"].items():
         for port in service.get("ports", []):
             if port.get("host_ip") != "127.0.0.1":

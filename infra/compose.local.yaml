@@ -1,5 +1,14 @@
 # Compose 2.24.4+ supports !override and optional env_file entries.
 services:
+  api:
+    environment:
+      CODE_EXECUTION_API_KEY: "${SANDBOX_API_KEY:?Private sandbox key is required}"
+  worker:
+    environment:
+      CODE_EXECUTION_API_KEY: "${SANDBOX_API_KEY:?Private sandbox key is required}"
+  worker_beat:
+    environment:
+      CODE_EXECUTION_API_KEY: "${SANDBOX_API_KEY:?Private sandbox key is required}"
   nginx:
     ports: !override
       - "127.0.0.1:${EXPOSE_NGINX_PORT:-8080}:80"
