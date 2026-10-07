@@ -115,6 +115,7 @@ make check
 - [قرارداد تحلیلگر](docs/klassor-requirement-analysis-contract.md)
 - [نمونه‌های تحلیل](docs/klassor-requirement-analysis-examples.md)
 - [قرارداد برنامه‌ریز و بستهٔ توسعه](docs/klassor-technical-planning-contract.md)
+- [آماده‌سازی زمینهٔ فنی محلی](docs/product-technical-context.md)
 - [راه‌اندازی فرایند تحلیل درخواست کلاسور](workflows/klassor-analysis/README.md)
 - [تحلیل و بررسی مالک محصول](workflows/klassor-review/README.md)
 - [نتیجهٔ آزمون فرم و تصمیم مالک محصول](docs/klassor-product-review-evaluation.md)
