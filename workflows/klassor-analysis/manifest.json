@@ -1,11 +1,11 @@
 {
-  "workflow_revision": "0.4",
+  "workflow_revision": "0.5",
   "dify_version": "1.17.1",
   "dsl_version": "0.7.0",
   "prompt_path": "prompts/requirement-analyst.md",
-  "prompt_revision": "0.4",
-  "prompt_sha256": "30a8fbfcda292dde1b1c2505120276ec404c32e98e25e513a8c3e079b1bd3c43",
-  "workflow_sha256": "801e891c8488be3a2ae16fe3c41d8eb17d301e8ef1bee2346d850fb677be98fa",
+  "prompt_revision": "0.5",
+  "prompt_sha256": "414f6442e09ed0286f0d0e787ec55505e2b1d010bb4a047f4a3e8ba0072f07ce",
+  "workflow_sha256": "c3e07d88183fc9688d0ff970f6eb815f07f771e027ca9e5f7b32d26fcf8e53bd",
   "model_binding": "private local copy; no credentials in DSL",
   "human_decision": "unreviewed"
 }

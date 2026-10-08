@@ -149,7 +149,7 @@ def build(harness=False):
 
 def manifest(workflow):
     return {"workflow_revision": "0.1", "review_revision": "0.1", "dify_version": "1.17.1",
-            "dsl_version": workflow["version"], "analyst_prompt_revision": "0.4",
+            "dsl_version": workflow["version"], "analyst_prompt_revision": analysis.PROMPT_REVISION,
             "analyst_prompt_sha256": analysis.manifest(analysis.build())["prompt_sha256"],
             "decision_code_sha256": hashlib.sha256((FOLDER / "decision.py").read_bytes()).hexdigest(),
             "workflow_sha256": hashlib.sha256(analysis.dump(workflow).encode()).hexdigest(),

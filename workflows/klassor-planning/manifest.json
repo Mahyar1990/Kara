@@ -1,9 +1,11 @@
 {
   "workflow_revision": "0.1",
   "planner_prompt_revision": "0.4",
+  "analyst_prompt_revision": "0.5",
+  "analyst_prompt_sha256": "414f6442e09ed0286f0d0e787ec55505e2b1d010bb4a047f4a3e8ba0072f07ce",
   "dify_version": "1.17.1",
   "dsl_version": "0.7.0",
-  "workflow_sha256": "44cd9055f0318b0f1d6cb9e5d785fe439e900154a476c0287b46874c72dfd699",
+  "workflow_sha256": "444084cd44a2a26c4d24a4c96a95d96c57e9761a85c793f7c1f77aa7ff9e2895",
   "gate_sha256": "9bc8fda867510dfb145352202e180b6443fcc78cd6f13ddff16eb205359f455f",
   "prompt_sha256": "f140980dfe9d57f69e510b84a7dd0aba2f05b222f803bf25e66effe940ac539d",
   "development_enabled": false,

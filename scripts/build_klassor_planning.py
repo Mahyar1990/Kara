@@ -136,7 +136,10 @@ def build(harness=False, bundle=None, model=analysis.MODEL_PLACEHOLDER):
 
 
 def manifest(workflow):
-    return {'workflow_revision': '0.1', 'planner_prompt_revision': '0.4', 'dify_version': '1.17.1',
+    return {'workflow_revision': '0.1', 'planner_prompt_revision': '0.4',
+            'analyst_prompt_revision': analysis.PROMPT_REVISION,
+            'analyst_prompt_sha256': analysis.manifest(analysis.build())['prompt_sha256'],
+            'dify_version': '1.17.1',
             'dsl_version': workflow['version'], 'workflow_sha256': hashlib.sha256(analysis.dump(workflow).encode()).hexdigest(),
             'gate_sha256': hashlib.sha256((FOLDER / 'gate.py').read_bytes()).hexdigest(),
             'prompt_sha256': hashlib.sha256((ROOT / 'prompts/technical-planner.md').read_bytes()).hexdigest(),

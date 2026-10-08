@@ -35,6 +35,6 @@ def main(jira_key="", title="", request_text="", sources_text="", clarification_
         "request_fingerprint": fingerprint,
         "prepared_at_utc": datetime.now(timezone.utc).isoformat(),
         "input_method": "ورود دستی؛ وجود درخواست در جیرا بررسی نشده است",
-        "prompt_revision": "0.4",
+        "prompt_revision": "0.5",
     }
     return {"input_json": json.dumps(envelope, ensure_ascii=False), "analysis_ref": analysis_ref}
