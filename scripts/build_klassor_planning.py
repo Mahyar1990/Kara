@@ -136,7 +136,7 @@ def build(harness=False, bundle=None, model=analysis.MODEL_PLACEHOLDER):
 
 
 def manifest(workflow):
-    return {'workflow_revision': '0.1', 'planner_prompt_revision': '0.4',
+    return {'workflow_revision': '0.1', 'planner_prompt_revision': '0.5',
             'analyst_prompt_revision': analysis.PROMPT_REVISION,
             'analyst_prompt_sha256': analysis.manifest(analysis.build())['prompt_sha256'],
             'dify_version': '1.17.1',
