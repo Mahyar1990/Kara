@@ -1,0 +1,31 @@
+import path from 'node:path'
+import ts from 'typescript'
+
+const root = path.resolve('web')
+const configPath = path.join(root, 'tsconfig.json')
+const config = ts.readConfigFile(configPath, ts.sys.readFile)
+if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'))
+const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root)
+const files = [
+  'app/components/company-projects/index.tsx',
+  'app/(commonLayout)/projects/page.tsx',
+  'app/(commonLayout)/projects/[projectId]/page.tsx',
+  'app/components/main-nav/routes.ts',
+  'service/company-projects.ts',
+].map(file => path.join(root, file))
+const program = ts.createProgram(files, { ...parsed.options, incremental: false, noEmit: true })
+const errors = [...parsed.errors, ...program.getOptionsDiagnostics()]
+for (const file of files) {
+  const source = program.getSourceFile(file)
+  if (!source) throw new Error(`Missing project source: ${file}`)
+  errors.push(...program.getSyntacticDiagnostics(source), ...program.getSemanticDiagnostics(source))
+}
+if (errors.length) {
+  process.stderr.write(ts.formatDiagnosticsWithColorAndContext(errors, {
+    getCanonicalFileName: file => file,
+    getCurrentDirectory: ts.sys.getCurrentDirectory,
+    getNewLine: () => '\n',
+  }))
+  process.exit(1)
+}
+console.log('Project UI types checked: pages, navigation, components and API client.')

@@ -82,6 +82,11 @@ def prepare_source():
                    cwd=SOURCE, env=environment, check=True)
     subprocess.run(["git", "apply", str(CUSTOM / "source.patch")],
                    cwd=SOURCE, env=environment, check=True)
+    subprocess.run(["git", "apply", "--check", str(CUSTOM / "projects.patch")],
+                   cwd=SOURCE, env=environment, check=True)
+    subprocess.run(["git", "apply", str(CUSTOM / "projects.patch")],
+                   cwd=SOURCE, env=environment, check=True)
+    shutil.copytree(CUSTOM / "overlay", SOURCE / "web", dirs_exist_ok=True)
     overrides = json.loads((CUSTOM / "fa-overrides.json").read_text())
     for namespace, values in overrides.items():
         target = SOURCE / "web/i18n/fa-IR" / f"{namespace}.json"

@@ -1,0 +1,18 @@
+--- a/web/app/components/main-nav/routes.ts
++++ b/web/app/components/main-nav/routes.ts
+@@ -37,6 +37,15 @@
+ }
+ 
+ export const MAIN_NAV_ROUTES = [
++  {
++    key: 'company-projects',
++    href: '/projects',
++    label: 'پروژه‌ها',
++    active: (path: string) => isPathUnderRoute(path, '/projects'),
++    icon: 'i-custom-vender-main-nav-studio-v2',
++    activeIcon: 'i-custom-vender-main-nav-studio-v2-active',
++    visibility: VISIBLE_TO_ALL,
++  },
+   {
+     key: 'home',
+     href: '/',

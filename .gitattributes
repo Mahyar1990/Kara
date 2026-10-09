@@ -1,2 +1,4 @@
 * text=auto eol=lf
 infra/web/source.patch -whitespace
+# Unified diff context contains a single space on an otherwise empty line.
+infra/web/projects.patch whitespace=-blank-at-eol
