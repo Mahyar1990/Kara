@@ -1,0 +1,41 @@
+{
+  "bundle_id": "product-analysis",
+  "bundle_version": "0.1",
+  "schema_version": "0.1",
+  "status": "design_and_prompt_package",
+  "runtime_connected": false,
+  "model_evaluation_performed": false,
+  "common_prompt": "common.md",
+  "lifecycle_contract": "../../docs/product-analysis-lifecycle.md",
+  "templates": "../../docs/product-analysis-templates.md",
+  "roles": [
+    {"id": "PA-00", "name_fa": "هماهنگ‌کنندهٔ تحلیل", "prompt": "coordinator.md", "kind": "language_coordinator", "default_dependencies": [], "modes": ["analyze", "clarify", "review_change", "evaluate_evidence", "evaluate_outcome"]},
+    {"id": "PA-01", "name_fa": "کشف مسئله و ارزش", "prompt": "discovery-value.md", "kind": "specialist", "default_dependencies": [], "modes": ["analyze", "clarify", "review_change", "evaluate_outcome"]},
+    {"id": "PA-02", "name_fa": "استخراج نیاز و شواهد", "prompt": "elicitation-evidence.md", "kind": "specialist", "default_dependencies": ["PA-01"], "modes": ["analyze", "clarify", "review_change"]},
+    {"id": "PA-03", "name_fa": "مدل‌ساز دامنه و فرایند", "prompt": "domain-process.md", "kind": "specialist", "default_dependencies": ["PA-01", "PA-02"], "modes": ["analyze", "clarify", "review_change"]},
+    {"id": "PA-04", "name_fa": "تدوینگر نیازمندی", "prompt": "requirements-specification.md", "kind": "specialist", "default_dependencies": ["PA-03"], "modes": ["analyze", "clarify", "review_change"]},
+    {"id": "PA-05", "name_fa": "داده، رابط و اثر فنی", "prompt": "data-interface-impact.md", "kind": "specialist", "default_dependencies": ["PA-03", "PA-04"], "modes": ["analyze", "clarify", "review_change"]},
+    {"id": "PA-06", "name_fa": "کیفیت و ریسک", "prompt": "nfr-risk.md", "kind": "specialist", "default_dependencies": ["PA-01", "PA-03", "PA-04"], "modes": ["analyze", "clarify", "review_change", "evaluate_evidence", "evaluate_outcome"]},
+    {"id": "PA-07", "name_fa": "طراح تست و پذیرش", "prompt": "test-acceptance.md", "kind": "specialist", "default_dependencies": ["PA-04", "PA-05", "PA-06"], "modes": ["analyze", "clarify", "review_change", "evaluate_evidence"]},
+    {"id": "PA-08", "name_fa": "بازبین مستقل تحلیل", "prompt": "independent-review.md", "kind": "independent_reviewer", "default_dependencies": ["PA-01", "PA-02", "PA-03", "PA-04", "PA-05", "PA-06", "PA-07"], "modes": ["analyze", "clarify", "review_change", "evaluate_evidence"]}
+  ],
+  "routing_note_fa": "وابستگی‌ها ترتیب پیش‌فرض تحلیل کامل‌اند؛ عمق و نقش‌های مرتبط با دلیل و متناسب با دامنه انتخاب می‌شوند. هماهنگ‌کننده پیشنهاد می‌دهد و بستر عبور واقعی را کنترل می‌کند.",
+  "klassor_adapter": {
+    "legacy_analysis_contract": "../../docs/klassor-requirement-analysis-contract.md",
+    "legacy_analysis_prompt": "../requirement-analyst.md",
+    "legacy_planning_contract": "../../docs/klassor-technical-planning-contract.md",
+    "projection_section_count": 10,
+    "legacy_workflows_modified": false,
+    "source_baseline_ref": "origin/sandbox",
+    "required_baseline_roles": ["backend", "client", "newman", "playwright"]
+  },
+  "human_responsibilities": {
+    "requirements_decision": "product_owner",
+    "technical_discussion": ["product_owner", "technical_lead", "developer"],
+    "final_merge": "technical_lead_manual",
+    "sandbox_acceptance_owner": null,
+    "release_decision_owner": null,
+    "jira_done_milestone": null
+  },
+  "execution_authority_note_fa": "این manifest فایل پیکربندی طراحی است؛ اجرا، احراز هویت، دسترسی، ذخیرهٔ تصمیم و اتصالات Dify/Jira/GitLab را پیاده‌سازی نمی‌کند. نقش‌های زبانی مجوز مرج یا انتشار ایجاد نمی‌کنند."
+}
