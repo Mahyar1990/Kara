@@ -1,0 +1,10 @@
+{
+  "template_revision": "0.1",
+  "dify_version": "1.17.1",
+  "dsl_version": "0.7.0",
+  "prompt_sha256": "5538d82e0d09d4439641b271b53573cc4ca61ee360efa4b15d57b5c93f1dba10",
+  "workflow_sha256": "b1225c7283d30391189a6cba8402c39aeb9ce9acaebe3a087d68a1bd927c890e",
+  "model_binding": "local configuration; no credentials in template",
+  "execution_mode": "trial",
+  "connected_tools": []
+}

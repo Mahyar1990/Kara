@@ -111,6 +111,7 @@ make check
 
 ## مستندات اختصاصی این شاخه
 
+- [قالب عمومی ساخت ایجنت](workflows/base-agent/README.md): تعریف پروژه، نقش و هدف قابل تنظیم و اجرای آزمایشی با قرارداد خروجی مشترک.
 - [طرح کامل تحلیل محصول از کشف تا پذیرش و سنجش ارزش](docs/product-analysis-lifecycle.md): طراحی مبتنی بر کتاب ارائه‌شده، یک هماهنگ‌کننده و هشت متخصص؛ هنوز به Dify متصل یا روی مدل ارزیابی نشده است.
 - [قالب‌های تحلیل، توسعه و پذیرش](docs/product-analysis-templates.md) و [دستورالعمل نقش‌های تخصصی](prompts/product-analysis/README.md).
 - [طراحی فرایند کلاسور](docs/klassor-development-agent-pilot.md)
