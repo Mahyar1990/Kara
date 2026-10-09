@@ -52,6 +52,15 @@ make down
 - [محیط محلی](docs/local-development.md)
 - [رابط فارسی و راست‌به‌چپ](docs/persian-interface.md)
 - [اتصال خصوصی مدل](docs/company-model-connection.md)
+- [پروژه‌ها و برنامه‌های اختصاصی](docs/projects.md)
+
+برای اجرای بررسی‌های توسعه، محیط Python محلی را آماده کنید:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-platform.txt
+make check
+```
 
 ## منابع
 

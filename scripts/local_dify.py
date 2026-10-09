@@ -183,6 +183,17 @@ def doctor():
     ).stdout.strip()
     if web_revision != fingerprint():
         raise RuntimeError("Running web customization is outdated; run make up")
+    from company_api import fingerprint as api_fingerprint
+    for name in ("api", "worker", "worker_beat", "api_websocket"):
+        container = compose(["ps", "-q", name], capture=True).stdout.strip()
+        if not container:
+            raise RuntimeError(f"Projects backend service is not running: {name}")
+        revision = run(["docker", "inspect", container, "--format",
+                        '{{index .Config.Labels "company-agent.projects"}}'],
+                       capture_output=True, text=True).stdout.strip()
+        if revision != api_fingerprint():
+            raise RuntimeError(f"Projects backend customization is outdated: {name}; run make up")
+    print("Dify projects backend check: current custom image")
     # Capture the resolved config to validate bindings without printing credentials.
     resolved = json.loads(compose(["config", "--format", "json"], capture=True).stdout)
     sandbox_key = resolved["services"]["sandbox"]["environment"].get("API_KEY")
@@ -232,6 +243,9 @@ def main():
     elif action == "up":
         prepare()
         compose(["config", "--quiet"])
+        import company_api
+        if not company_api.image_is_current():
+            company_api.build_image()
         from persian_web import build_image, image_is_current
         if not image_is_current():
             print("Building the Persian web interface; pausing local services to free memory.", flush=True)

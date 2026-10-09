@@ -1,4 +1,4 @@
-PYTHON ?= python3
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 
 .PHONY: setup up down status logs doctor check check-model
 
@@ -22,7 +22,7 @@ doctor:
 
 check:
 	$(PYTHON) scripts/check_project.py
-	$(PYTHON) -m unittest discover -s scripts -p 'test_company_model.py'
+	$(PYTHON) -m unittest discover -s scripts -p 'test_*.py'
 
 check-model:
 	$(PYTHON) scripts/check_company_model.py

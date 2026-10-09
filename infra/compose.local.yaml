@@ -1,14 +1,23 @@
 # Compose 2.24.4+ supports !override and optional env_file entries.
 services:
   api:
+    image: company-agent/dify-api:1.17.1-projects
+    pull_policy: never
     environment:
       CODE_EXECUTION_API_KEY: "${SANDBOX_API_KEY:?Private sandbox key is required}"
   worker:
+    image: company-agent/dify-api:1.17.1-projects
+    pull_policy: never
     environment:
       CODE_EXECUTION_API_KEY: "${SANDBOX_API_KEY:?Private sandbox key is required}"
   worker_beat:
+    image: company-agent/dify-api:1.17.1-projects
+    pull_policy: never
     environment:
       CODE_EXECUTION_API_KEY: "${SANDBOX_API_KEY:?Private sandbox key is required}"
+  api_websocket:
+    image: company-agent/dify-api:1.17.1-projects
+    pull_policy: never
   nginx:
     ports: !override
       - "127.0.0.1:${EXPOSE_NGINX_PORT:-8080}:80"
