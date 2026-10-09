@@ -161,7 +161,7 @@ def wait_for_api(timeout=300):
                 if json.load(response).get("result") == "pong":
                     print("Dify API is ready.", flush=True)
                     return
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        except (urllib.error.URLError, TimeoutError, ConnectionResetError, json.JSONDecodeError):
             pass
         time.sleep(2)
     raise RuntimeError("Dify did not become ready within 5 minutes; inspect make logs")
