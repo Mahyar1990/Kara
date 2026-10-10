@@ -9,7 +9,7 @@ changes = {
         'workspace=WorkspacePermissionSnapshot(permission_keys=list(permissions.get("workspace", []))),',
         'workspace=WorkspacePermissionSnapshot(permission_keys=__import__("company_projects.access", fromlist=["filter_permissions"]).filter_permissions(session, tenant_id, account_id, permissions.get("workspace", []))),')],
     'controllers/console/__init__.py': [(
-        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.readiness",\n')],
+        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n')],
     'app_factory.py': [(
         '    initialize_extensions(app)\n',
         '    initialize_extensions(app)\n    from company_projects.store import migrate\n    from company_projects.access import initialize, restrict_central_workspace\n    from extensions.ext_database import db\n    with app.app_context():\n        migrate(db.engine)\n        with db.engine.begin() as connection:\n            initialize(connection)\n    restrict_central_workspace(app)\n')],
@@ -34,6 +34,9 @@ changes = {
         '        if params.project_id:\n            from company_projects.access import validate_app_project\n            validate_app_project(session, tenant_id, params.project_id, account.id)\n        app_mode = AppMode.value_of(params.mode)\n'), (
         '        # Preserve the original commit-before-signal ordering for telemetry.\n',
         '        if params.project_id:\n            from company_projects.access import authority\n            from company_projects.store import assign\n            assign(session.connection(), authority(session)["tenant_id"], params.project_id, app.id)\n\n        # Preserve the original commit-before-signal ordering for telemetry.\n')],
+    'services/workflow_draft_variable_service.py': [(
+        '        # Ensure the session is bound to a engine.\n        assert isinstance(engine, Engine)\n        session_maker = sessionmaker(bind=engine, expire_on_commit=False)\n',
+        '        # Company template imports use an outer transaction around native commits.\n        from sqlalchemy import Connection\n        assert isinstance(engine, (Engine, Connection))\n        session_maker = sessionmaker(bind=engine, expire_on_commit=False, join_transaction_mode="create_savepoint")\n')],
 }
 for filename, replacements in changes.items():
     target = root / filename

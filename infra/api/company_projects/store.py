@@ -30,6 +30,14 @@ product = sa.Table('company_product', metadata,
 workspaces = sa.Table('company_project_workspaces', metadata,
     sa.Column('project_id', sa.Uuid(as_uuid=False), sa.ForeignKey('company_projects.id'), primary_key=True),
     sa.Column('workspace_id', sa.Uuid(as_uuid=False), nullable=False, unique=True))
+template_copies = sa.Table('company_template_copies', metadata,
+    sa.Column('app_id', sa.Uuid(as_uuid=False), primary_key=True),
+    sa.Column('tenant_id', sa.Uuid(as_uuid=False), nullable=False, index=True),
+    sa.Column('template_id', sa.String(80), nullable=False),
+    sa.Column('template_version', sa.String(40), nullable=False),
+    sa.Column('source_commit', sa.String(40), nullable=False),
+    sa.Column('created_by', sa.Uuid(as_uuid=False), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False))
 
 
 class ProjectError(ValueError):

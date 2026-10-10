@@ -12,6 +12,8 @@ const files = [
   'app/components/company-projects/forms.tsx',
   'app/components/company-projects/project-page.tsx',
   'app/components/company-projects/setup.tsx',
+  'app/components/company-projects/templates.tsx',
+  'app/(commonLayout)/projects/[projectId]/templates/page.tsx',
   'app/(commonLayout)/projects/[projectId]/setup/page.tsx',
   'service/company-adoption.ts',
   'app/(commonLayout)/projects/page.tsx',

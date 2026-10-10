@@ -1,5 +1,5 @@
 import type { CompanyProject } from './company-projects'
-import { get } from '@/service/base'
+import { get, post } from '@/service/base'
 
 export type SetupSnapshot = {
   project: CompanyProject
@@ -12,4 +12,8 @@ export type SetupSnapshot = {
 }
 export const adoptionApi = {
   setup: (id: string) => get<SetupSnapshot>(`/company/projects/${id}/setup`),
+  templates: (id: string) => get<TemplateCatalog>(`/company/projects/${id}/templates`),
+  copy: (id: string, template: string, body: { name: string; dataset_id?: string }) => post<{ id: string; name: string }>(`/company/projects/${id}/templates/${template}/copies`, { body }),
 }
+export type StarterTemplate = { id: string; version: string; name: string; description: string; requires_knowledge: boolean; example_input: string }
+export type TemplateCatalog = { data: StarterTemplate[]; model_name: string | null; datasets: { id: string; name: string }[] }
