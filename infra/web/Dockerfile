@@ -19,7 +19,7 @@ RUN npm ci --prefix .company-web --ignore-scripts --no-audit --no-fund
 FROM packages AS builder
 COPY . .
 RUN NODE_OPTIONS=--max-old-space-size=4096 node .company-web/check-projects-types.mjs
-RUN node .company-web/localize-literals.mjs web && node --test .company-web/rtl.spec.mjs .company-web/members.spec.mjs
+RUN node .company-web/localize-literals.mjs web && node --test .company-web/rtl.spec.mjs .company-web/members.spec.mjs .company-web/navigation.spec.mjs
 WORKDIR /app/web
 ENV NODE_OPTIONS=--max-old-space-size=4096
 ENV pnpm_config_verify_deps_before_run=false

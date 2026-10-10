@@ -36,7 +36,7 @@ export default function CompanyMembers() {
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
         <p className="mb-2 text-sm text-text-tertiary">{project ? `اعضای پروژهٔ ${project.name}` : 'مرکز مدیریت محصول'}</p>
-        <h1 className="text-3xl font-bold text-text-primary">مدیریت کاربران</h1>
+        <h1 className="text-3xl font-bold text-text-primary">{project ? 'اعضای پروژه' : 'مدیریت کاربران محصول'}</h1>
         <p className="mt-3 text-sm leading-7 text-text-secondary">کاربران تیم، دعوت‌نامه‌ها و نقش هر عضو را در این بخش مدیریت کنید.</p>
       </header>
       <p className="text-sm leading-7 text-text-tertiary">{project ? `دعوت و نقش کاربران فقط برای پروژهٔ «${project.name}» اعمال می‌شود. ${canManage ? 'برای افزودن همکار، ایمیل و نقش او را در فرم دعوت وارد کنید.' : 'مدیریت اعضا با مالک پروژه است.'}` : 'شما مالک محصول هستید. برای تعیین مالک جدید، ابتدا همکار را دعوت کنید تا حسابش فعال شود. دسترسی به پروژه‌ها از صفحهٔ هر پروژه تعیین می‌شود.'}</p>

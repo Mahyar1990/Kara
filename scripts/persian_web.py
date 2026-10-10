@@ -94,6 +94,10 @@ def prepare_source():
                    cwd=SOURCE, env=environment, check=True)
     subprocess.run(["git", "apply", str(CUSTOM / "ownership.patch")],
                    cwd=SOURCE, env=environment, check=True)
+    subprocess.run(["git", "apply", "--check", str(CUSTOM / "navigation.patch")],
+                   cwd=SOURCE, env=environment, check=True)
+    subprocess.run(["git", "apply", str(CUSTOM / "navigation.patch")],
+                   cwd=SOURCE, env=environment, check=True)
     shutil.copytree(CUSTOM / "overlay", SOURCE / "web", dirs_exist_ok=True)
     overrides = json.loads((CUSTOM / "fa-overrides.json").read_text())
     for namespace, values in overrides.items():

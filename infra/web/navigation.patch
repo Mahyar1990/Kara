@@ -1,0 +1,165 @@
+--- a/web/app/components/main-nav/index.tsx
++++ b/web/app/components/main-nav/index.tsx
+@@ -10,6 +10,7 @@
+ import { DifyLogo } from '@/app/components/base/logo/dify-logo'
+ import EnvNav from '@/app/components/header/env-nav'
+ import StepByStepTourMount from '@/app/components/step-by-step-tour/mount'
++import { CompanyNavigationHeader, productNavigation, projectNavigation, useCompanyNavigation } from '@/app/components/company-projects/navigation'
+ import { isCurrentWorkspaceDatasetOperatorAtom } from '@/context/workspace-state'
+ import { userProfileQueryOptions } from '@/features/account-profile/client'
+ import { isAgentV2Enabled } from '@/features/agent-v2/feature-flag'
+@@ -22,7 +23,6 @@
+ import HelpMenu from './components/help-menu'
+ import MainNavLink from './components/nav-link'
+ import { MainNavSearchButton } from './components/search-button'
+-import { WorkspaceCard } from './components/workspace-card'
+ import { isMainNavRouteVisible, MAIN_NAV_ROUTES } from './routes'
+
+ const WebAppsSection = lazy(() => import('./components/web-apps-section'))
+@@ -30,6 +30,7 @@
+ export function MainNav({ className, initialPlatform }: MainNavProps) {
+   const { t } = useTranslation()
+   const pathname = usePathname()
++  const { project, context } = useCompanyNavigation()
+   const isCurrentWorkspaceDatasetOperator = useAtomValue(isCurrentWorkspaceDatasetOperatorAtom)
+   const { data: systemFeatures } = useSuspenseQuery(systemFeaturesQueryOptions())
+   const { data: currentEnv } = useSuspenseQuery({
+@@ -47,8 +48,8 @@
+   const helpMenuTriggerRef = useRef<HTMLButtonElement>(null)
+
+   const navItems = useMemo<MainNavItem[]>(
+-    () =>
+-      MAIN_NAV_ROUTES.filter((route) =>
++    () => {
++      const nativeItems = MAIN_NAV_ROUTES.filter((route) =>
+         isMainNavRouteVisible(route, {
+           agentV2Enabled,
+           canViewSkills,
+@@ -62,8 +63,12 @@
+         active: route.active,
+         icon: route.icon,
+         activeIcon: route.activeIcon,
+-      })),
++      }))
++      return project ? projectNavigation(project.id, nativeItems) : productNavigation(context.data?.is_product_owner === true)
++    },
+     [
++      project?.id,
++      context.data?.is_product_owner,
+       agentV2Enabled,
+       canViewSkills,
+       enableSkill,
+@@ -81,7 +86,7 @@
+
+     return (
+       <Link
+-        href="/"
++        href="/projects"
+         className="flex h-8 shrink-0 items-center overflow-hidden focus-visible:ring-2 focus-visible:ring-state-accent-solid focus-visible:outline-hidden"
+         aria-label={appTitle}
+       >
+@@ -105,19 +110,19 @@
+         className,
+       )}
+     >
+-      <div className="flex min-h-0 w-60 flex-1 flex-col overflow-hidden">
++      <div className="flex min-h-0 w-60 flex-1 flex-col overflow-y-auto">
+         <div className="flex items-center justify-between pt-3 pr-2 pb-2 pl-4">
+           {renderLogo()}
+-          <MainNavSearchButton initialPlatform={initialPlatform} />
++          {project && <MainNavSearchButton initialPlatform={initialPlatform} />}
+         </div>
+         <div className="p-2">
+-          <WorkspaceCard />
++          <CompanyNavigationHeader />
+         </div>
+         <nav
+-          aria-label={t(($) => $['navigation.primary'], { ns: 'common' })}
++          aria-label={project ? 'امکانات پروژه' : 'مدیریت محصول'}
+           className="isolate flex flex-col gap-px p-2"
+         >
+-          {navItems.map((item) => (
++          {navItems.filter(item => !['/integrations/model-provider', '/marketplace'].includes(item.href)).map((item) => (
+             <MainNavLink key={item.href} item={item} pathname={pathname}>
+               {item.href === '/agents' && (
+                 <Badge
+@@ -130,22 +135,24 @@
+             </MainNavLink>
+           ))}
+         </nav>
+-        {!isCurrentWorkspaceDatasetOperator && (
+-          <Suspense fallback={null}>
+-            <WebAppsSection />
+-          </Suspense>
+-        )}
+-        {showEnvTag && (
++        {project && <details className="mx-2 mt-2 rounded-xl border border-divider-subtle">
++          <summary className="cursor-pointer px-3 py-2 text-sm text-text-secondary">تنظیمات و اتصال‌ها</summary>
++          <nav aria-label="تنظیمات پروژه" className="p-1">
++            {navItems.filter(item => ['/integrations/model-provider', '/marketplace'].includes(item.href)).map(item => <MainNavLink key={item.href} item={item} pathname={pathname} />)}
++          </nav>
++        </details>}
++        {project && !isCurrentWorkspaceDatasetOperator && <Suspense fallback={null}><WebAppsSection /></Suspense>}
++        {project && showEnvTag && (
+           <div className="mt-auto shrink-0 px-3 pb-2">
+             <EnvNav />
+           </div>
+         )}
+       </div>
+       <div className="isolate w-60 shrink-0">
+-        <StepByStepTourMount
++        {project && <StepByStepTourMount
+           recoveryAnchorRef={systemFeatures.branding.enabled ? undefined : helpMenuTriggerRef}
+           className="relative z-1 -mb-1 ml-2.5 h-8 w-45.75 overflow-visible"
+-        />
++        />}
+         <div className="flex w-60 items-center justify-between bg-linear-to-b from-background-body-transparent to-background-body to-50% py-3 pr-1 pl-3 backdrop-blur-[2px]">
+           <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+             <AccountSection />
+--- a/web/app/components/main-nav/layout.tsx
++++ b/web/app/components/main-nav/layout.tsx
+@@ -11,6 +11,8 @@
+ import { isAgentV2Enabled } from '@/features/agent-v2/feature-flag'
+ import { usePathname } from '@/next/navigation'
+ import { MainNav } from '.'
++import { CompanyNavigationBoundary } from '@/app/components/company-projects/navigation'
++import Link from '@/next/link'
+ import { shouldHideMainNavigation, shouldUseDetailSidebar } from './routes'
+ import { MAIN_CONTENT_ID, SkipNav } from './skip-nav'
+
+@@ -49,6 +51,16 @@
+   })
+
+   return (
++    <CompanyNavigationBoundary selection={
++      <div className="flex h-full min-w-0 grow">
++        <MainNav initialPlatform={initialPlatform} />
++        <main dir="rtl" className="grow p-8 text-text-primary">
++          <h1 className="mb-4 text-2xl font-bold">ابتدا پروژه را انتخاب کنید</h1>
++          <p className="mb-6 text-sm leading-7 text-text-secondary">برای کار با برنامه‌ها، ایجنت‌ها و دانش، وارد یکی از پروژه‌های خود شوید.</p>
++          <Link href="/projects" className="text-text-accent">مشاهدهٔ پروژه‌ها</Link>
++        </main>
++      </div>
++    }>
+     <div className="flex h-0 min-h-0 min-w-0 grow overflow-hidden bg-background-body">
+       <SkipNav>{t(($) => $['navigation.skipToMain'])}</SkipNav>
+       <AppDetailStoreCleanup />
+@@ -65,6 +77,7 @@
+         {children}
+       </main>
+     </div>
++    </CompanyNavigationBoundary>
+   )
+ }
+
+--- a/web/app/components/main-nav/components/web-apps-section.tsx
++++ b/web/app/components/main-nav/components/web-apps-section.tsx
+@@ -74,7 +74,7 @@
+   const searchFocusRequestedRef = useRef(false)
+   const sectionLabelId = useId()
+   const [lastFocusedAppId, setLastFocusedAppId] = useState<string | null>(null)
+-  const [appsExpanded, setAppsExpanded] = useState(true)
++  const [appsExpanded, setAppsExpanded] = useState(() => isInstalledAppPath(pathname))
+   const [searchVisible, setSearchVisible] = useState(false)
+   const [searchText, setSearchText] = useState('')
+   const [uninstallDialogAppId, setUninstallDialogAppId] = useState<string | null>(null)
