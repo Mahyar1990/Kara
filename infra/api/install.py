@@ -3,6 +3,9 @@ from pathlib import Path
 
 root = Path('/app/api')
 changes = {
+    'services/enterprise/rbac_service.py': [(
+        '            if not dify_config.RBAC_ENABLED:\n                if len(role_ids) != 1:\n',
+        '            if not dify_config.RBAC_ENABLED:\n                from company_members.access import require_role_change\n                require_role_change(tenant_id, account_id, member_account_id, role_ids, session=session)\n                if len(role_ids) != 1:\n')],
     'controllers/console/__init__.py': [(
         'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n')],
     'app_factory.py': [(
