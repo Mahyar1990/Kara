@@ -9,7 +9,7 @@ changes = {
         'workspace=WorkspacePermissionSnapshot(permission_keys=list(permissions.get("workspace", []))),',
         'workspace=WorkspacePermissionSnapshot(permission_keys=__import__("company_projects.access", fromlist=["filter_permissions"]).filter_permissions(session, tenant_id, account_id, permissions.get("workspace", []))),')],
     'controllers/console/__init__.py': [(
-        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n    "company_projects.inbox",\n')],
+        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n    "company_projects.inbox",\n    "company_projects.automations",\n')],
     'app_factory.py': [(
         '    initialize_extensions(app)\n',
         '    initialize_extensions(app)\n    from company_projects.store import migrate\n    from company_projects.access import initialize, restrict_central_workspace\n    from extensions.ext_database import db\n    with app.app_context():\n        migrate(db.engine)\n        with db.engine.begin() as connection:\n            initialize(connection)\n    restrict_central_workspace(app)\n')],

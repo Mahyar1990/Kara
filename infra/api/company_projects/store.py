@@ -38,6 +38,13 @@ template_copies = sa.Table('company_template_copies', metadata,
     sa.Column('source_commit', sa.String(40), nullable=False),
     sa.Column('created_by', sa.Uuid(as_uuid=False), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False))
+automations = sa.Table('company_automations', metadata,
+    sa.Column('app_id', sa.Uuid(as_uuid=False), primary_key=True),
+    sa.Column('tenant_id', sa.Uuid(as_uuid=False), nullable=False, index=True),
+    sa.Column('source_app_id', sa.Uuid(as_uuid=False), nullable=False),
+    sa.Column('source_workflow_id', sa.Uuid(as_uuid=False), nullable=False),
+    sa.Column('created_by', sa.Uuid(as_uuid=False), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False))
 
 
 class ProjectError(ValueError):
