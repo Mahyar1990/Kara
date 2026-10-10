@@ -42,7 +42,7 @@ def snapshot(session, project_id, tenant_id, account):
         dict(id='app', title='اولین برنامه ساخته شده است', complete=app_count > 0, required=True,
              description='یک برنامه بسازید و ورودی، خروجی و مراحل آن را مشخص کنید.', href=f'/projects/{project_id}'),
         dict(id='test', title='اجرای آزمایشی موفق دارید', complete=successful > 0, required=True,
-             description='پیش از انتشار، با یک ورودی ساختگی نتیجه را بررسی کنید. کیفیت خروجی را خودتان تأیید کنید.', href=f'/projects/{project_id}'),
+             description='پیش از انتشار، با یک ورودی ساختگی نتیجه را بررسی کنید. کیفیت خروجی را خودتان تأیید کنید.', href=f'/projects/{project_id}/inbox'),
         dict(id='publish', title='یک فرایند منتشر شده است', complete=published > 0, required=False,
              description='بعد از بررسی خروجی، نسخهٔ تأییدشده را در ویرایشگر منتشر کنید.', href=f'/projects/{project_id}'),
     ]

@@ -9,7 +9,7 @@ changes = {
         'workspace=WorkspacePermissionSnapshot(permission_keys=list(permissions.get("workspace", []))),',
         'workspace=WorkspacePermissionSnapshot(permission_keys=__import__("company_projects.access", fromlist=["filter_permissions"]).filter_permissions(session, tenant_id, account_id, permissions.get("workspace", []))),')],
     'controllers/console/__init__.py': [(
-        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n')],
+        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n    "company_projects.inbox",\n')],
     'app_factory.py': [(
         '    initialize_extensions(app)\n',
         '    initialize_extensions(app)\n    from company_projects.store import migrate\n    from company_projects.access import initialize, restrict_central_workspace\n    from extensions.ext_database import db\n    with app.app_context():\n        migrate(db.engine)\n        with db.engine.begin() as connection:\n            initialize(connection)\n    restrict_central_workspace(app)\n')],
@@ -37,6 +37,11 @@ changes = {
     'services/workflow_draft_variable_service.py': [(
         '        # Ensure the session is bound to a engine.\n        assert isinstance(engine, Engine)\n        session_maker = sessionmaker(bind=engine, expire_on_commit=False)\n',
         '        # Company template imports use an outer transaction around native commits.\n        from sqlalchemy import Connection\n        assert isinstance(engine, (Engine, Connection))\n        session_maker = sessionmaker(bind=engine, expire_on_commit=False, join_transaction_mode="create_savepoint")\n')],
+    'core/repositories/human_input_repository.py': [(
+        '            form_model = session.get(HumanInputForm, form_id)\n            if form_model is None:\n                raise FormNotFoundError(f"form not found, id={form_id}")\n\n            recipient_model = session.get(HumanInputFormRecipient, recipient_id) if recipient_id else None\n',
+        '            from company_projects.approval import lock_active_form\n            form_model = lock_active_form(session, form_id)\n            if form_model is None:\n                raise FormNotFoundError(f"form not found, id={form_id}")\n\n            recipient_model = session.get(HumanInputFormRecipient, recipient_id) if recipient_id else None\n'), (
+        '            form_model = session.get(HumanInputForm, form_id)\n            if form_model is None:\n                raise FormNotFoundError(f"form not found, id={form_id}")\n\n            if timeout_status not in {HumanInputFormStatus.TIMEOUT, HumanInputFormStatus.EXPIRED}:\n',
+        '            form_model = session.scalar(select(HumanInputForm).where(HumanInputForm.id == form_id).with_for_update())\n            if form_model is None:\n                raise FormNotFoundError(f"form not found, id={form_id}")\n\n            if timeout_status not in {HumanInputFormStatus.TIMEOUT, HumanInputFormStatus.EXPIRED}:\n')],
 }
 for filename, replacements in changes.items():
     target = root / filename
