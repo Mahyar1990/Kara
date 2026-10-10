@@ -1,20 +1,33 @@
 'use client'
 
 import type { CompanyProject } from '@/service/company-projects'
-import { useQuery } from '@tanstack/react-query'
 import Link from '@/next/link'
-import { adoptionApi } from '@/service/company-adoption'
-import { button, panel, ProjectPage, QueryNotice } from './project-page'
+import { button, panel, ProjectPage } from './project-page'
 
-function Checklist({ project }: { project: CompanyProject }) {
-  const status = useQuery({ queryKey: ['company-setup', project.workspace_id], queryFn: () => adoptionApi.setup(project.id) })
-  if (!status.isSuccess) return <QueryNotice error={status.isError} retry={() => status.refetch()} />
-  const data = status.data
-  return <><section className={panel}><div className="flex flex-wrap items-center justify-between gap-4"><p className="text-lg font-semibold text-text-primary">{data.completed.toLocaleString('fa-IR')} از {data.required.toLocaleString('fa-IR')} گام اصلی انجام شده است</p><button className={button} disabled={status.isFetching} onClick={() => status.refetch()}>به‌روزرسانی وضعیت</button></div><p className="mt-3 text-sm leading-7 text-text-secondary">این وضعیت از اطلاعات واقعی پروژه خوانده می‌شود. اجرای موفق به معنی تأیید کیفیت پاسخ نیست؛ نتیجه را قبل از استفادهٔ تیم بررسی کنید.</p></section>
-    <ol className="space-y-4">{data.steps.map((step, index) => <li key={step.id} className={`${panel} flex flex-wrap items-start justify-between gap-4`}><div className="min-w-0 flex-1"><p className="mb-2 text-xs text-text-accent">گام {(index + 1).toLocaleString('fa-IR')} · {step.complete ? 'انجام شده' : step.required ? 'نیازمند اقدام' : 'اختیاری'}</p><h2 className="text-lg font-semibold text-text-primary">{step.title}</h2><p className="mt-2 text-sm leading-7 text-text-secondary">{step.description}</p></div><Link href={step.href} className={button}>باز کردن بخش مربوط</Link></li>)}</ol>
-    <section className={panel}><h2 className="text-lg font-semibold text-text-primary">برای فرایندهای مبتنی بر اسناد</h2><p className="mt-2 text-sm leading-7 text-text-secondary">در بخش دانش، اسناد مجاز تیم را اضافه کنید و منتظر پایان پردازش بمانید. سپس دانش را به برنامه متصل کنید. ساخت دانش برای سایر فرایندها الزامی نیست.</p><Link className={`${button} mt-4 inline-block`} href="/datasets">مدیریت دانش پروژه</Link></section>
+function Guide({ project }: { project: CompanyProject }) {
+  const sections = [
+    { id: 'apps', title: 'برنامه‌ها و فرایندها', description: 'برنامه‌های تیم را در این پروژه پیدا کنید. با دسترسی ساخت برنامه، می‌توانید فرایند تازه بسازید و ورودی‌ها، مراحل و خروجی آن را تنظیم کنید.', href: `/projects/${project.id}`, action: 'مشاهدهٔ برنامه‌ها' },
+    { id: 'templates', title: 'قالب‌های آماده', description: 'برای تحلیل درخواست، تهیهٔ گزارش یا پاسخ از روی اسناد از قالب‌های آماده استفاده کنید و برنامه را متناسب با نیاز تیم تغییر دهید.', href: `/projects/${project.id}/templates`, action: 'مشاهدهٔ قالب‌ها' },
+    { id: 'knowledge', title: 'دانش پروژه', description: 'اسناد و منابع تیم را به دانش پروژه اضافه کنید و آن‌ها را در برنامه‌ها به کار بگیرید. منابع پس از پردازش قابل استفاده‌اند.', href: '/datasets', action: 'مدیریت دانش' },
+    { id: 'skills', title: 'مهارت‌ها', description: 'دستورالعمل‌های قابل استفادهٔ مجدد را به‌صورت مهارت نگهداری کنید و در ایجنت‌های تیم به کار ببرید.', href: '/skills', action: 'مشاهدهٔ مهارت‌ها' },
+    { id: 'agents', title: 'ایجنت‌ها', description: 'برای کارهای تیم ایجنت بسازید و نقش، دستورالعمل و ابزارهای مورد نیاز آن را تنظیم کنید.', href: '/agents', action: 'مشاهدهٔ ایجنت‌ها' },
+    { id: 'runs', title: 'اجراها و تأییدها', description: 'وضعیت اجرای فرایندها، نتیجه‌ها و خطاها را ببینید. اگر تصمیمی به شما ارجاع شده باشد، از کارتابل آن را بررسی و ثبت کنید.', href: `/projects/${project.id}/inbox`, action: 'باز کردن کارتابل' },
+    { id: 'members', title: 'اعضای پروژه', description: 'مالک پروژه اعضای تیم را دعوت می‌کند و سطح دسترسی آن‌ها را مشخص می‌کند. دسترسی هر فرد به برنامه‌ها و امکانات پروژه براساس نقش اوست.', href: '/users', action: project.can_manage_members ? 'مدیریت اعضا' : 'مشاهدهٔ اعضا' },
+    ...(project.role === 'owner' || project.role === 'admin' ? [{ id: 'model', title: 'مدل هوش مصنوعی', description: 'مدل‌های مورد استفادهٔ تیم و مدل پیش‌فرض پروژه را در بخش یکپارچه‌سازی‌ها تنظیم کنید.', href: '/integrations/model-provider', action: 'تنظیم مدل' }] : []),
+  ]
+  return <>
+    <p className="text-sm leading-7 text-text-secondary">در هر پروژه، برنامه‌ها، دانش، مهارت‌ها و اعضای یک تیم را مدیریت می‌کنید. از بخش‌های زیر برای انجام کارهای تیم استفاده کنید.</p>
+    <section aria-label="امکانات پروژه" className="grid gap-5 md:grid-cols-2">
+      {sections.map(section => <article key={section.id} className={`${panel} flex flex-col`}>
+        <h2 className="text-lg font-semibold text-text-primary">{section.title}</h2>
+        <p className="mb-5 mt-3 text-sm leading-7 text-text-secondary">{section.description}</p>
+        <Link href={section.href} className={`${button} mt-auto self-start`}>{section.action}</Link>
+      </article>)}
+    </section>
+    <p className="text-sm leading-7 text-text-secondary">پیش از انتشار، نتیجهٔ برنامه را بررسی کنید. انتشار از داخل ویرایشگر هر برنامه انجام می‌شود.</p>
   </>
 }
+
 export default function ProjectSetup({ projectId }: { projectId: string }) {
-  return <ProjectPage projectId={projectId} title="راهنمای شروع پروژه">{project => <Checklist project={project} />}</ProjectPage>
+  return <ProjectPage projectId={projectId} title="راهنمای استفاده از پروژه">{project => <Guide project={project} />}</ProjectPage>
 }

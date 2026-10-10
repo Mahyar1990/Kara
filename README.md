@@ -55,7 +55,7 @@ make down
 - [پروژه‌ها و برنامه‌های اختصاصی](docs/projects.md)
 - [مدیریت کاربران و نقش‌ها](docs/users.md)
 - [مالک محصول و دسترسی مستقل پروژه‌ها](docs/project-ownership.md)
-- [راهنمای شروع پروژه](docs/project-setup.md)
+- [راهنمای استفاده از پروژه](docs/project-setup.md)
 - [کتابخانهٔ قالب‌ها](docs/template-library.md)
 - [کارتابل اجراها و تأییدها](docs/project-inbox.md)
 
