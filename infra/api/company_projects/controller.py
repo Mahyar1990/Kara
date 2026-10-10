@@ -6,9 +6,9 @@ from flask import request
 from flask_restx import Resource
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from werkzeug.exceptions import BadRequest, Conflict, NotFound
+from werkzeug.exceptions import BadRequest, Conflict, NotFound, Forbidden
 
-from company_projects import store
+from company_projects import store, access, ownership
 from configs import dify_config
 from controllers.common.app_access import resolve_app_access_filter
 from controllers.common.rbac import RBACCheck, Workspace
@@ -18,6 +18,8 @@ from controllers.console.wraps import (RBACPermission, account_initialization_re
 from extensions.ext_database import db
 from libs.login import current_account_with_tenant, login_required
 from models.model import App
+from models.account import Account, AccountStatus, TenantAccountRole
+from services.account_service import TenantService
 from services.app_service import AppListParams, AppService, CreateAppParams
 
 
@@ -85,8 +87,9 @@ def list_apps(session, tenant_id, account_id, project_id=None):
     if not conditions:
         return dict(data=[], total=0, page=page, has_more=False)
     if project_id:
-        store.get_project(session.connection(), tenant_id, project_id)
-        conditions.append(App.id.in_(store.app_ids(project_id, tenant_id)))
+        row = access.project_for_account(session, project_id, account_id)
+        if str(row['workspace_id']) != str(tenant_id):
+            raise Forbidden('ابتدا وارد فضای مستقل همین پروژه شوید.')
     if kind == 'workflow':
         conditions.append(App.mode.in_(['workflow', 'advanced-chat']))
     elif kind == 'agent':
@@ -110,34 +113,89 @@ def list_apps(session, tenant_id, account_id, project_id=None):
 class ProjectsApi(Resource):
     @guarded()
     def get(self):
-        _, tenant_id = identity()
-        with db.engine.connect() as connection:
-            return dict(data=[store.public_project(row) for row in store.list_projects(connection, tenant_id)])
+        account, _ = identity()
+        with Session(db.engine) as session:
+            return dict(data=[access.public_project(session, row, account.id) for row in access.list_for_account(session, account.id)],
+                is_product_owner=access.is_product_owner(session, account.id))
 
-    @guarded(write=True)
+    @guarded()
     def post(self):
-        account, tenant_id = identity()
+        account, _ = identity()
         data = payload()
-        with db.engine.begin() as connection:
-            row = store.create_project(connection, tenant_id, account.id, data.get('name'), data.get('description', ''))
-        return store.public_project(row), 201
+        with db.engine.begin() as connection, Session(bind=connection, join_transaction_mode='create_savepoint') as session:
+            row = ownership.create_project(session, account.id, data.get('name'), data.get('description', ''), data.get('owner_id'))
+            session.commit()
+            return access.public_project(session, row, account.id), 201
 
 
 @console_ns.route('/company/projects/<uuid:project_id>')
 class ProjectApi(Resource):
     @guarded()
     def get(self, project_id):
-        _, tenant_id = identity()
-        with db.engine.connect() as connection:
-            return store.public_project(store.get_project(connection, tenant_id, project_id))
+        account, _ = identity()
+        with Session(db.engine) as session:
+            return access.public_project(session, access.project_for_account(session, project_id, account.id), account.id)
 
-    @guarded(write=True)
+    @guarded()
     def patch(self, project_id):
-        _, tenant_id = identity()
+        account, _ = identity()
         data = payload()
-        with db.engine.begin() as connection:
-            row = store.update_project(connection, tenant_id, project_id, data.get('name'), data.get('description', ''))
-        return store.public_project(row)
+        with Session(db.engine) as session, session.begin():
+            access.require_product_owner(session, account.id)
+            row = access.project_for_account(session, project_id, account.id)
+            store.update_project(session.connection(), row['tenant_id'], project_id, data.get('name'), data.get('description', ''))
+            if row['workspace_id']:
+                from models.account import Tenant
+                session.get(Tenant, row['workspace_id']).name = store.details(data.get('name'))['name']
+            return access.public_project(session, access.project_for_account(session, project_id, account.id), account.id)
+
+
+@console_ns.route('/company/context')
+class CompanyContextApi(Resource):
+    @guarded()
+    def get(self):
+        account, tenant_id = identity()
+        with Session(db.engine) as session:
+            root = access.authority(session)
+            row = access.workspace_project(session, tenant_id)
+            return dict(is_product_owner=access.is_product_owner(session, account.id),
+                root_workspace_id=str(root['tenant_id']),
+                current_project=access.public_project(session, row, account.id) if row else None,
+                can_manage_members=access.can_manage_members(session, tenant_id, account.id))
+
+
+@console_ns.route('/company/projects/owners')
+class ProjectOwnersApi(Resource):
+    @guarded()
+    def get(self):
+        account, _ = identity()
+        with Session(db.engine) as session:
+            access.require_product_owner(session, account.id)
+            return dict(data=[dict(id=user.id, name=user.name, email=user.email) for user in
+                session.scalars(sa.select(Account).where(Account.status == AccountStatus.ACTIVE).order_by(Account.name))])
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/owner')
+class ProjectOwnerApi(Resource):
+    @guarded()
+    def put(self, project_id):
+        account, _ = identity()
+        with Session(db.engine) as session, session.begin():
+            row = ownership.set_owner(session, project_id, account.id, payload().get('owner_id'))
+            return access.public_project(session, row, account.id)
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/enter')
+class ProjectEnterApi(Resource):
+    @guarded()
+    def post(self, project_id):
+        account, _ = identity()
+        with Session(db.engine) as session:
+            row = access.project_for_account(session, project_id, account.id)
+            if not row['workspace_id']:
+                raise Conflict('فضای مستقل پروژه هنوز آماده نشده است.')
+            TenantService.switch_tenant(account, row['workspace_id'], session=session)
+            return dict(result='success', workspace_id=row['workspace_id'])
 
 
 @console_ns.route('/company/projects/resources')
@@ -146,6 +204,8 @@ class ProjectResourcesApi(Resource):
     def get(self):
         account, tenant_id = identity()
         with Session(db.engine) as session:
+            if not access.workspace_project(session, tenant_id) and not access.is_product_owner(session, account.id):
+                raise Forbidden('ابتدا وارد پروژهٔ خود شوید.')
             return list_apps(session, tenant_id, account.id)
 
 
@@ -155,6 +215,7 @@ class ProjectAppsApi(Resource):
     def get(self, project_id):
         account, tenant_id = identity()
         with Session(db.engine) as session:
+            access.validate_app_project(session, tenant_id, project_id, account.id)
             return list_apps(session, tenant_id, account.id, str(project_id))
 
     @guarded(write=True)
@@ -174,6 +235,7 @@ class ProjectAppsApi(Resource):
         except (ValueError, TypeError):
             raise BadRequest('نام برنامه الزامی است.') from None
         with Session(db.engine, expire_on_commit=False) as session:
+            access.validate_app_project(session, tenant_id, project_id, account.id)
             app = AppService().create_app(tenant_id, params, account, session=session)
             return dict(id=app.id, name=app.name, mode=app.mode), 201
 
@@ -182,16 +244,8 @@ class ProjectAppsApi(Resource):
 class ProjectAppBindingApi(Resource):
     @guarded(write=True)
     def put(self, project_id, app_id):
-        account, tenant_id = identity()
-        with Session(db.engine) as session, session.begin():
-            visible_app(session, tenant_id, account.id, app_id)
-            store.assign(session.connection(), tenant_id, project_id, app_id)
-        return dict(result='success')
+        raise Conflict('برنامه‌ها در فضای مستقل پروژه ساخته می‌شوند؛ انتقال بین پروژه‌ها نیازمند انتقال وابستگی‌هاست.')
 
     @guarded(write=True)
     def delete(self, project_id, app_id):
-        account, tenant_id = identity()
-        with Session(db.engine) as session, session.begin():
-            visible_app(session, tenant_id, account.id, app_id)
-            store.unassign(session.connection(), tenant_id, project_id, app_id)
-        return dict(result='success')
+        raise Conflict('برنامه متعلق به فضای مستقل پروژه است. برای حذف برنامه از ابزار حذف Dify استفاده کنید.')

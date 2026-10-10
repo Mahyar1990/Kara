@@ -23,6 +23,13 @@ bindings = sa.Table('company_project_apps', metadata,
     sa.Column('app_id', sa.Uuid(as_uuid=False), primary_key=True),
     sa.Column('project_id', sa.Uuid(as_uuid=False), nullable=False, index=True),
     sa.ForeignKeyConstraint(['project_id', 'tenant_id'], ['company_projects.id', 'company_projects.tenant_id']))
+product = sa.Table('company_product', metadata,
+    sa.Column('id', sa.Integer, primary_key=True),
+    sa.Column('account_id', sa.Uuid(as_uuid=False), nullable=False),
+    sa.Column('tenant_id', sa.Uuid(as_uuid=False), nullable=False))
+workspaces = sa.Table('company_project_workspaces', metadata,
+    sa.Column('project_id', sa.Uuid(as_uuid=False), sa.ForeignKey('company_projects.id'), primary_key=True),
+    sa.Column('workspace_id', sa.Uuid(as_uuid=False), nullable=False, unique=True))
 
 
 class ProjectError(ValueError):
