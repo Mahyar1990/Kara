@@ -144,5 +144,7 @@ def restrict_central_workspace(app):
         if account and tenant_id:
             with Session(db.engine) as session:
                 root = authority(session)
+                if path == '/workspaces/info' and request.method == 'POST' and workspace_project(session, tenant_id):
+                    raise Forbidden('نام پروژه را مالک محصول از صفحهٔ پروژه ویرایش می‌کند.')
                 if str(tenant_id) == str(root['tenant_id']) and not is_product_owner(session, account.id):
                     raise Forbidden('این بخش مخصوص مالک محصول است؛ از صفحهٔ پروژه‌ها وارد پروژهٔ خود شوید.')

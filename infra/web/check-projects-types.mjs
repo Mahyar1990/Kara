@@ -8,6 +8,8 @@ if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.m
 const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root)
 const files = [
   'app/components/company-projects/index.tsx',
+  'app/components/company-projects/access.tsx',
+  'app/components/company-projects/forms.tsx',
   'app/(commonLayout)/projects/page.tsx',
   'app/(commonLayout)/projects/[projectId]/page.tsx',
   'app/components/main-nav/routes.ts',

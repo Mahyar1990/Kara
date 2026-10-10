@@ -159,6 +159,7 @@ class CompanyContextApi(Resource):
             root = access.authority(session)
             row = access.workspace_project(session, tenant_id)
             return dict(is_product_owner=access.is_product_owner(session, account.id),
+                product_owner_id=str(root['account_id']),
                 root_workspace_id=str(root['tenant_id']),
                 current_project=access.public_project(session, row, account.id) if row else None,
                 can_manage_members=access.can_manage_members(session, tenant_id, account.id))

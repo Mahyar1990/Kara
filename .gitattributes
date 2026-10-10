@@ -3,3 +3,4 @@ infra/web/source.patch -whitespace
 # Unified diff context contains a single space on an otherwise empty line.
 infra/web/projects.patch whitespace=-blank-at-eol
 infra/web/users.patch whitespace=-blank-at-eol
+infra/web/ownership.patch whitespace=-blank-at-eol

@@ -1,0 +1,58 @@
+--- a/web/app/components/header/account-setting/members-page/index.tsx
++++ b/web/app/components/header/account-setting/members-page/index.tsx
+@@ -21,6 +21,7 @@
+ import { consoleQuery } from '@/service/console'
+ import { useMembers } from '@/service/use-common'
+ import { hasPermission } from '@/utils/permission'
++import { projectApi } from '@/service/company-projects'
+ import { filterWorkspaceMembers } from '@/utils/company-members'
+ import EditWorkspaceModal from './edit-workspace-modal'
+ import InviteButton from './invite-button'
+@@ -40,6 +41,8 @@
+     select: (data) => data.profile.email,
+   })
+   const currentWorkspace = useAtomValue(currentWorkspaceAtom)
++  const company = useQuery({ queryKey: ['company-context', currentWorkspace.id], queryFn: projectApi.context })
++  const protectedOwner = company.data?.product_owner_id
+   const isCurrentWorkspaceOwner = useAtomValue(isCurrentWorkspaceOwnerAtom)
+   const workspacePermissionKeys = useAtomValue(workspacePermissionKeysAtom)
+   const { data, refetch } = useMembers(language)
+@@ -71,7 +74,7 @@
+   const [showTransferOwnershipModal, setShowTransferOwnershipModal] = useState(false)
+   const [detailsMember, setDetailsMember] = useState<Member | null>(null)
+ 
+-  const canManageMembers = hasPermission(workspacePermissionKeys, 'workspace.member.manage')
++  const canManageMembers = hasPermission(workspacePermissionKeys, 'workspace.member.manage') && company.data?.can_manage_members === true
+   const roleColumnLabel = systemFeatures.rbac_enabled
+     ? t(($) => $['members.roles'], { ns: 'common' })
+     : t(($) => $['members.role'], { ns: 'common' })
+@@ -117,7 +120,7 @@
+           <div className="grow">
+             <div className="flex items-center gap-1 system-md-semibold text-text-secondary">
+               <span>{currentWorkspace?.name}</span>
+-              {isCurrentWorkspaceOwner && (
++              {isCurrentWorkspaceOwner && !company.data?.current_project && (
+                 <span>
+                   <Tooltip>
+                     <TooltipTrigger
+@@ -202,10 +205,8 @@
+                 member={account}
+                 roles={account.roles}
+                 isCurrentUser={userProfileEmail === account.email}
+-                canManage={canManageMembers}
+-                canTransferOwnership={
+-                  isCurrentWorkspaceOwner && features?.is_allow_transfer_workspace === true
+-                }
++                canManage={canManageMembers && account.id !== protectedOwner && account.role !== 'owner'}
++                canTransferOwnership={false}
+                 allowMultipleRoles={systemFeatures.rbac_enabled}
+                 onOpenDetails={handleOpenDetails}
+                 onTransferOwnership={handleTransferOwnership}
+@@ -235,6 +236,7 @@
+           canAssignRoles={
+             canManageMembers &&
+             detailsMember.role !== 'owner' &&
++            detailsMember.id !== protectedOwner &&
+             userProfileEmail !== detailsMember.email
+           }
+           allowMultipleRoles={systemFeatures.rbac_enabled}

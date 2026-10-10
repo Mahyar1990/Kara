@@ -3,6 +3,9 @@
 import type { MemberStatusFilter } from '@/utils/company-members'
 import { useAtomValue } from 'jotai'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import Link from '@/next/link'
+import { projectApi } from '@/service/company-projects'
 import MembersPage from '@/app/components/header/account-setting/members-page'
 import { useLocale } from '@/context/i18n'
 import { workspacePermissionKeysAtom } from '@/context/permission-state'
@@ -20,19 +23,24 @@ export default function CompanyMembers() {
   const canManage = hasPermission(permissions, 'workspace.member.manage')
   const locale = useLocale()
   const members = useMembers(getAccessControlTemplateLanguage(locale))
+  const context = useQuery({ queryKey: ['company-context', workspaceId], queryFn: projectApi.context, enabled: !!workspaceId })
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<MemberStatusFilter>('all')
   const accounts = members.data?.accounts || []
   const visibleCount = filterWorkspaceMembers(accounts, search, status).length
+  if (!context.isSuccess) return <main dir="rtl" className="p-8 text-text-primary"><p>{context.isError ? 'دریافت محدودهٔ دسترسی انجام نشد.' : 'در حال دریافت اطلاعات…'}</p>{context.isError && <button onClick={() => context.refetch()}>تلاش دوباره</button>}</main>
+  const project = context.data.current_project
+  if (!project && !context.data.is_product_owner) return <main dir="rtl" className="p-8 text-text-primary"><h1 className="mb-4 text-2xl font-bold">ابتدا پروژه را انتخاب کنید</h1><Link href="/projects" className="text-text-accent">مشاهدهٔ پروژه‌های من</Link></main>
 
   return <main dir="rtl" className="h-full overflow-y-auto bg-background-body p-5 md:p-8">
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
-        <p className="mb-2 text-sm text-text-tertiary">اعضای فضای کاری</p>
+        <p className="mb-2 text-sm text-text-tertiary">{project ? `اعضای پروژهٔ ${project.name}` : 'مرکز مدیریت محصول'}</p>
         <h1 className="text-3xl font-bold text-text-primary">مدیریت کاربران</h1>
         <p className="mt-3 text-sm leading-7 text-text-secondary">کاربران تیم، دعوت‌نامه‌ها و نقش هر عضو را در این بخش مدیریت کنید.</p>
       </header>
-      <p className="text-sm leading-7 text-text-tertiary">نقش کاربران در سطح فضای کاری اعمال می‌شود و بین پروژه‌های آن مشترک است. {canManage ? 'برای افزودن همکار، ایمیل و نقش او را در فرم دعوت وارد کنید.' : 'می‌توانید اعضا را مشاهده کنید؛ تغییر اعضا و نقش‌ها با مدیر فضای کاری است.'}</p>
+      <p className="text-sm leading-7 text-text-tertiary">{project ? `دعوت و نقش کاربران فقط برای پروژهٔ «${project.name}» اعمال می‌شود. ${canManage ? 'برای افزودن همکار، ایمیل و نقش او را در فرم دعوت وارد کنید.' : 'مدیریت اعضا با مالک پروژه است.'}` : 'شما مالک محصول هستید. برای تعیین مالک جدید، ابتدا همکار را دعوت کنید تا حسابش فعال شود. دسترسی به پروژه‌ها از صفحهٔ هر پروژه تعیین می‌شود.'}</p>
+      <Link href="/projects" className="inline-block text-sm text-text-accent">مشاهده و انتخاب پروژه‌ها ←</Link>
       {members.isPending ? <p role="status" className="text-sm text-text-secondary">در حال دریافت کاربران…</p> : members.isError ? <section role="alert" className="rounded-2xl border border-divider-regular bg-background-default p-6"><p className="mb-4 text-text-primary">دریافت فهرست کاربران انجام نشد.</p><button className="rounded-lg bg-components-button-primary-bg px-4 py-2 text-white" onClick={() => members.refetch()}>تلاش دوباره</button></section> : <>
         <section aria-label="آمار کاربران" className="grid grid-cols-3 gap-3">
           {([['کل اعضا', accounts.length], ['فعال', accounts.filter(member => member.status === 'active').length], ['در انتظار پذیرش دعوت', accounts.filter(member => member.status === 'pending').length]] as const).map(([label, count]) => <div key={label} className="rounded-xl border border-divider-regular bg-background-default p-4"><p className="text-xs leading-6 text-text-tertiary">{label}</p><p className="mt-2 text-2xl font-semibold text-text-primary">{number(count)}</p></div>)}

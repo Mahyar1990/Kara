@@ -24,7 +24,9 @@ changes = {
         '        is_allowed = dify_config.ALLOW_CREATE_WORKSPACE\n',
         '        return False  # Project creation is controlled by the product owner.\n        is_allowed = dify_config.ALLOW_CREATE_WORKSPACE\n'), (
         '        is_allowed = dify_config.ALLOW_REGISTER\n',
-        '        return False  # Company accounts are created through owner invitations.\n        is_allowed = dify_config.ALLOW_REGISTER\n')],
+        '        return False  # Company accounts are created through owner invitations.\n        is_allowed = dify_config.ALLOW_REGISTER\n'), (
+        '        system_features.is_allow_register = dify_config.ALLOW_REGISTER\n',
+        '        system_features.is_allow_register = False\n')],
     'services/app_service.py': [(
         'class CreateAppParams(BaseModel):\n',
         'class CreateAppParams(BaseModel):\n    project_id: str | None = None\n'), (

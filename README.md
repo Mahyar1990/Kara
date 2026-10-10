@@ -54,6 +54,7 @@ make down
 - [اتصال خصوصی مدل](docs/company-model-connection.md)
 - [پروژه‌ها و برنامه‌های اختصاصی](docs/projects.md)
 - [مدیریت کاربران و نقش‌ها](docs/users.md)
+- [مالک محصول و دسترسی مستقل پروژه‌ها](docs/project-ownership.md)
 
 برای اجرای بررسی‌های توسعه، محیط Python محلی را آماده کنید:
 
