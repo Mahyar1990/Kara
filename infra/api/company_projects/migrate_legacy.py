@@ -181,7 +181,7 @@ def migrate(session, *, copy_models=True):
                 store.projects.c.tenant_id == source_id, store.projects.c.name_key == legacy_name.casefold())):
             legacy_name += ' — بایگانی'
         legacy = store.create_project(connection, source_id, owner_id, legacy_name,
-            'برنامه‌های قبلی بدون پروژه، به همراه تاریخچه و اجراهای در انتظار تأیید')
+            'فضای نگهداری برنامه‌ها و فرایندهای سازمان')
         source = session.get(Tenant, source_id)
         source.name = legacy['name']
         session.execute(store.workspaces.insert().values(project_id=legacy['id'], workspace_id=source_id))
