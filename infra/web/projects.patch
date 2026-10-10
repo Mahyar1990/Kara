@@ -16,3 +16,12 @@
    {
      key: 'home',
      href: '/',
+@@ -66,7 +75,7 @@
+   {
+     key: 'roster',
+     href: '/agents',
+-    label: 'Agents',
++    label: 'ایجنت‌ها',
+     active: (path: string) => isPathUnderRoute(path, '/agents'),
+     icon: 'i-custom-vender-main-nav-agent',
+     activeIcon: 'i-custom-vender-main-nav-agent-active',
