@@ -3,7 +3,7 @@
   "templates": [
     {
       "id": "request-analysis",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "name": "تحلیل درخواست",
       "description": "تبدیل متن درخواست به شرح مسئله، نتیجهٔ مورد انتظار، معیارهای پذیرش و پرسش‌های باقی‌مانده.",
       "requires_knowledge": false,
