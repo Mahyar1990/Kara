@@ -1,0 +1,148 @@
+--- a/web/app/components/main-nav/routes.ts
++++ b/web/app/components/main-nav/routes.ts
+@@ -47,6 +47,15 @@
+     visibility: VISIBLE_TO_ALL,
+   },
+   {
++    key: 'company-users',
++    href: '/users',
++    label: 'مدیریت کاربران',
++    active: (path: string) => isPathUnderRoute(path, '/users'),
++    icon: 'i-ri-team-line',
++    activeIcon: 'i-ri-team-fill',
++    visibility: VISIBLE_TO_ALL,
++  },
++  {
+     key: 'home',
+     href: '/',
+     labelKey: 'mainNav.home',
+--- a/web/app/components/header/account-setting/members-page/index.tsx
++++ b/web/app/components/header/account-setting/members-page/index.tsx
+@@ -1,6 +1,7 @@
+ 'use client'
+ import type { MemberInviteResponse } from '@dify/contracts/api/console/workspaces/types.gen'
+ import type { Role } from '@/models/access-control'
++import type { MemberStatusFilter } from '@/utils/company-members'
+ import type { Member } from '@/models/common'
+ import { toast } from '@langgenius/dify-ui/toast'
+ import { Tooltip, TooltipContent, TooltipTrigger } from '@langgenius/dify-ui/tooltip'
+@@ -20,6 +21,7 @@
+ import { consoleQuery } from '@/service/console'
+ import { useMembers } from '@/service/use-common'
+ import { hasPermission } from '@/utils/permission'
++import { filterWorkspaceMembers } from '@/utils/company-members'
+ import EditWorkspaceModal from './edit-workspace-modal'
+ import InviteButton from './invite-button'
+ import { InviteModal } from './invite-modal'
+@@ -28,7 +30,7 @@
+ import MemberRow from './member-row'
+ import TransferOwnershipModal from './transfer-ownership-modal'
+ 
+-const MembersPage = () => {
++const MembersPage = ({ search = '', status = 'all' }: { search?: string; status?: MemberStatusFilter }) => {
+   const { t } = useTranslation()
+   const locale = useLocale()
+   const language = getAccessControlTemplateLanguage(locale)
+@@ -147,7 +149,7 @@
+                 <div className="flex space-x-1">
+                   <div>
+                     {t(($) => $['plansCommon.member'], { ns: 'billing' })}
+-                    {locale !== LanguagesSupported[1] && accounts.length > 1 && 's'}
++                    {locale !== 'fa-IR' && locale !== LanguagesSupported[1] && accounts.length > 1 && 's'}
+                   </div>
+                   <div className="">{accounts.length}</div>
+                   <div>/</div>
+@@ -162,7 +164,7 @@
+                   <div>{accounts.length}</div>
+                   <div>
+                     {t(($) => $['plansCommon.memberAfter'], { ns: 'billing' })}
+-                    {locale !== LanguagesSupported[1] && accounts.length > 1 && 's'}
++                    {locale !== 'fa-IR' && locale !== LanguagesSupported[1] && accounts.length > 1 && 's'}
+                   </div>
+                 </div>
+               )}
+@@ -194,7 +196,7 @@
+             </div>
+           </div>
+           <div className="relative min-w-120">
+-            {accounts.map((account) => (
++            {filterWorkspaceMembers(accounts, search, status).map((account) => (
+               <MemberRow
+                 key={account.id}
+                 member={account}
+--- a/web/service/use-common.ts
++++ b/web/service/use-common.ts
+@@ -14,6 +14,9 @@
+   StructuredOutputRulesResponse,
+ } from '@/models/common'
+ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
++import { useAtomValue } from 'jotai'
++import { currentWorkspaceIdAtom } from '@/context/workspace-state'
++import { localizeWorkspaceRole } from '@/utils/company-members'
+ import { discardRegistrationSessionState } from '@/app/components/base/amplitude/registration-session-state'
+ // oxlint-disable-next-line no-restricted-imports
+ import { get, post } from './base'
+@@ -115,8 +118,11 @@
+ }
+ 
+ export const useMembers = (language?: AccessControlTemplateLanguage) => {
++  const workspaceId = useAtomValue(currentWorkspaceIdAtom)
+   return useQuery<MemberResponse>({
+-    queryKey: [...commonQueryKeys.members, language],
++    queryKey: [...commonQueryKeys.members, workspaceId, language],
++    enabled: !!workspaceId,
++    select: data => ({ ...data, accounts: (data.accounts || []).map(account => ({ ...account, roles: account.roles.map(localizeWorkspaceRole) })) }),
+     queryFn: () =>
+       get<MemberResponse>('/workspaces/current/members', {
+         params: {
+--- a/web/service/access-control/use-workspace-roles.ts
++++ b/web/service/access-control/use-workspace-roles.ts
+@@ -10,6 +10,9 @@
+ } from '@/models/access-control'
+ import type { CommonResponse } from '@/models/common'
+ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
++import { useAtomValue } from 'jotai'
++import { currentWorkspaceIdAtom } from '@/context/workspace-state'
++import { localizeWorkspaceRole } from '@/utils/company-members'
+ import { del, get, post, put } from '../base'
+ import { commonQueryKeys } from '../use-common'
+ 
+@@ -17,9 +20,12 @@
+ 
+ export const useWorkspaceRoleList = (params: RoleListRequest) => {
+   const { page = 1, ...queryParams } = params
++  const workspaceId = useAtomValue(currentWorkspaceIdAtom)
+ 
+-  return useInfiniteQuery({
++  return useInfiniteQuery<RoleListResponse>({
+-    queryKey: [NAME_SPACE, 'workspace-role-list', queryParams],
++    queryKey: [NAME_SPACE, 'workspace-role-list', workspaceId, queryParams],
++    enabled: !!workspaceId,
++    select: data => ({ ...data, pages: data.pages.map(page => ({ ...page, data: page.data.map(localizeWorkspaceRole) })) }),
+     queryFn: ({ pageParam }) =>
+       get<RoleListResponse>('/workspaces/current/rbac/roles', {
+         params: {
+--- a/web/service/access-control/use-member-roles.ts
++++ b/web/service/access-control/use-member-roles.ts
+@@ -1,14 +1,20 @@
+ import type { AccessControlTemplateLanguage } from '@/i18n-config/language'
+ import type { RolesOfMemberResponse, UpdateRolesOfMemberRequest } from '@/models/access-control'
+ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
++import { useAtomValue } from 'jotai'
++import { currentWorkspaceIdAtom } from '@/context/workspace-state'
++import { localizeWorkspaceRole } from '@/utils/company-members'
+ import { get, put } from '../base'
+ import { commonQueryKeys } from '../use-common'
+ 
+ const NAME_SPACE = 'rbac-member-roles'
+ 
+ export const useRolesOfMember = (memberId: string, language: AccessControlTemplateLanguage) => {
++  const workspaceId = useAtomValue(currentWorkspaceIdAtom)
+   return useQuery({
+-    queryKey: [NAME_SPACE, 'member-roles', memberId, language],
++    queryKey: [NAME_SPACE, 'member-roles', memberId, workspaceId, language],
++    enabled: !!workspaceId && !!memberId,
++    select: data => ({ ...data, roles: data.roles.map(localizeWorkspaceRole) }),
+     queryFn: () =>
+       get<RolesOfMemberResponse>(`/workspaces/current/rbac/members/${memberId}/rbac-roles`, {
+         params: {

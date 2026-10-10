@@ -53,6 +53,7 @@ make down
 - [رابط فارسی و راست‌به‌چپ](docs/persian-interface.md)
 - [اتصال خصوصی مدل](docs/company-model-connection.md)
 - [پروژه‌ها و برنامه‌های اختصاصی](docs/projects.md)
+- [مدیریت کاربران و نقش‌ها](docs/users.md)
 
 برای اجرای بررسی‌های توسعه، محیط Python محلی را آماده کنید:
 

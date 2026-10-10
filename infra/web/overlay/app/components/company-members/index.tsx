@@ -1,0 +1,51 @@
+'use client'
+
+import type { MemberStatusFilter } from '@/utils/company-members'
+import { useAtomValue } from 'jotai'
+import { useState } from 'react'
+import MembersPage from '@/app/components/header/account-setting/members-page'
+import { useLocale } from '@/context/i18n'
+import { workspacePermissionKeysAtom } from '@/context/permission-state'
+import { currentWorkspaceIdAtom } from '@/context/workspace-state'
+import { getAccessControlTemplateLanguage } from '@/i18n-config/language'
+import { useMembers } from '@/service/use-common'
+import { filterWorkspaceMembers } from '@/utils/company-members'
+import { hasPermission } from '@/utils/permission'
+
+const number = (value: number) => value.toLocaleString('fa-IR')
+
+export default function CompanyMembers() {
+  const workspaceId = useAtomValue(currentWorkspaceIdAtom)
+  const permissions = useAtomValue(workspacePermissionKeysAtom)
+  const canManage = hasPermission(permissions, 'workspace.member.manage')
+  const locale = useLocale()
+  const members = useMembers(getAccessControlTemplateLanguage(locale))
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState<MemberStatusFilter>('all')
+  const accounts = members.data?.accounts || []
+  const visibleCount = filterWorkspaceMembers(accounts, search, status).length
+
+  return <main dir="rtl" className="h-full overflow-y-auto bg-background-body p-5 md:p-8">
+    <div className="mx-auto max-w-5xl space-y-6">
+      <header>
+        <p className="mb-2 text-sm text-text-tertiary">اعضای فضای کاری</p>
+        <h1 className="text-3xl font-bold text-text-primary">مدیریت کاربران</h1>
+        <p className="mt-3 text-sm leading-7 text-text-secondary">کاربران تیم، دعوت‌نامه‌ها و نقش هر عضو را در این بخش مدیریت کنید.</p>
+      </header>
+      <p className="text-sm leading-7 text-text-tertiary">نقش کاربران در سطح فضای کاری اعمال می‌شود و بین پروژه‌های آن مشترک است. {canManage ? 'برای افزودن همکار، ایمیل و نقش او را در فرم دعوت وارد کنید.' : 'می‌توانید اعضا را مشاهده کنید؛ تغییر اعضا و نقش‌ها با مدیر فضای کاری است.'}</p>
+      {members.isPending ? <p role="status" className="text-sm text-text-secondary">در حال دریافت کاربران…</p> : members.isError ? <section role="alert" className="rounded-2xl border border-divider-regular bg-background-default p-6"><p className="mb-4 text-text-primary">دریافت فهرست کاربران انجام نشد.</p><button className="rounded-lg bg-components-button-primary-bg px-4 py-2 text-white" onClick={() => members.refetch()}>تلاش دوباره</button></section> : <>
+        <section aria-label="آمار کاربران" className="grid grid-cols-3 gap-3">
+          {([['کل اعضا', accounts.length], ['فعال', accounts.filter(member => member.status === 'active').length], ['در انتظار پذیرش دعوت', accounts.filter(member => member.status === 'pending').length]] as const).map(([label, count]) => <div key={label} className="rounded-xl border border-divider-regular bg-background-default p-4"><p className="text-xs leading-6 text-text-tertiary">{label}</p><p className="mt-2 text-2xl font-semibold text-text-primary">{number(count)}</p></div>)}
+        </section>
+        <div className="flex flex-wrap gap-4">
+          <label className="min-w-52 flex-1 text-sm text-text-secondary">جستجوی کاربر<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="نام یا ایمیل" className="mt-2 block w-full rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary" /></label>
+          <label className="text-sm text-text-secondary">وضعیت کاربر<select value={status} onChange={event => setStatus(event.target.value as MemberStatusFilter)} className="mt-2 block rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary"><option value="all">همهٔ کاربران</option><option value="active">فعال</option><option value="pending">در انتظار پذیرش دعوت</option></select></label>
+        </div>
+        <section aria-label="فهرست کاربران" className="rounded-2xl border border-divider-regular bg-background-default p-5">
+          <p role="status" className="mb-5 text-sm text-text-tertiary">{number(visibleCount)} کاربر در این فهرست{!visibleCount && '؛ کاربری با این جستجو و وضعیت پیدا نشد.'}</p>
+          <div className="overflow-x-auto"><MembersPage key={workspaceId} search={search} status={status} /></div>
+        </section>
+      </>}
+    </div>
+  </main>
+}

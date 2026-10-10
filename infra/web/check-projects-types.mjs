@@ -12,6 +12,13 @@ const files = [
   'app/(commonLayout)/projects/[projectId]/page.tsx',
   'app/components/main-nav/routes.ts',
   'service/company-projects.ts',
+  'app/(commonLayout)/users/page.tsx',
+  'app/components/company-members/index.tsx',
+  'app/components/header/account-setting/members-page/index.tsx',
+  'service/use-common.ts',
+  'service/access-control/use-workspace-roles.ts',
+  'service/access-control/use-member-roles.ts',
+  'utils/company-members.ts',
 ].map(file => path.join(root, file))
 const program = ts.createProgram(files, { ...parsed.options, incremental: false, noEmit: true })
 const errors = [...parsed.errors, ...program.getOptionsDiagnostics()]
@@ -28,4 +35,4 @@ if (errors.length) {
   }))
   process.exit(1)
 }
-console.log('Project UI types checked: pages, navigation, components and API client.')
+console.log('Company UI types checked: projects, members, navigation and API clients.')
