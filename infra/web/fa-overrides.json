@@ -81,7 +81,13 @@
     "stepByStepTour.tasks.home.noCreate.title": "مرور آموزش Dify",
     "stepByStepTour.tasks.integration.noPermission.title": "کاوش اتصال‌ها",
     "stepByStepTour.tasks.integration.title": "کاوش اتصال‌ها",
-    "toolsPage.toolPlugin": "افزونهٔ ابزار"
+    "toolsPage.toolPlugin": "افزونهٔ ابزار",
+    "operation.close": "بستن",
+    "members.invite": "دعوت کاربر",
+    "members.inviteTeamMember": "دعوت کاربر به فضای کاری",
+    "members.emailNotSetup": "سرور ایمیل تنظیم نشده است. پس از ثبت دعوت، لینک آن را از پنجرهٔ نتیجه کپی کنید و به همکار بدهید.",
+    "members.invitationSent": "دعوت ثبت شد",
+    "members.invitationSentTip": "دعوت با موفقیت ثبت شد. همکار می‌تواند از لینک دعوت برای فعال‌سازی حساب استفاده کند."
   },
   "dataset": {
     "firstEmpty.connectDescription": "پایگاه دانش دارید؟ بدون جابه‌جایی داده‌ها، آن را از طریق API متصل کنید.",
