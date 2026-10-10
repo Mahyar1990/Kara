@@ -21,7 +21,7 @@ from services.skill_management_service import SkillManagementService, SkillManag
 from company_projects.controller import visible_app
 
 
-class ProjectAccessTests(unittest.TestCase):
+class ProjectDatabaseFixture(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         _, cls.app = create_app()
@@ -57,6 +57,8 @@ class ProjectAccessTests(unittest.TestCase):
         self.session.execute(store.workspaces.insert(), [dict(project_id=self.a['id'], workspace_id=self.workspace_a.id),
             dict(project_id=self.b['id'], workspace_id=self.workspace_b.id)])
 
+
+class ProjectAccessTests(ProjectDatabaseFixture):
     def test_only_product_owner_can_create_or_assign_owner(self):
         access.require_product_owner(self.session, self.product_owner.id)
         for actor in [self.project_owner, self.admin, self.editor, self.other]:
