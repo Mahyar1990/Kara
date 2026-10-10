@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "templates": [
+    {
+      "id": "request-analysis",
+      "version": "1.0.0",
+      "name": "تحلیل درخواست",
+      "description": "تبدیل متن درخواست به شرح مسئله، نتیجهٔ مورد انتظار، معیارهای پذیرش و پرسش‌های باقی‌مانده.",
+      "requires_knowledge": false,
+      "example_input": "می‌خواهیم اعضای تیم بتوانند گزارش هفتگی فعالیت‌های خود را ببینند. گزارش باید فقط فعالیت‌های همان تیم را نمایش دهد.",
+      "file": "request-analysis.json"
+    },
+    {
+      "id": "team-report",
+      "version": "1.0.0",
+      "name": "گزارش تیم",
+      "description": "تهیهٔ گزارش مرتب از یادداشت‌های تیم، همراه با مسائل باز و اقدامات پیشنهادی.",
+      "requires_knowledge": false,
+      "example_input": "یادداشت ساختگی: فرم ثبت درخواست آماده شده. اتصال به سامانهٔ داخلی هنوز بررسی نشده. تیم خواسته ابتدا یک اجرای آزمایشی داشته باشیم.",
+      "file": "team-report.json"
+    },
+    {
+      "id": "document-answer",
+      "version": "1.0.0",
+      "name": "پاسخ از روی اسناد",
+      "description": "پاسخ مستند به پرسش بر اساس دانش انتخاب‌شدهٔ همین پروژه.",
+      "requires_knowledge": true,
+      "example_input": "برای تأیید یک درخواست چه مراحلی در مستندات تیم تعریف شده است؟",
+      "file": "document-answer.json"
+    }
+  ]
+}
