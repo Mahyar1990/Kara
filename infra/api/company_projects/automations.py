@@ -83,7 +83,9 @@ def scoped_trigger(session, project_id, tenant_id, account, trigger_id, lock=Fal
     if lock:
         # Lock the app, not the trigger: native publication reconciles triggers in
         # separate sessions, so holding a trigger row would deadlock that handler.
-        app = session.scalar(sa.select(App).where(App.id == app.id, App.tenant_id == tenant_id).with_for_update())
+        app = session.scalar(sa.select(App).where(App.id == app.id, App.tenant_id == tenant_id).with_for_update()
+            .execution_options(populate_existing=True))
+        session.refresh(trigger)
     return trigger, app
 
 

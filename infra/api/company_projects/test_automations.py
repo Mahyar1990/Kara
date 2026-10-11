@@ -114,3 +114,17 @@ class AutomationTests(ProjectDatabaseFixture):
             with self.assertRaises(Forbidden):
                 automations.require_permission(self.session, self.workspace_a.id, self.editor, self.source.id,
                     automations.RBACPermission.APP_EDIT)
+
+    def test_control_refreshes_state_changed_since_the_initial_read(self):
+        trigger = AppTrigger(tenant_id=self.workspace_a.id, app_id=self.source.id, node_id='schedule',
+            trigger_type='trigger-schedule', title='Synthetic', status='disabled')
+        self.session.add(trigger); self.session.flush()
+        # Another transaction can win before this request acquires the app lock.
+        # Reproduce the stale ORM cache against a real database update.
+        self.session.execute(sa.update(AppTrigger).where(AppTrigger.id == trigger.id).values(status='enabled'),
+            execution_options={'synchronize_session': False})
+        self.assertEqual(trigger.status, 'disabled')
+        result = automations.set_enabled(self.session, self.a['id'], self.workspace_a.id, self.editor,
+            trigger.id, dict(enabled=False))
+        self.assertEqual(result['status'], 'disabled')
+        self.assertEqual(self.session.scalar(sa.select(AppTrigger.status).where(AppTrigger.id == trigger.id)), 'disabled')
