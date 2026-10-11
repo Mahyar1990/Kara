@@ -96,12 +96,22 @@ class InboxTests(ProjectDatabaseFixture):
             result = inbox.form_payload(service, self.form, self.recipient)
             self.assertNotIn(self.recipient.access_token, json.dumps(result))
             self.assertEqual(result['inputs'][0]['type'], 'paragraph')
+            self.assertEqual(result['inputs'][0]['default'], dict(type='constant', selector=[], value=''))
             with self.assertRaises(InvalidFormDataError):
                 service.submit_form_by_token(self.recipient.recipient_type, self.recipient.access_token, 'unknown', {'comment': ''})
             self.form.expiration_time = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=1)
             self.session.flush()
             with self.assertRaises(FormExpiredError):
                 inbox.form_payload(service, self.form, self.recipient)
+
+    def test_form_payload_preserves_explicit_paragraph_defaults(self):
+        definition = json.loads(self.form.form_definition)
+        definition['inputs'][0]['default'] = dict(type='constant', selector=[], value='نظر اولیه')
+        self.form.form_definition = json.dumps(definition)
+        self.session.flush()
+        with patch('core.repositories.human_input_repository.session_factory.create_session', side_effect=self.maker):
+            result = inbox.form_payload(HumanInputService(self.maker), self.form, self.recipient)
+        self.assertEqual(result['inputs'][0]['default'], definition['inputs'][0]['default'])
 
     def test_competing_native_submissions_commit_exactly_one_decision(self):
         # Isolated committed rows are necessary for two real PostgreSQL connections.

@@ -112,8 +112,13 @@ def form_payload(service, form, recipient):
         raise NotFound('فرم پیدا نشد.')
     service.ensure_form_active(native)
     definition = native.get_definition()
+    inputs = [item.model_dump(mode='json') for item in service.resolve_form_inputs(native)]
+    # Native imports allow no paragraph default; the web renderer expects a source.
+    for item in inputs:
+        if item['type'] == 'paragraph' and item.get('default') is None:
+            item['default'] = dict(type='constant', selector=[], value='')
     return dict(id=form.id, node_id=form.node_id, title=definition.node_title or 'بررسی و ثبت تصمیم',
-        content=definition.rendered_content, inputs=[item.model_dump(mode='json') for item in service.resolve_form_inputs(native)],
+        content=definition.rendered_content, inputs=inputs,
         actions=[item.model_dump(mode='json') for item in definition.user_actions],
         default_values=definition.default_values, expiration_time=timestamp(form.expiration_time))
 
