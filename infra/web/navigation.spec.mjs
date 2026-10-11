@@ -19,7 +19,7 @@ test('remembered workspace does not expose project menus on product screens', ()
 })
 
 test('different project details require entry before their tools are shown', () => {
-  for (const suffix of ['', '/templates', '/inbox', '/setup']) {
+  for (const suffix of ['', '/templates', '/inbox', '/setup', '/automations']) {
     assert.equal(companyNavigationScope(`/projects/team-b${suffix}`, { id: 'team-a' }), 'product')
     assert.equal(companyNavigationScope(`/projects/team-b${suffix}`, null), 'product')
     assert.equal(companyNavigationScope(`/projects/team-b${suffix}`, { id: 'team-b' }), 'project')
@@ -45,7 +45,7 @@ test('project links stay in the selected team and preserve native feature filter
   assert.equal(hrefs.includes('/projects'), false)
   assert.equal(hrefs.includes('/agents'), false)
   assert.equal(hrefs.includes('/skills'), false)
-  for (const suffix of ['', '/templates', '/inbox', '/setup']) assert.ok(hrefs.includes(`/projects/team-b${suffix}`))
+  for (const suffix of ['', '/templates', '/inbox', '/setup', '/automations']) assert.ok(hrefs.includes(`/projects/team-b${suffix}`))
   assert.equal(hrefs.filter(href => href === '/users').length, 1)
   assert.equal(navigation.find(item => item.href === '/apps').label, 'برنامه‌ها و فرایندها')
   assert.equal(navigation[0].active('/projects/team-b'), true)

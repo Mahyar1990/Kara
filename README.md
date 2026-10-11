@@ -58,6 +58,7 @@ make down
 - [راهنمای استفاده از پروژه](docs/project-setup.md)
 - [کتابخانهٔ قالب‌ها](docs/template-library.md)
 - [کارتابل اجراها و تأییدها](docs/project-inbox.md)
+- [اتوماسیون‌های پروژه](docs/project-automations.md)
 
 برای اجرای بررسی‌های توسعه، محیط Python محلی را آماده کنید:
 

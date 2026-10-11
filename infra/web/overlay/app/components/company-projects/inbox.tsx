@@ -5,6 +5,7 @@ import type { RunDetail, RunSummary } from '@/service/company-inbox'
 import type { HumanInputFormData } from '@/types/workflow'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useSearchParams } from '@/next/navigation'
 import HumanInputForm from '@/app/components/base/chat/chat/answer/human-input-content/human-input-form'
 import Link from '@/next/link'
 import { inboxApi } from '@/service/company-inbox'
@@ -54,11 +55,12 @@ function Execution({ projectId, id, close }: { projectId: string; id: string; cl
 }
 
 function Runs({ project }: { project: CompanyProject }) {
+  const params = useSearchParams()
   const [status, setStatus] = useState('all')
   const [name, setName] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string | null>(params.get('run'))
   const runs = useQuery({ queryKey: ['company-runs', project.workspace_id, status, search, page], queryFn: () => inboxApi.runs(project.id, status, search, page), refetchInterval: 10000 })
   return <><p className="text-sm leading-7 text-text-secondary">وضعیت اجراها، نتیجه‌ها و درخواست‌های تصمیم را پیگیری کنید. تصمیم‌های ارجاع‌شده به شما در همین کارتابل قابل بررسی‌اند.</p>
     <div className="grid gap-4 sm:grid-cols-3">{(['running', 'paused', 'failed'] as const).map(state => <button key={state} className={`${panel} text-right`} onClick={() => { setStatus(state); setPage(1); setSelected(null) }}><p className="text-sm text-text-secondary">{states[state]}</p><p className="mt-3 text-3xl font-bold text-text-primary">{number(runs.data?.counts[state] || 0)}</p></button>)}</div>
