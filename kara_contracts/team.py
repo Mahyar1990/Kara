@@ -365,6 +365,7 @@ class Stage:
     stage_id: str
     scope: Scope
     agent_id: str
+    workflow_id: str
     revision: int
     state: StageState
     input_digest: str
@@ -373,7 +374,7 @@ class Stage:
     active_attempt_id: str | None = None
 
     def __post_init__(self):
-        for value in (self.stage_id, self.agent_id, self.finalizer_id):
+        for value in (self.stage_id, self.agent_id, self.workflow_id, self.finalizer_id):
             _uuid(value)
         if not isinstance(self.scope, Scope):
             raise ContractError('invalid_scope')
@@ -456,7 +457,8 @@ def transition_stage(stage, event, *, expected_revision, guards=frozenset(), con
             raise ContractError('human_action_required')
         if not isinstance(context, ActionContext):
             raise ContractError('action_context_required')
-        if context.agent.scope != stage.scope or context.agent.agent_id != stage.agent_id:
+        if (context.agent.scope != stage.scope or context.agent.agent_id != stage.agent_id or
+                context.agent.workflow_id != stage.workflow_id):
             raise ContractError('permission_scope_mismatch')
         if isinstance(rule.action, ProjectAction):
             permission = project_permission(context.actor, context.membership, stage.scope, rule.action)

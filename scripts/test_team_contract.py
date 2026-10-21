@@ -31,7 +31,7 @@ class ContractFixture(unittest.TestCase):
         self.ready = frozenset({G.PREREQUISITES, G.APPROVAL, G.INPUTS})
         self.all_guards = self.ready | {G.OUTPUT}
         self.binding = content_digest({'request_revision': 1, 'turn': 0})
-        self.stage = Stage(uid(30), self.scope, self.agent.agent_id, 1, S.READY,
+        self.stage = Stage(uid(30), self.scope, self.agent.agent_id, self.agent.workflow_id, 1, S.READY,
                            self.binding, self.po.account_id, R.PO)
         self.now = datetime(2026, 10, 21, 12, tzinfo=timezone.utc)
         self.request = VersionRef(self.scope, uid(40), 1, content_digest('متن درخواست'))
@@ -275,6 +275,11 @@ class StageLifecycleTests(ContractFixture):
         self.assertCode('permission_required', lambda: self.move(self.stage, E.START, context=self.context(grants=()),
                         guards=self.ready, attempt_id=uid(50)))
 
+    def test_pinned_workflow_cannot_be_replaced_by_latest_agent_version(self):
+        changed = self.context(agent=replace(self.agent, workflow_id=uid(999)))
+        self.assertCode('permission_scope_mismatch', lambda: self.move(self.stage, E.START,
+                        context=changed, guards=self.ready, attempt_id=uid(50)))
+
     def test_current_account_and_membership_are_rechecked_for_each_transition(self):
         for context in [self.context(actor=replace(self.po, active=False)),
                         self.context(member=replace(self.member, active=False))]:
@@ -287,7 +292,7 @@ class StageLifecycleTests(ContractFixture):
 
     def test_two_role_handoff_keeps_second_stage_blocked_until_finalization(self):
         next_agent = replace(self.agent, agent_id=uid(70), workflow_id=uid(71))
-        second = replace(self.stage, stage_id=uid(72), agent_id=next_agent.agent_id, state=S.BLOCKED,
+        second = replace(self.stage, stage_id=uid(72), agent_id=next_agent.agent_id, workflow_id=next_agent.workflow_id, state=S.BLOCKED,
                          finalizer_id=self.tl.account_id, decision_role=R.TL)
         self.assertCode('transition_guard_missing', lambda: self.move(second, E.UNBLOCK, system=True,
                         guards=frozenset({G.APPROVAL, G.INPUTS})))
