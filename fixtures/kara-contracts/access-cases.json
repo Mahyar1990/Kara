@@ -1,0 +1,14 @@
+{
+  "contract_version": "1.0.0",
+  "synthetic": true,
+  "cases": [
+    {"id": "po-title-is-not-run-permission", "role": "normal", "business_roles": ["po"], "grants": [], "action": "run", "allowed": false},
+    {"id": "normal-member-can-run-with-grant", "role": "normal", "business_roles": [], "grants": ["run", "feedback"], "action": "run", "allowed": true},
+    {"id": "run-is-not-finalize", "role": "normal", "business_roles": ["po"], "grants": ["run", "feedback"], "action": "finalize", "allowed": false},
+    {"id": "owner-is-not-run-permission", "role": "owner", "business_roles": [], "grants": [], "action": "run", "allowed": false},
+    {"id": "owner-can-manage-access", "role": "owner", "business_roles": [], "grants": [], "action": "manage_access", "allowed": true},
+    {"id": "editor-cannot-manage-access", "role": "editor", "business_roles": ["tl"], "grants": [], "action": "manage_access", "allowed": false},
+    {"id": "operational-grant-includes-minimal-view", "role": "normal", "business_roles": [], "grants": ["feedback"], "action": "view", "allowed": true},
+    {"id": "view-is-not-run", "role": "normal", "business_roles": [], "grants": ["view"], "action": "run", "allowed": false}
+  ]
+}
