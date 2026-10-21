@@ -1,6 +1,7 @@
 # Development instructions
 
 - Read README.md and CONTRIBUTING.md before changing the platform.
+- Use docs/spec-driven-development.md and .specify/memory/constitution.md for future development. Select the bounded feature explicitly from specs/README.md; follow the installed speckit skills, reconcile spec/plan/contracts/tasks, analyze before implementation, and record actual acceptance evidence before checking tasks. Existing KP-02..10 artifacts are drafts, not implemented features; later plans must be refreshed against accepted predecessor contracts. Never invent the missing Jira intermediary-service sample.
 - Follow docs/branches.md: master holds the Kara platform and all current reviews, requirements and planning documents. Keep clasor-agents aligned with master with no unique commits until dedicated Klassor implementation starts; only then commit its implementation and related assets there. Preserve existing agents and clasor-analysis-agents history separately.
 - Use Kara (کارا) as this project and product name in introductions, user-facing copy and usage documentation. Reserve Dify for necessary technical references to the upstream code, versions and dependencies; describe the execution engine and team workflow features as parts of Kara.
 - Follow docs/kara-platform-readiness-plan.md: prepare and accept the core team workflow on Kara before starting dedicated Klassor agents. Validate platform collaboration with synthetic deterministic steps first.
