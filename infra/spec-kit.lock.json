@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/github/spec-kit",
+  "version": "1.2.2",
+  "tag": "v1.2.2",
+  "commit": "74be0a63e93c7087c5b06556b7561810d8f78a45",
+  "integration": "codex",
+  "script": "sh",
+  "git_extension": false
+}
