@@ -1,10 +1,12 @@
+ARG KARA_WEB_PACKAGES_BASE=base
 FROM node:24.20.0-alpine AS base
 RUN apk add --no-cache tzdata && corepack enable
 ENV PNPM_HOME=/pnpm
 ENV PATH=/pnpm:$PATH
 ENV NEXT_TELEMETRY_DISABLED=1
 
-FROM base AS packages
+FROM ${KARA_WEB_PACKAGES_BASE} AS packages
+ARG KARA_WEB_OFFLINE=false
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY web/package.json web/package.json
@@ -12,13 +14,21 @@ COPY e2e/package.json e2e/package.json
 COPY sdks/nodejs-client/package.json sdks/nodejs-client/package.json
 COPY cli/package.json cli/package.json
 COPY packages packages
-RUN corepack install && pnpm install --frozen-lockfile --ignore-scripts
+RUN if [ "$KARA_WEB_OFFLINE" = "true" ]; then \
+      pnpm install --offline --frozen-lockfile --ignore-scripts; \
+    else \
+      corepack install && pnpm install --frozen-lockfile --ignore-scripts --fetch-timeout=600000 --network-concurrency=8; \
+    fi
 COPY .company-web/package.json .company-web/package-lock.json .company-web/
-RUN npm ci --prefix .company-web --ignore-scripts --no-audit --no-fund
+RUN if [ "$KARA_WEB_OFFLINE" = "true" ]; then \
+      npm ci --offline --prefix .company-web --ignore-scripts --no-audit --no-fund; \
+    else \
+      npm ci --prefix .company-web --ignore-scripts --no-audit --no-fund; \
+    fi
 
 FROM packages AS builder
 COPY . .
-RUN NODE_OPTIONS=--max-old-space-size=4096 node .company-web/check-projects-types.mjs
+RUN rm -rf web/.next && NODE_OPTIONS=--max-old-space-size=4096 node .company-web/check-projects-types.mjs
 RUN node .company-web/localize-literals.mjs web && node --test .company-web/rtl.spec.mjs .company-web/members.spec.mjs .company-web/navigation.spec.mjs
 WORKDIR /app/web
 ENV NODE_OPTIONS=--max-old-space-size=4096

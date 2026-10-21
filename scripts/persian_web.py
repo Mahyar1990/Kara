@@ -116,7 +116,15 @@ def prepare_source():
 
 def build_image():
     source = prepare_source()
-    subprocess.run(["docker", "build", "--label",
+    command = ["docker", "build"]
+    cached_packages = os.environ.get("KARA_WEB_BUILD_CACHE_IMAGE")
+    if cached_packages:
+        # The cache supplies tools/store only. Both installers still validate the
+        # current lockfiles; source, tests and production compilation run below.
+        command.extend(["--network=none", "--build-arg",
+                        f"KARA_WEB_PACKAGES_BASE={cached_packages}", "--build-arg",
+                        "KARA_WEB_OFFLINE=true"])
+    subprocess.run([*command, "--label",
                     f"company-agent.localization={fingerprint()}", "-t", IMAGE,
                     "-f", str(CUSTOM / "Dockerfile"), str(source)], check=True)
 
