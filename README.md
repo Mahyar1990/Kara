@@ -66,6 +66,7 @@ make down
 - [مدیریت کاربران و نقش‌ها](docs/users.md)
 - [نقش‌های کاری تیم و قرارداد API](docs/kara-team-roles.md)
 - [گزارش آزمون و پذیرش KP-01](docs/kara-kp01-validation.md)
+- [تکمیل موارد باز KP-01](docs/kara-kp01-closeout.md): نام Kara، ساخت کامل کلاینت و شواهد نهایی آزمون.
 - [ادمین کل و دسترسی مستقل پروژه‌ها](docs/project-ownership.md)
 - [راهنمای استفاده از پروژه](docs/project-setup.md)
 - [کتابخانهٔ قالب‌ها](docs/template-library.md)
