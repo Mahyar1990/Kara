@@ -6,7 +6,7 @@
 
 ## ۱. مبنای موجود و تصمیم‌های سازگاری
 
-مبنای کد شروع `58e744b` در `master` است. [ذخیره‌سازی پروژه](../infra/api/company_projects/store.py)، [عضویت/دسترسی](../infra/api/company_projects/access.py) و [مالکیت](../infra/api/company_projects/ownership.py) خوانده شدند. ساختار مدل‌های بومی accounts، tenant_account_joins، apps، workflows و workflow_runs از سورس نسخهٔ قفل‌شده بررسی شد؛ این بررسی، مشاهدهٔ schema یا دادهٔ پایگاه زنده نیست.
+مبنای کد شروع `58e744b` در `master` است. [ذخیره‌سازی پروژه](../infra/api/company_projects/store.py)، [عضویت/دسترسی](../infra/api/company_projects/access.py) و [مالکیت](../infra/api/company_projects/ownership.py) خوانده شدند. ساختار مدل‌های بومی accounts، tenant_account_joins، apps، workflows و workflow_runs از سورس نسخهٔ قفل‌شده بررسی شد؛ این بررسی در KP-00 مشاهدهٔ schema زنده نبود؛ شواهد ارتقای واقعی و بررسی محیط روشن اکنون در [گزارش KP-01](kara-kp01-validation.md) آمده‌اند.
 
 **دو شناسهٔ tenant با هم مخلوط نشوند:** `company_projects.tenant_id` به فضای مدیریت مرکزی اشاره دارد؛ workspace واقعی تیم از `company_project_workspaces.workspace_id` گرفته می‌شود. عضویت، App.tenant_id و Workflow.tenant_id باید با workspace تیم تطبیق داشته باشند. Scope قرارداد از project_id و همین workspace_id ساخته می‌شود؛ tenant مرکزی جای workspace تیم نیست.
 
@@ -45,6 +45,7 @@ flowchart TD
 
 | جدول هدف | دادهٔ ضروری و قید اصلی | گام ساخت |
 | --- | --- | --- |
+| `company_team_member_policies` | scope، account_id، membership_id و revision؛ قفل و تشخیص تغییر یا عضویت مجدد | KP-01 |
 | `company_team_roles` | scope، account_id، business_role، assigned_by/at؛ یکتا روی scope/account/role؛ عضویت بومی همان workspace لازم است. | KP-01 |
 | `company_team_agents` | id، scope، app_id، نام/توضیح، نسخهٔ قرارداد، lifecycle، acl_revision؛ هر ثبت متعلق به یک app همان workspace است. | KP-02 |
 | `company_team_grants` | scope، agent_id، account_id، action، granted_by/at؛ یکتا روی scope/agent/account/action؛ manage_access در actionهای این جدول مجاز نیست. | KP-02 |
@@ -148,4 +149,4 @@ flowchart TD
 
 خروجی آفلاین: قرارداد رفتاری نسخهٔ ۱، مرجع مستقل، نمونه‌های ساختگی و ۳۳ آزمون جدید، مدل روابط و قیود و این طرح migration. `make check` با مجموع ۵۴ آزمون موفق است. پیکربندی Compose موجود نیز با config --quiet اعتبارسنجی شد؛ سرویسی شروع و مدلی فراخوانی نشد.
 
-مبنای عملیاتیِ محیط روشن، schema/data زنده و اجرای مدل همچنان بررسی نشده‌اند؛ قبل از فعال‌کردن مسیر جدید و پذیرش هسته باید تکمیل شوند. **کار بعدی KP-01 است: ثبت نقش‌های کاری و تفکیک عنوان ادمین کل، همراه migration اول و آداپتر حساب/عضویت.** ورود به ساخت ایجنت‌های کلاسور هنوز انجام نمی‌شود.
+**به‌روزرسانی KP-01:** نقش‌های کاری و آداپتر حساب/عضویت واقعی همراه migration اول تحویل شدند. backup/restore، ارتقای بانک اصلی با حفظ ردیف‌های ۱۵۱ جدول قبلی، خواندن با کد قبلی، API، مرورگر و doctor آزموده شدند؛ [گزارش پذیرش](kara-kp01-validation.md) مرجع شواهد است. مدل/LLM در این گام اجرا نشد. **گام بعدی KP-02، تعریف ایجنت قابل اجرا و مجوز صریح آن است.** ورود به ساخت ایجنت‌های کلاسور تا پذیرش کل هسته انجام نمی‌شود.

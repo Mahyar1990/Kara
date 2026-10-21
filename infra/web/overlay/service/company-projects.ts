@@ -26,6 +26,21 @@ export type ProjectAppPage = { data: ProjectApp[]; total: number; page: number; 
 export type ResourceKind = 'all' | 'workflow' | 'agent' | 'other'
 const base = '/company/projects'
 
+export type BusinessRole = 'po' | 'tl' | 'designer' | 'developer' | 'qc'
+export type MemberBusinessRoles = {
+  project_id: string
+  workspace_id: string
+  account_id: string
+  membership_id: string
+  revision: number
+  roles: BusinessRole[]
+}
+
+export const teamApi = {
+  list: (projectId: string) => get<{ data: MemberBusinessRoles[] }>(`${base}/${projectId}/team/members`),
+  replace: (projectId: string, accountId: string, body: { roles: BusinessRole[]; expected_revision: number; expected_membership_id: string }, actionKey: string) => put<MemberBusinessRoles>(`${base}/${projectId}/team/members/${accountId}/roles`, { body, headers: { 'Idempotency-Key': actionKey } }),
+}
+
 // These company endpoints have no upstream generated SDK contract.
 export const projectApi = {
   list: () => get<{ data: CompanyProject[]; is_product_owner: boolean }>(base),

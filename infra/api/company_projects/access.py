@@ -24,7 +24,7 @@ def initialize(connection):
 def authority(session):
     row = session.execute(sa.select(store.product).where(store.product.c.id == 1)).mappings().first()
     if row is None:
-        raise Forbidden('مالک محصول هنوز در راه‌اندازی اولیه تعیین نشده است.')
+        raise Forbidden('ادمین کل Kara هنوز در راه‌اندازی اولیه تعیین نشده است.')
     return row
 
 
@@ -34,7 +34,7 @@ def is_product_owner(session, account_id):
 
 def require_product_owner(session, account_id):
     if not is_product_owner(session, account_id):
-        raise Forbidden('ساخت پروژه و تعیین مالک آن فقط با مالک محصول است.')
+        raise Forbidden('ساخت پروژه و تعیین مالک آن فقط با ادمین کل Kara است.')
 
 
 def workspace_project(session, workspace_id):
@@ -85,11 +85,11 @@ def require_member_management(session, workspace_id, operator_id, target_id=None
     if not managed:
         return  # Leave unrelated legacy workspaces to their native policy.
     if not can_manage_members(session, workspace_id, operator_id):
-        raise Forbidden('مدیریت اعضای پروژه فقط با مالک پروژه یا مالک محصول است.')
+        raise Forbidden('مدیریت اعضای پروژه فقط با مالک پروژه یا ادمین کل Kara است.')
     if target_id and action in ('remove', 'update'):
         owner = owner_of(session, workspace_id)
         if str(target_id) == str(root['account_id']) or (owner and owner.id == str(target_id)):
-            raise Forbidden('مالک محصول و مالک پروژه از این مسیر قابل حذف یا تغییر نیستند.')
+            raise Forbidden('ادمین کل Kara و مالک پروژه از این مسیر قابل حذف یا تغییر نیستند.')
 
 
 def filter_permissions(session, workspace_id, account_id, keys):
@@ -111,7 +111,7 @@ def validate_app_project(session, workspace_id, project_id, account_id):
 def forbid_native_owner_transfer(session, tenant_id, new_role):
     root = authority(session)
     if new_role == 'owner' and (str(tenant_id) == str(root['tenant_id']) or workspace_project(session, tenant_id)):
-        raise Forbidden('مالک پروژه را مالک محصول از صفحهٔ پروژه تعیین می‌کند.')
+        raise Forbidden('مالک پروژه را ادمین کل Kara از صفحهٔ پروژه تعیین می‌کند.')
 
 
 def public_project(session, row, account_id):
@@ -145,6 +145,6 @@ def restrict_central_workspace(app):
             with Session(db.engine) as session:
                 root = authority(session)
                 if path == '/workspaces/info' and request.method == 'POST' and workspace_project(session, tenant_id):
-                    raise Forbidden('نام پروژه را مالک محصول از صفحهٔ پروژه ویرایش می‌کند.')
+                    raise Forbidden('نام پروژه را ادمین کل Kara از صفحهٔ پروژه ویرایش می‌کند.')
                 if str(tenant_id) == str(root['tenant_id']) and not is_product_owner(session, account.id):
-                    raise Forbidden('این بخش مخصوص مالک محصول است؛ از صفحهٔ پروژه‌ها وارد پروژهٔ خود شوید.')
+                    raise Forbidden('این بخش مخصوص ادمین کل Kara است؛ از صفحهٔ پروژه‌ها وارد پروژهٔ خود شوید.')

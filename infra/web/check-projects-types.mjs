@@ -34,6 +34,7 @@ const files = [
   'service/company-projects.ts',
   'app/(commonLayout)/users/page.tsx',
   'app/components/company-members/index.tsx',
+  'app/components/company-members/business-roles.tsx',
   'app/components/header/account-setting/members-page/index.tsx',
   'service/use-common.ts',
   'service/access-control/use-workspace-roles.ts',

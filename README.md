@@ -53,7 +53,7 @@ make down
 ## مستندات بستر
 
 - [قرارداد نسخهٔ اول همکاری تیمی](docs/kara-team-contract-v1.md): مرجع قابل اجرا و آزمون آفلاین دسترسی، تصمیم و تغییر وضعیت مراحل.
-- [مدل داده و طرح ارتقای همکاری تیمی](docs/kara-team-data-migration.md): خروجی KP-00، روابط، قیود و مهاجرت مرحله‌ایِ طراحی‌شده؛ هنوز روی بانک داده اعمال نشده است.
+- [مدل داده و طرح ارتقای همکاری تیمی](docs/kara-team-data-migration.md): روابط و قیود؛ مهاجرت نقش‌های KP-01 پیاده‌سازی شده و مراحل بعدی طراحی‌اند.
 
 - [بررسی آمادگی و برنامهٔ تکمیل Kara](docs/kara-platform-readiness-plan.md): اولویت فعلی؛ آماده‌سازی همکاری تیمی و مجوزها پیش از ساخت ایجنت‌های کلاسور.
 
@@ -64,7 +64,9 @@ make down
 - [اتصال خصوصی مدل](docs/company-model-connection.md)
 - [پروژه‌ها و برنامه‌های اختصاصی](docs/projects.md)
 - [مدیریت کاربران و نقش‌ها](docs/users.md)
-- [مالک محصول و دسترسی مستقل پروژه‌ها](docs/project-ownership.md)
+- [نقش‌های کاری تیم و قرارداد API](docs/kara-team-roles.md)
+- [گزارش آزمون و پذیرش KP-01](docs/kara-kp01-validation.md)
+- [ادمین کل و دسترسی مستقل پروژه‌ها](docs/project-ownership.md)
 - [راهنمای استفاده از پروژه](docs/project-setup.md)
 - [کتابخانهٔ قالب‌ها](docs/template-library.md)
 - [کارتابل اجراها و تأییدها](docs/project-inbox.md)
