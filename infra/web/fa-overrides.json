@@ -27,7 +27,9 @@
     "agentDetail.configure.tools.toolTabs.mcp": "ابزارهای MCP",
     "agentDetail.configure.tools.toolTabs.workflow": "گردش کار",
     "agentDetail.logs.filters.source.webapp": "برنامهٔ وب",
-    "skillManagement.title": "مهارت‌ها"
+    "skillManagement.title": "مهارت‌ها",
+    "agentDetail.configure.tools.richTip": "ابزارهای Kara را از workspace خود اضافه کنید. <docLink>بیشتر بدانید</docLink>\n\nابزارهایی که عامل در sandbox خود نصب می‌کند اینجا نمایش داده نمی‌شوند، اما برای او در دسترس می‌مانند.",
+    "agentDetail.configure.tools.tip": "ابزارهای Kara را از workspace خود اضافه کنید. بیشتر بدانید\n\nابزارهایی که عامل در sandbox خود نصب می‌کند اینجا نمایش داده نمی‌شوند، اما برای او در دسترس می‌مانند."
   },
   "app-debug": {
     "feature.annotation.scoreThreshold.description": "آستانهٔ شباهت برای پاسخ‌های حاشیه‌نویسی‌شده را تعیین می‌کند.",
@@ -59,8 +61,8 @@
     "settings.swaggerAPIAsTool": "استفاده از API مبتنی بر Swagger به‌عنوان ابزار",
     "settings.trigger": "محرک",
     "settings.workspace": "فضای کاری",
-    "stepByStepTour.guides.home.noCreate.description": "درس‌ها را مرور کنید و با کارکرد Dify آشنا شوید. ساخت برنامه از یک درس به مجوز ایجاد در فضای کاری یا کمک مدیر نیاز دارد.",
-    "stepByStepTour.guides.home.noCreate.title": "مرور درس‌های آموزش Dify",
+    "stepByStepTour.guides.home.noCreate.description": "درس‌ها را مرور کنید و با کارکرد Kara آشنا شوید. ساخت برنامه از یک درس به مجوز ایجاد در فضای کاری یا کمک مدیر نیاز دارد.",
+    "stepByStepTour.guides.home.noCreate.title": "مرور درس‌های آموزش Kara",
     "stepByStepTour.guides.integration.dataSource.description": "منابع داده را متصل کنید تا بخش دانش بتواند محتوا را از Drive، Notion، GitHub، Firecrawl و منابع دیگر دریافت کند.",
     "stepByStepTour.guides.integration.limitedAccess.dataSource.description": "منابع داده را برای دریافت محتوا در بخش دانش متصل کنید. راه‌اندازی ممکن است به دسترسی مدیر نیاز داشته باشد.",
     "stepByStepTour.guides.integration.limitedAccess.mcp.description": "سرورهای MCP متصل و ابزارها و سرویس‌های آن‌ها را مشاهده کنید. افزودن یا ویرایش سرورها به مجوز مناسب فضای کاری نیاز دارد.",
@@ -78,7 +80,7 @@
     "stepByStepTour.guides.integration.updateSettings.description": "شیوهٔ به‌روزرسانی خودکار اتصال‌ها، زمان‌بندی و اتصال‌های مشمول به‌روزرسانی را تعیین کنید.",
     "stepByStepTour.guides.integration.updateSettings.title": "تنظیمات به‌روزرسانی",
     "stepByStepTour.tasks.home.noCreate.description": "می‌توانید درس‌ها را مرور کنید؛ ساخت برنامه از درس به مجوز بیشتری نیاز دارد.",
-    "stepByStepTour.tasks.home.noCreate.title": "مرور آموزش Dify",
+    "stepByStepTour.tasks.home.noCreate.title": "مرور آموزش Kara",
     "stepByStepTour.tasks.integration.noPermission.title": "کاوش اتصال‌ها",
     "stepByStepTour.tasks.integration.title": "کاوش اتصال‌ها",
     "toolsPage.toolPlugin": "افزونهٔ ابزار",
@@ -87,19 +89,33 @@
     "members.inviteTeamMember": "دعوت کاربر به فضای کاری",
     "members.emailNotSetup": "سرور ایمیل تنظیم نشده است. پس از ثبت دعوت، لینک آن را از پنجرهٔ نتیجه کپی کنید و به همکار بدهید.",
     "members.invitationSent": "دعوت ثبت شد",
-    "members.invitationSentTip": "دعوت با موفقیت ثبت شد. همکار می‌تواند از لینک دعوت برای فعال‌سازی حساب استفاده کند."
+    "members.invitationSentTip": "دعوت با موفقیت ثبت شد. همکار می‌تواند از لینک دعوت برای فعال‌سازی حساب استفاده کند.",
+    "account.langGeniusAccount": "حساب Kara",
+    "account.langGeniusAccountTip": "حساب Kara شما و داده‌های کاربری مرتبط.",
+    "apiBasedExtension.title": "افزونه‌های مبتنی بر API مدیریت متمرکز API را فراهم می‌کنند و پیکربندی را برای استفاده آسان در برنامه‌های Kara ساده می‌کنند.",
+    "apiBasedExtensionPage.description": "قابلیت‌های ماژول‌های Kara را از طریق API گسترش دهید — بازبینی محتوای سفارشی یا ابزارهای داده خارجی را به برنامه‌های خود اضافه کنید.",
+    "stepByStepTour.guides.knowledge.empty.create.description": "سریع‌ترین راه برای شروع. اسناد را بارگذاری کنید و Kara قطعه‌بندی، نمایه‌سازی و embedding را برای شما انجام می‌دهد. هر زمان خواستید می‌توانید به حالت سفارشی تغییر دهید.",
+    "stepByStepTour.guides.studio.empty.learnDify.description": "تازه با Kara آشنا شده‌اید؟ ابتدا یک درس راهنما را طی کنید — Workflowها، Agentها و موارد دیگر را در عمل می‌بینید.",
+    "stepByStepTour.guides.studio.empty.learnDify.title": "یا با Learn Kara شروع کنید",
+    "stepByStepTour.guides.studio.empty.template.description": "قالب‌های Kara را مرور کنید و قالبی را انتخاب کنید که با آنچه می‌خواهید بسازید هماهنگ است. راهی عالی برای شروع بدون نوشتن همه چیز از صفر.",
+    "stepByStepTour.tasks.home.description": "یک درس عملی از Learn Kara را باز کنید تا Kara را در عمل ببینید.",
+    "stepByStepTour.tasks.home.title": "یک درس Learn Kara را امتحان کنید",
+    "stepByStepTour.title": "با Kara آشنا شوید"
   },
   "dataset": {
     "firstEmpty.connectDescription": "پایگاه دانش دارید؟ بدون جابه‌جایی داده‌ها، آن را از طریق API متصل کنید.",
     "firstEmpty.createDescription": "سریع‌ترین راه شروع؛ هر زمان می‌توانید تنظیمات را سفارشی کنید.",
-    "indexingTechnique.economy": "اقتصادی"
+    "indexingTechnique.economy": "اقتصادی",
+    "newKnowledge.sourcesEmptyDescription": "یک وب‌سایت، فضای کاری یا درایو را متصل کنید؛ Kara آن را همگام و به‌روز نگه می‌دارد تا بازیابی هرگز مختل نشود."
   },
   "dataset-documents": {
     "metadata.field.book.ISBN": "شابک",
     "metadata.field.github.url": "نشانی",
     "metadata.field.notion.url": "نشانی",
     "metadata.field.paper.DOI": "شناسهٔ DOI",
-    "metadata.field.webPage.url": "نشانی"
+    "metadata.field.webPage.url": "نشانی",
+    "list.desc": "تمامی فایل‌های دانش در اینجا نمایش داده می‌شوند و کل دانش می‌تواند به ارجاعات Kara متصل شود یا از طریق افزونه چت ایندکس شود.",
+    "list.empty.sync.tip": "Kara به‌طور دوره‌ای فایل‌ها را از Notion شما دانلود و پردازش را کامل می‌کند."
   },
   "plugin": {
     "task.errorPlugins": "نصب افزونه‌ها ناموفق بود",
@@ -127,7 +143,9 @@
     "nodes.http.authorization.header": "سرآیند",
     "nodes.http.body": "بدنهٔ درخواست",
     "nodes.ifElse.optionName.url": "نشانی",
-    "tabs.customTool": "ابزار مبتنی بر Swagger"
+    "tabs.customTool": "ابزار مبتنی بر Swagger",
+    "common.clipboardVersionCompatibilityWarning": "این محتوا از نسخه دیگری از برنامه Kara کپی شده است. ممکن است برخی بخش‌ها ناسازگار باشند.",
+    "nodes.knowledgeBase.chunkStructureTip.message": "پایگاه دانش Kara از سه ساختار چانک پشتیبانی می‌کند: عمومی، والد-فرزند و پرسش‌وپاسخ. هر پایگاه دانش فقط می‌تواند یک ساختار داشته باشد. خروجی گره قبلی باید با ساختار انتخاب‌شده هماهنگ باشد."
   },
   "login": {
     "setAdminAccountDesc": "حساب مدیر برای ساخت برنامه‌ها، مدیریت مدل‌های هوش مصنوعی و تنظیم فضای کاری استفاده می‌شود.",
@@ -135,6 +153,14 @@
     "license.tip": "پیش از شروع استفاده از نسخهٔ عمومی Dify، شرایط مجوز را مطالعه کنید.",
     "license.link": "مجوز متن‌باز",
     "name": "نام",
-    "namePlaceholder": "نام شما"
+    "namePlaceholder": "نام شما",
+    "explore": "کاوش Kara",
+    "go": "برو به Kara",
+    "joinTipEnd": "تیم در Kara",
+    "resetPasswordDesc": "ایمیلی را که برای ثبت نام در Kara استفاده کرده اید تایپ کنید و ما یک ایمیل بازنشانی رمز عبور برای شما ارسال خواهیم کرد.",
+    "welcome": "به Kara خوش آمدید، لطفا برای ادامه وارد شوید."
+  },
+  "app": {
+    "firstEmpty.templateDescription": "از یک گردش‌کار از پیش ساخته شروع کنید. برای یادگیری Kara و الگوهای رایج مناسب است."
   }
 }

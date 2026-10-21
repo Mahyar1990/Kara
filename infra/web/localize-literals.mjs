@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const translations = JSON.parse(readFileSync(new URL('./literal-translations.json', import.meta.url)))
-const technical = new Set(['CSV', 'JSON', 'JSONL', 'SVG', 'OAuth', 'PKCS1_OAEP', 'Dify', 'GitHub',
+const technical = new Set(['CSV', 'JSON', 'JSONL', 'SVG', 'OAuth', 'PKCS1_OAEP', 'Kara', 'Dify', 'GitHub',
   'Jina Reader', 'WaterCrawl', '🔥 Firecrawl', 'ESC', 'Enter', '.csv', 'ABCD-1234', 'default', 'dify_app',
   'NEXT_PUBLIC_APP_ID=', 'NEXT_PUBLIC_APP_KEY=', 'NEXT_PUBLIC_API_URL=', 'error_message', 'last_run',
   'conversation_var', 'structured_output', 'sys.', 'articles/*', 'blog/*, /about/*'])

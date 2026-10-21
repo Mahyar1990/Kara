@@ -1,0 +1,80 @@
+--- a/web/app/components/main-nav/index.tsx
++++ b/web/app/components/main-nav/index.tsx
+@@ -8,5 +8,5 @@
+ import { useTranslation } from 'react-i18next'
+ import Badge from '@/app/components/base/badge'
+-import { DifyLogo } from '@/app/components/base/logo/dify-logo'
++import { KaraLogo } from '@/app/components/base/logo/kara-logo'
+ import EnvNav from '@/app/components/header/env-nav'
+ import StepByStepTourMount from '@/app/components/step-by-step-tour/mount'
+@@ -83,5 +83,5 @@
+       systemFeatures.branding.enabled && systemFeatures.branding.application_title
+         ? systemFeatures.branding.application_title
+-        : 'Dify'
++        : 'Kara'
+
+     return (
+@@ -98,5 +98,5 @@
+           />
+         ) : (
+-          <DifyLogo alt="" />
++          <KaraLogo alt="" />
+         )}
+       </Link>
+--- a/web/app/signin/_header.tsx
++++ b/web/app/signin/_header.tsx
+@@ -2,5 +2,5 @@
+ import { useSuspenseQuery } from '@tanstack/react-query'
+ import Divider from '@/app/components/base/divider'
+-import { DifyLogo } from '@/app/components/base/logo/dify-logo'
++import { KaraLogo } from '@/app/components/base/logo/kara-logo'
+ import { useLocale } from '@/context/i18n'
+ import { systemFeaturesQueryOptions } from '@/features/system-features/client'
+@@ -28,5 +28,5 @@
+         />
+       ) : (
+-        <DifyLogo alt="Dify" size="large" />
++        <KaraLogo alt="Kara" size="large" />
+       )}
+       <div className="flex items-center gap-1">
+--- a/web/app/device/_header.tsx
++++ b/web/app/device/_header.tsx
+@@ -2,5 +2,5 @@
+ import { useSuspenseQuery } from '@tanstack/react-query'
+ import Divider from '@/app/components/base/divider'
+-import { DifyLogo } from '@/app/components/base/logo/dify-logo'
++import { KaraLogo } from '@/app/components/base/logo/kara-logo'
+ import LocaleMenu from '@/app/signin/_locale-menu'
+ import { useLocale } from '@/context/i18n'
+@@ -28,5 +28,5 @@
+         />
+       ) : (
+-        <DifyLogo alt="Dify" size="large" />
++        <KaraLogo alt="Kara" size="large" />
+       )}
+       <div className="flex items-center gap-1">
+--- a/web/app/components/main-nav/components/help-menu/account-about-dialog.tsx
++++ b/web/app/components/main-nav/components/help-menu/account-about-dialog.tsx
+@@ -7,5 +7,5 @@
+ import dayjs from 'dayjs'
+ import { useTranslation } from 'react-i18next'
+-import { DifyLogo } from '@/app/components/base/logo/dify-logo'
++import { KaraLogo } from '@/app/components/base/logo/kara-logo'
+ import Link from '@/next/link'
+
+@@ -45,5 +45,5 @@
+         />
+         <div className="flex flex-col items-center gap-4 px-6 py-12">
+-          <DifyLogo alt="Dify" size="large" className="mx-auto" />
++          <KaraLogo alt="Kara" size="large" className="mx-auto" />
+
+           <div className="text-center system-xs-regular text-text-tertiary">
+--- a/web/app/layout.tsx
++++ b/web/app/layout.tsx
+@@ -49,5 +49,5 @@
+     icons: brandedFavicon
+       ? { icon: brandedFavicon, apple: brandedFavicon }
+-      : { icon: `${basePath}/favicon.ico` },
++      : { icon: `${basePath}/kara/favicon.svg` },
+   }
+ }
