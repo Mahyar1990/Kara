@@ -50,6 +50,8 @@ make down
 
 ## مستندات بستر
 
+- [مدل کارکرد Kara و اجرای تیمی مراحل](docs/kara-operating-model.md): نیازمندی‌های پروژه، نقش‌ها، مجوز اجرای ایجنت، بازخورد و تحویل نسخه‌دار.
+
 - [محیط محلی](docs/local-development.md)
 - [رابط فارسی و راست‌به‌چپ](docs/persian-interface.md)
 - [اتصال خصوصی مدل](docs/company-model-connection.md)
