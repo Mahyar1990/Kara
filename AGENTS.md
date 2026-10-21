@@ -1,7 +1,7 @@
 # Development instructions
 
 - Read README.md and CONTRIBUTING.md before changing the platform.
-- Follow docs/branches.md: master holds the Kara platform; agents holds shared agent implementations. Commit all Klassor agent work and related assets on clasor-agents; clasor-analysis-agents is historical.
+- Follow docs/branches.md: master holds the Kara platform and all current reviews, requirements and planning documents. Keep clasor-agents aligned with master with no unique commits until dedicated Klassor implementation starts; only then commit its implementation and related assets there. Preserve existing agents and clasor-analysis-agents history separately.
 - Use Kara (کارا) as this project and product name in introductions, user-facing copy and usage documentation. Reserve Dify for necessary technical references to the upstream code, versions and dependencies; describe the execution engine and team workflow features as parts of Kara.
 - Follow docs/kara-platform-readiness-plan.md: prepare and accept the core team workflow on Kara before starting dedicated Klassor agents. Validate platform collaboration with synthetic deterministic steps first.
 - Preserve the request, analysis-version and human-decision relationship.
