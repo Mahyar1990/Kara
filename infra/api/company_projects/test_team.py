@@ -120,3 +120,9 @@ class TeamRolesTests(ProjectDatabaseFixture):
             self.change()
         with self.assertRaises(BadRequest):
             self.change(key='{' + str(uuid4()) + '}')
+
+    def test_nonmember_removal_keeps_native_error(self):
+        from services.account_service import TenantService
+        from services.errors.account import MemberNotInTenantError
+        with self.assertRaises(MemberNotInTenantError):
+            TenantService.remove_member_from_tenant(self.workspace_a, self.other, self.project_owner, session=self.session)

@@ -123,7 +123,10 @@ def before_member_removal(session, workspace_id, actor_id, account_id):
         return
     key = scope(session, project['id'], workspace_id, actor_id, write=True)
     key['account_id'] = str(account_id)
-    join = member(session, workspace_id, account_id, lock=True)
+    try:
+        join = member(session, workspace_id, account_id, lock=True)
+    except NotFound:
+        return  # Preserve the native MemberNotInTenantError and its API response.
     reflected = tables(session)
     current = snapshot(session, key, join, reflected=reflected)
     _, _, audit = reflected
