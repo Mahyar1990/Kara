@@ -1,7 +1,8 @@
 # Development instructions
 
 - Read README.md and CONTRIBUTING.md before changing the platform.
-- Follow docs/branches.md: master holds the Kara/Dify platform; agents holds shared agent implementations. Commit all Klassor agent work and related assets on clasor-agents; clasor-analysis-agents is historical.
+- Follow docs/branches.md: master holds the Kara platform; agents holds shared agent implementations. Commit all Klassor agent work and related assets on clasor-agents; clasor-analysis-agents is historical.
+- Use Kara (کارا) as this project and product name in introductions, user-facing copy and usage documentation. Reserve Dify for necessary technical references to the upstream code, versions and dependencies; describe the execution engine and team workflow features as parts of Kara.
 - Preserve the request, analysis-version and human-decision relationship.
 - Use the sandbox branch as the baseline for all four Klassor source/test repositories. Record its exact ref and commit; do not substitute the current checkout. Local origin/sandbox may be read without switching branches or fetching.
 - Build Klassor agent context from each source repository's AGENTS.md, relevant PROJECT_MAP.md sections, and selected doc/docs and repository skills. Keep repository rules separate from technical evidence, pin sources to the same snapshot, and refresh private context after path or baseline changes.
