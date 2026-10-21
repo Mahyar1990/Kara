@@ -12,8 +12,10 @@ changes = {
         'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n    "company_projects.inbox",\n    "company_projects.automations",\n')],
     'app_factory.py': [(
         '    initialize_extensions(app)\n',
-        '    initialize_extensions(app)\n    from company_projects.store import migrate\n    from company_projects.access import initialize, restrict_central_workspace\n    from extensions.ext_database import db\n    with app.app_context():\n        migrate(db.engine)\n        with db.engine.begin() as connection:\n            initialize(connection)\n    restrict_central_workspace(app)\n')],
+        '    initialize_extensions(app)\n    from company_projects.store import migrate\n    from company_projects.team_migrations import migrate as migrate_team\n    from company_projects.access import initialize, restrict_central_workspace\n    from extensions.ext_database import db\n    with app.app_context():\n        migrate(db.engine)\n        migrate_team(db.engine)\n        with db.engine.begin() as connection:\n            initialize(connection)\n    restrict_central_workspace(app)\n')],
     'services/account_service.py': [(
+        '        TenantService.check_member_permission(tenant, operator, account, "remove", session=session)\n',
+        '        TenantService.check_member_permission(tenant, operator, account, "remove", session=session)\n        from company_projects.team import before_member_removal\n        before_member_removal(session, tenant.id, operator.id, account.id)\n'), (
         '        """Check member permission"""\n',
         '        """Check member permission"""\n        from company_projects.access import require_member_management\n        require_member_management(session, tenant.id, operator.id, member.id if member else None, action)\n'), (
         '        """Update member role"""\n',
