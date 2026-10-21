@@ -71,6 +71,11 @@ python3 -m venv .venv
 make check
 ```
 
+## برنامه‌ریزی ایجنت‌ها
+
+- [برنامهٔ ساخت و تست ایجنت‌های کلاسور در Kara](docs/clasor-agents-implementation-plan.md)
+- [برنامهٔ پیشین تحلیل محصول](docs/product-analysis-implementation-plan.md)
+
 ## منابع
 
 - [راهنمای رسمی نصب Dify](https://docs.dify.ai/en/self-host/deploy/quick-start/docker-compose)
