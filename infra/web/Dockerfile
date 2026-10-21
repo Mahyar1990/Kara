@@ -24,7 +24,7 @@ WORKDIR /app/web
 ENV NODE_OPTIONS=--max-old-space-size=4096
 ENV pnpm_config_verify_deps_before_run=false
 RUN mkdir -p public/fonts && cp ../.company-web/node_modules/@fontsource-variable/vazirmatn/files/vazirmatn-arabic-wght-normal.woff2 public/fonts/ && cp ../.company-web/node_modules/@fontsource-variable/vazirmatn/LICENSE public/fonts/vazirmatn-license.txt
-RUN pnpm exec next build --webpack
+RUN pnpm exec next build --webpack && rm -rf .next/cache
 
 FROM base AS production
 ENV NODE_ENV=production
