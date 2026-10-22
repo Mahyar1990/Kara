@@ -97,6 +97,7 @@ make check
 
 ## برنامه‌ریزی ایجنت‌ها
 
+- [گام صفر پایلوت کلاسور](docs/clasor-pilot-baseline.md): منابع sandbox، پروژهٔ مستقل، اجرای بومی مدل و پیش‌نویس قرارداد تحلیلگر.
 - [بازبینی آمادگی برای کلاسور](docs/clasor-readiness-review.md): تطبیق نیازها با کد، قیود فعلی و ترتیب شروع پایلوت.
 
 - [برنامهٔ ساخت و تست ایجنت‌های کلاسور در Kara](docs/clasor-agents-implementation-plan.md)
