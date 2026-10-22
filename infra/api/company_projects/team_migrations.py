@@ -70,7 +70,41 @@ CREATE TABLE company_team_agent_attempts (
 );
 CREATE INDEX company_team_agent_pending_idx ON company_team_agent_attempts(status, created_at);
 """
-MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA))
+FLOW_SCHEMA = """
+CREATE TABLE company_team_flows (
+    id uuid PRIMARY KEY, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    name varchar(120) NOT NULL, name_key varchar(360) NOT NULL, description varchar(2000) NOT NULL,
+    revision integer NOT NULL CHECK (revision > 0), draft_stages jsonb NOT NULL,
+    current_version_id uuid, archived boolean NOT NULL DEFAULT false,
+    created_by uuid NOT NULL, created_at timestamptz NOT NULL, updated_at timestamptz NOT NULL,
+    UNIQUE (id, project_id, workspace_id), UNIQUE (project_id, workspace_id, name_key),
+    FOREIGN KEY (project_id, workspace_id) REFERENCES company_project_workspaces(project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_flow_versions (
+    id uuid PRIMARY KEY, flow_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    version integer NOT NULL CHECK (version > 0), source_revision integer NOT NULL CHECK (source_revision > 0),
+    contract_version integer NOT NULL CHECK (contract_version = 1), digest varchar(64) NOT NULL,
+    name varchar(120) NOT NULL, description varchar(2000) NOT NULL, stage_bindings jsonb NOT NULL,
+    published_by uuid NOT NULL, published_at timestamptz NOT NULL,
+    UNIQUE (flow_id, version), UNIQUE (id, flow_id, project_id, workspace_id),
+    FOREIGN KEY (flow_id, project_id, workspace_id) REFERENCES company_team_flows(id, project_id, workspace_id)
+);
+-- kara-statement
+ALTER TABLE company_team_flows ADD CONSTRAINT company_team_flow_current_version_fk
+    FOREIGN KEY (current_version_id, id, project_id, workspace_id)
+    REFERENCES company_team_flow_versions(id, flow_id, project_id, workspace_id);
+-- kara-statement
+CREATE FUNCTION company_team_keep_flow_version() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'Published team flow versions are immutable';
+END;
+$$;
+-- kara-statement
+CREATE TRIGGER company_team_flow_version_immutable BEFORE UPDATE OR DELETE ON company_team_flow_versions
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_flow_version();
+"""
+MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA))
 
 
 def checksum(sql):
@@ -95,7 +129,10 @@ def migrate(engine):
             raise RuntimeError('Unknown or changed team migration; refusing schema drift')
         for name, sql in MIGRATIONS[len(applied):]:
             # Each statement and its marker share this transaction, including DDL.
-            for statement in sql.split(';'):
+            # Explicit boundaries allow trigger bodies containing semicolons;
+            # the existing 001/002 SQL and their checksums remain unchanged.
+            separator = '\n-- kara-statement\n' if '\n-- kara-statement\n' in sql else ';'
+            for statement in sql.split(separator):
                 if statement.strip():
                     connection.execute(sa.text(statement))
             connection.execute(sa.text('INSERT INTO company_team_migrations (migration_id, checksum) VALUES (:name, :checksum)'),
