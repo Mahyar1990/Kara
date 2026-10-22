@@ -11,6 +11,7 @@
 - Keep local credentials, runtime data and customer documents outside Git.
 - Keep the upstream Dify checkout at the commit in infra/dify.lock.json; use infra overrides rather than editing upstream.
 - Run make check for shared-content changes. For runtime changes, also validate Compose configuration and run make doctor after startup.
+- Keep verification and its token cost proportional to the change. Reuse successful results from the current task; rerun tests only for related changes, failures or unresolved concerns. Prefer one focused regression run and a short real UI smoke test over repeated full suites. Save long logs privately and return only the exit status, counts and actionable failure excerpt. Keep progress updates concise; these savings must not omit required checks or hide incomplete acceptance.
 - Record workflow exports and matching prompt revisions together; do not claim a model test without a real execution.
 - Commit completed work incrementally in small, atomic commits. Each commit must implement exactly one coherent task; do not bundle independent features, fixes, refactors or documentation tasks at the end of a session.
 - Apply the atomic-commit policy to code, infrastructure, integrations, prompts, workflow exports, fixtures, tests and documentation. Related implementation, necessary tests and documentation may share a commit when they all support that single task.
