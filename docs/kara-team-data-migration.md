@@ -2,7 +2,7 @@
 
 نسخهٔ طراحی `1.0.0` — ۲۱ اکتبر ۲۰۲۶ — خروجی KP-00، همراه [قرارداد رفتاری](kara-team-contract-v1.md).
 
-این سند مدل و ترتیب migrationها را تعیین می‌کند. خروجی KP-00 فقط طراحی بود. مهاجرت `001_team_roles` و آداپتر عضویت واقعی در KP-01 پیاده‌سازی شدند. در KP-02، مهاجرت افزایشی `002_team_agents` تعریف اجرایی، grant، رویداد و تلاش پایدار را اضافه می‌کند؛ جزئیات عملی در [ایجنت‌های تیم](kara-team-agents.md) آمده است. جدول‌های مراحل بعد همچنان طراحی‌اند و از پیش ساخته نمی‌شوند.
+این سند مدل و ترتیب migrationها را تعیین می‌کند. خروجی KP-00 فقط طراحی بود. مهاجرت `001_team_roles` و آداپتر عضویت واقعی در KP-01 پیاده‌سازی شدند. در KP-02، مهاجرت افزایشی `002_team_agents` تعریف اجرایی، grant، رویداد و تلاش پایدار را اضافه می‌کند؛ جزئیات عملی در [ایجنت‌های تیم](kara-team-agents.md) آمده است. مهاجرت `003_team_flows` در KP-03 پیش‌نویس و نسخه‌های تغییرناپذیر فلو را اضافه می‌کند. جدول‌های مراحل بعد همچنان طراحی‌اند و از پیش ساخته نمی‌شوند.
 
 ## ۱. مبنای موجود و تصمیم‌های سازگاری
 
@@ -51,8 +51,8 @@ flowchart TD
 | `company_team_agent_grants` | scope، agent_id، account_id، membership_id، action، granted_by/at؛ manage_access قابل واگذاری نیست و حذف عضویت grant را حذف می‌کند. | KP-02، ساخته‌شده |
 | `company_team_agent_events` | رویداد و نتیجهٔ idempotency عملیات ایجنت؛ از audit نقش‌های عضو جداست. | KP-02، ساخته‌شده |
 | `company_team_agent_attempts` | actor، incarnation عضویت، workflow_id، ورودی، کلید اقدام، وضعیت و نتیجه؛ pending نقش outbox آغاز اجرا را دارد و شناسهٔ تلاش همان run بومی است. | KP-02، ساخته‌شده |
-| `company_team_flows` | id، scope، نام، current_revision و وضعیت آرشیو؛ نام در همان پروژه یکتا باشد. | KP-03 |
-| `company_team_flow_versions` | id، scope، flow_id، revision، digest، stage_bindings، published_by/at؛ نسخهٔ منتشرشده immutable است. | KP-03 |
+| `company_team_flows` | id، scope، نام یکتا، revision، draft_stages، current_version_id و archived | KP-03، ساخته‌شده |
+| `company_team_flow_versions` | id، scope، flow_id، version، source_revision، contract_version، digest، نام/توضیح، stage_bindings و published_by/at؛ trigger تغییر/حذف نسخه را منع می‌کند. | KP-03، ساخته‌شده |
 | `company_team_requests` | id، scope، عنوان، منشأ و external_id اختیاری، created_by/at، current_revision؛ کلید بیرونی فقط در همان scope و سامانهٔ منبع یکتا باشد. | KP-04 |
 | `company_team_request_revisions` | id، scope، request_id، revision، متن اصلی/متن نهایی، digest، parent، author؛ یکتا روی scope/request/revision؛ متن اصلی حفظ شود. | KP-04 |
 | `company_team_intake_decisions` | id، scope، request_revision_id، flow_version_id، outcome/mode، actor، reason/time، expiry/revocation؛ مرجع و متن تصمیم immutable، ابطال رویداد مستقل داشته باشد. | KP-04 |
