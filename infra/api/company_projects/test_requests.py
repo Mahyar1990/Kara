@@ -10,7 +10,7 @@ from company_projects import access, agents, flows, requests, team
 from company_projects.test_flows import FlowFixture
 
 
-class RequestTests(FlowFixture):
+class RequestFixture(FlowFixture):
     def setUp(self):
         super().setUp()
         self.flow = self.publish(self.save())
@@ -37,6 +37,8 @@ class RequestTests(FlowFixture):
         return requests.decide(self.session, self.a['id'], self.workspace_a.id, (actor or self.admin).id,
             row['id'], data, key or str(uuid4()))
 
+
+class RequestTests(RequestFixture):
     def test_any_member_creates_but_manager_and_global_admin_are_not_po(self):
         row = self.request(actor=self.admin)
         self.assertEqual(row['state'], 'pending'); self.assertFalse(row['intake_valid'])

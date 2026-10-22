@@ -174,8 +174,96 @@ CREATE TRIGGER company_team_request_attachment_immutable BEFORE UPDATE OR DELETE
 CREATE TRIGGER company_team_intake_decision_immutable BEFORE UPDATE OR DELETE ON company_team_intake_decisions
     FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
 """
+STAGE_SCHEMA = """
+CREATE TABLE company_team_instances (
+    id uuid PRIMARY KEY, project_id uuid NOT NULL, workspace_id uuid NOT NULL, request_id uuid NOT NULL,
+    request_revision_id uuid NOT NULL, intake_decision_id uuid NOT NULL UNIQUE,
+    flow_id uuid NOT NULL, flow_version_id uuid NOT NULL, request_digest varchar(64) NOT NULL,
+    flow_digest varchar(64) NOT NULL, created_by uuid NOT NULL, created_at timestamptz NOT NULL,
+    UNIQUE (id, project_id, workspace_id),
+    FOREIGN KEY (request_revision_id, request_id, project_id, workspace_id)
+        REFERENCES company_team_request_revisions(id, request_id, project_id, workspace_id),
+    FOREIGN KEY (intake_decision_id, request_id, project_id, workspace_id)
+        REFERENCES company_team_intake_decisions(id, request_id, project_id, workspace_id),
+    FOREIGN KEY (flow_version_id, flow_id, project_id, workspace_id)
+        REFERENCES company_team_flow_versions(id, flow_id, project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_stages (
+    id uuid PRIMARY KEY, instance_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    ordinal integer NOT NULL CHECK (ordinal >= 0), step_key varchar(40) NOT NULL, binding jsonb NOT NULL,
+    revision integer NOT NULL CHECK (revision > 0), round integer NOT NULL CHECK (round > 0),
+    state varchar(24) NOT NULL CHECK (state IN ('blocked','ready','running','awaiting_feedback','awaiting_decision','completed','failed','stale')),
+    inputs jsonb, dependencies jsonb, input_digest varchar(64), active_attempt_id uuid, selected_artifact_id uuid,
+    updated_at timestamptz NOT NULL,
+    CHECK ((state = 'running') = (active_attempt_id IS NOT NULL)),
+    UNIQUE (instance_id, ordinal), UNIQUE (instance_id, step_key), UNIQUE (id, project_id, workspace_id),
+    FOREIGN KEY (instance_id, project_id, workspace_id) REFERENCES company_team_instances(id, project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_stage_attempts (
+    attempt_id uuid PRIMARY KEY REFERENCES company_team_agent_attempts(id), stage_id uuid NOT NULL,
+    project_id uuid NOT NULL, workspace_id uuid NOT NULL, round integer NOT NULL, input_digest varchar(64) NOT NULL,
+    created_at timestamptz NOT NULL, UNIQUE (attempt_id, stage_id, project_id, workspace_id),
+    FOREIGN KEY (stage_id, project_id, workspace_id) REFERENCES company_team_stages(id, project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_artifacts (
+    id uuid PRIMARY KEY, stage_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    version integer NOT NULL CHECK (version > 0), round integer NOT NULL CHECK (round > 0),
+    input_digest varchar(64) NOT NULL, digest varchar(64) NOT NULL, content jsonb NOT NULL,
+    kind varchar(16) NOT NULL CHECK (kind IN ('workflow','human')), attempt_id uuid NOT NULL,
+    parent_id uuid, author_id uuid NOT NULL, membership_id uuid NOT NULL, reason varchar(2000) NOT NULL,
+    created_at timestamptz NOT NULL, UNIQUE (stage_id, version), UNIQUE (id, stage_id, project_id, workspace_id),
+    FOREIGN KEY (stage_id, project_id, workspace_id) REFERENCES company_team_stages(id, project_id, workspace_id),
+    FOREIGN KEY (attempt_id, stage_id, project_id, workspace_id)
+        REFERENCES company_team_stage_attempts(attempt_id, stage_id, project_id, workspace_id),
+    FOREIGN KEY (parent_id, stage_id, project_id, workspace_id) REFERENCES company_team_artifacts(id, stage_id, project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_feedback (
+    id uuid PRIMARY KEY, stage_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    base_revision integer NOT NULL, round integer NOT NULL, parent_artifact_id uuid,
+    message varchar(8000) NOT NULL, inputs jsonb NOT NULL, input_digest varchar(64) NOT NULL,
+    author_id uuid NOT NULL, membership_id uuid NOT NULL, created_at timestamptz NOT NULL,
+    UNIQUE (stage_id, round),
+    FOREIGN KEY (stage_id, project_id, workspace_id) REFERENCES company_team_stages(id, project_id, workspace_id),
+    FOREIGN KEY (parent_artifact_id, stage_id, project_id, workspace_id) REFERENCES company_team_artifacts(id, stage_id, project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_stage_decisions (
+    id uuid PRIMARY KEY, stage_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    base_revision integer NOT NULL, artifact_id uuid NOT NULL, input_digest varchar(64) NOT NULL,
+    actor_id uuid NOT NULL, membership_id uuid NOT NULL, reason varchar(2000) NOT NULL,
+    created_at timestamptz NOT NULL, UNIQUE (stage_id, base_revision),
+    FOREIGN KEY (artifact_id, stage_id, project_id, workspace_id) REFERENCES company_team_artifacts(id, stage_id, project_id, workspace_id)
+);
+-- kara-statement
+ALTER TABLE company_team_stages ADD CONSTRAINT company_team_stage_active_attempt_fk
+    FOREIGN KEY (active_attempt_id, id, project_id, workspace_id)
+    REFERENCES company_team_stage_attempts(attempt_id, stage_id, project_id, workspace_id);
+-- kara-statement
+ALTER TABLE company_team_stages ADD CONSTRAINT company_team_stage_selected_artifact_fk
+    FOREIGN KEY (selected_artifact_id, id, project_id, workspace_id)
+    REFERENCES company_team_artifacts(id, stage_id, project_id, workspace_id);
+-- kara-statement
+CREATE TRIGGER company_team_instance_immutable BEFORE UPDATE OR DELETE ON company_team_instances
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+-- kara-statement
+CREATE TRIGGER company_team_stage_attempt_immutable BEFORE UPDATE OR DELETE ON company_team_stage_attempts
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+-- kara-statement
+CREATE TRIGGER company_team_artifact_immutable BEFORE UPDATE OR DELETE ON company_team_artifacts
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+-- kara-statement
+CREATE TRIGGER company_team_feedback_immutable BEFORE UPDATE OR DELETE ON company_team_feedback
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+-- kara-statement
+CREATE TRIGGER company_team_stage_decision_immutable BEFORE UPDATE OR DELETE ON company_team_stage_decisions
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+"""
 MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
-              ('004_team_requests', REQUEST_SCHEMA))
+              ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA))
 
 
 def checksum(sql):

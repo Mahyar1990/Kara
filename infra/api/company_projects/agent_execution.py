@@ -58,6 +58,8 @@ def assert_execution(tenant_id, app_id, workflow_id, user_id, run_id=None):
                 workflow.app_id != str(app_id) or workflow.tenant_id != str(tenant_id) or
                 agents.fingerprint(workflow) != agent['workflow_digest']):
             raise Forbidden('مرجع اجرا، نسخه یا عضویت تغییر کرده است.')
+        from company_projects.stages import validate_attempt
+        validate_attempt(session, attempt)
 
 
 def native_permission(session, app_id, actor_id, action='edit_definition'):
@@ -128,9 +130,13 @@ def claim(session, attempt_id):
                 workflow.tenant_id != row['workspace_id'] or workflow.app_id != app.id or
                 row['workflow_id'] != agent['workflow_id'] or agents.fingerprint(workflow) != agent['workflow_digest']):
             raise Forbidden('نسخه یا عضویت تغییر کرده است.')
+        from company_projects.stages import validate_attempt
+        validate_attempt(session, row)
     except HTTPException:
         session.execute(attempts.update().where(attempts.c.id == row['id']).values(status='blocked',
             finished_at=agents.now(), result={'error': 'دسترسی، عضویت یا نسخهٔ ایجنت تغییر کرده است.'}))
+        from company_projects.stages import complete_attempt
+        complete_attempt(session, row['id'])
         return None
     session.execute(attempts.update().where(attempts.c.id == row['id']).values(status='running', started_at=agents.now()))
     return dict(row), dict(agent)
@@ -165,12 +171,16 @@ def execute(attempt_id):
                 status, result = 'failed', {'error': 'اجرای فرایند موفق نشد. ورودی‌ها و تنظیمات را با مسئول ایجنت بررسی کنید.'}
             session.execute(attempts.update().where(attempts.c.id == attempt['id']).values(
                 status=status, result=result, finished_at=agents.now()))
+            from company_projects.stages import complete_attempt
+            complete_attempt(session, attempt['id'])
     except Exception:
         logger.exception('Team agent attempt failed: %s', attempt['id'])
         with Session(db.engine) as session, session.begin():
             _, _, attempts = agents.tables(session)
             session.execute(attempts.update().where(attempts.c.id == attempt['id']).values(status='failed',
                 result={'error': 'اجرای ایجنت انجام نشد. تنظیمات و دسترسی‌ها را بررسی کنید.'}, finished_at=agents.now()))
+            from company_projects.stages import complete_attempt
+            complete_attempt(session, attempt['id'])
     finally:
         _execution.reset(token)
 
