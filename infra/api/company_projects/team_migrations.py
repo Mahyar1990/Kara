@@ -31,7 +31,46 @@ CREATE TABLE company_team_audit_events (
     FOREIGN KEY (project_id, workspace_id) REFERENCES company_project_workspaces(project_id, workspace_id)
 );
 """
-MIGRATIONS = (('001_team_roles', ROLE_SCHEMA),)
+AGENT_SCHEMA = """
+CREATE TABLE company_team_agents (
+    id uuid PRIMARY KEY, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    app_id uuid NOT NULL UNIQUE REFERENCES apps(id), workflow_id uuid NOT NULL REFERENCES workflows(id),
+    name varchar(120) NOT NULL, description varchar(2000) NOT NULL,
+    workflow_digest varchar(64) NOT NULL, input_contract jsonb NOT NULL, output_contract jsonb NOT NULL,
+    revision integer NOT NULL DEFAULT 1 CHECK (revision > 0),
+    acl_revision integer NOT NULL DEFAULT 1 CHECK (acl_revision > 0),
+    archived boolean NOT NULL DEFAULT false, created_by uuid NOT NULL, created_at timestamptz NOT NULL,
+    UNIQUE (id, project_id, workspace_id),
+    FOREIGN KEY (project_id, workspace_id) REFERENCES company_project_workspaces(project_id, workspace_id)
+);
+CREATE TABLE company_team_agent_grants (
+    agent_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    account_id uuid NOT NULL, membership_id uuid NOT NULL REFERENCES tenant_account_joins(id) ON DELETE CASCADE,
+    action varchar(32) NOT NULL CHECK (action IN ('view','run','feedback','finalize','edit_definition','publish_definition')),
+    granted_by uuid NOT NULL, granted_at timestamptz NOT NULL,
+    PRIMARY KEY (agent_id, account_id, action),
+    FOREIGN KEY (agent_id, project_id, workspace_id) REFERENCES company_team_agents(id, project_id, workspace_id),
+    FOREIGN KEY (workspace_id, account_id) REFERENCES tenant_account_joins(tenant_id, account_id) ON DELETE CASCADE
+);
+CREATE TABLE company_team_agent_events (
+    id uuid PRIMARY KEY, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    actor_id uuid NOT NULL, correlation_id uuid NOT NULL, request_digest varchar(64) NOT NULL,
+    event_type varchar(80) NOT NULL, result jsonb NOT NULL, occurred_at timestamptz NOT NULL,
+    UNIQUE (project_id, workspace_id, actor_id, correlation_id),
+    FOREIGN KEY (project_id, workspace_id) REFERENCES company_project_workspaces(project_id, workspace_id)
+);
+CREATE TABLE company_team_agent_attempts (
+    id uuid PRIMARY KEY, agent_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    actor_id uuid NOT NULL, membership_id uuid NOT NULL, workflow_id uuid NOT NULL REFERENCES workflows(id),
+    inputs jsonb NOT NULL, request_digest varchar(64) NOT NULL, correlation_id uuid NOT NULL,
+    status varchar(20) NOT NULL CHECK (status IN ('pending','running','succeeded','failed','blocked','interrupted')),
+    result jsonb, created_at timestamptz NOT NULL, started_at timestamptz, finished_at timestamptz,
+    UNIQUE (project_id, workspace_id, actor_id, correlation_id),
+    FOREIGN KEY (agent_id, project_id, workspace_id) REFERENCES company_team_agents(id, project_id, workspace_id)
+);
+CREATE INDEX company_team_agent_pending_idx ON company_team_agent_attempts(status, created_at);
+"""
+MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA))
 
 
 def checksum(sql):

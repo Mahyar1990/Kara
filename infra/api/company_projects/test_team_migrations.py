@@ -24,6 +24,8 @@ class TeamMigrationTests(ProjectDatabaseFixture):
         self.addCleanup(cleanup)
         store.migrate(self.engine)
         with self.engine.begin() as c:
+            c.execute(sa.text('CREATE TABLE apps (id uuid PRIMARY KEY)'))
+            c.execute(sa.text('CREATE TABLE workflows (id uuid PRIMARY KEY)'))
             c.execute(sa.text('CREATE TABLE tenant_account_joins (id uuid PRIMARY KEY, tenant_id uuid NOT NULL, account_id uuid NOT NULL, role varchar(16), UNIQUE(tenant_id, account_id))'))
             self.ids = [str(uuid4()) for _ in range(4)]
             c.execute(sa.text('INSERT INTO tenant_account_joins VALUES (:id, :tenant, :account, :role)'),
@@ -41,14 +43,14 @@ class TeamMigrationTests(ProjectDatabaseFixture):
             for name, rows in self.before.items():
                 self.assertEqual(list(c.execute(sa.text(f'SELECT * FROM {name}'))), rows)
             self.assertEqual(c.scalar(sa.text('SELECT version FROM company_project_schema')), 1)
-            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), 1)
+            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), len(migrations.MIGRATIONS))
             self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_roles')), 0)
 
     def test_concurrent_runners_apply_once(self):
         with ThreadPoolExecutor(max_workers=2) as pool:
             list(pool.map(lambda _: migrations.migrate(self.engine), range(2)))
         with self.engine.connect() as c:
-            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), 1)
+            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), len(migrations.MIGRATIONS))
 
     def test_failure_rolls_back_ddl_and_marker(self):
         with patch.object(migrations, 'MIGRATIONS', (('001_team_roles', migrations.ROLE_SCHEMA + 'INVALID SQL;'),)):
@@ -66,7 +68,24 @@ class TeamMigrationTests(ProjectDatabaseFixture):
         with self.assertRaisesRegex(RuntimeError, 'drift'):
             migrations.migrate(self.engine)
         with self.engine.begin() as c:
-            c.execute(sa.text('UPDATE company_team_migrations SET checksum = :checksum'), dict(checksum=migrations.checksum(migrations.ROLE_SCHEMA)))
+            for name, sql in migrations.MIGRATIONS:
+                c.execute(sa.text('UPDATE company_team_migrations SET checksum = :checksum WHERE migration_id = :name'),
+                    dict(name=name, checksum=migrations.checksum(sql)))
             c.execute(sa.text("INSERT INTO company_team_migrations VALUES ('999_unknown', 'unknown', now())"))
         with self.assertRaisesRegex(RuntimeError, 'drift'):
             migrations.migrate(self.engine)
+
+    def test_upgrade_from_kp01_preserves_roles_and_audit(self):
+        with patch.object(migrations, 'MIGRATIONS', migrations.MIGRATIONS[:1]):
+            migrations.migrate(self.engine)
+        with self.engine.begin() as c:
+            project_id = c.scalar(sa.text('SELECT id FROM company_projects'))
+            c.execute(sa.text('INSERT INTO company_team_member_policies VALUES (:p,:w,:a,:m,2)'),
+                dict(p=project_id, w=self.ids[1], a=self.ids[2], m=self.ids[0]))
+            c.execute(sa.text("INSERT INTO company_team_roles VALUES (:p,:w,:a,'po',:a,now())"),
+                dict(p=project_id, w=self.ids[1], a=self.ids[2]))
+            before = list(c.execute(sa.text('SELECT * FROM company_team_roles')))
+        migrations.migrate(self.engine)
+        with self.engine.connect() as c:
+            self.assertEqual(list(c.execute(sa.text('SELECT * FROM company_team_roles'))), before)
+            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_agents')), 0)
