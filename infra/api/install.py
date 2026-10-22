@@ -9,7 +9,7 @@ changes = {
         'workspace=WorkspacePermissionSnapshot(permission_keys=list(permissions.get("workspace", []))),',
         'workspace=WorkspacePermissionSnapshot(permission_keys=__import__("company_projects.access", fromlist=["filter_permissions"]).filter_permissions(session, tenant_id, account_id, permissions.get("workspace", []))),')],
     'controllers/console/__init__.py': [(
-        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.team_controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n    "company_projects.inbox",\n    "company_projects.automations",\n')],
+        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.team_controller",\n    "company_projects.agent_controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n    "company_projects.inbox",\n    "company_projects.automations",\n')],
     'app_factory.py': [(
         '    initialize_extensions(app)\n',
         '    initialize_extensions(app)\n    from company_projects.store import migrate\n    from company_projects.team_migrations import migrate as migrate_team\n    from company_projects.access import initialize, restrict_central_workspace\n    from extensions.ext_database import db\n    with app.app_context():\n        migrate(db.engine)\n        migrate_team(db.engine)\n        with db.engine.begin() as connection:\n            initialize(connection)\n    restrict_central_workspace(app)\n')],
@@ -45,6 +45,52 @@ changes = {
         '            form_model = session.get(HumanInputForm, form_id)\n            if form_model is None:\n                raise FormNotFoundError(f"form not found, id={form_id}")\n\n            if timeout_status not in {HumanInputFormStatus.TIMEOUT, HumanInputFormStatus.EXPIRED}:\n',
         '            form_model = session.scalar(select(HumanInputForm).where(HumanInputForm.id == form_id).with_for_update())\n            if form_model is None:\n                raise FormNotFoundError(f"form not found, id={form_id}")\n\n            if timeout_status not in {HumanInputFormStatus.TIMEOUT, HumanInputFormStatus.EXPIRED}:\n')],
 }
+changes['app_factory.py'].append((
+    '    return socketio_app, app\n',
+    '    from company_projects.agent_execution import install_http_guard\n    install_http_guard(app)\n    return socketio_app, app\n'))
+changes['services/app_service.py'].append((
+    '        app_was_deleted.send(app)\n',
+    '        from company_projects.agent_execution import protect_source\n        protect_source(session, app_id=app.id)\n        app_was_deleted.send(app)\n'))
+changes.update({
+    'controllers/service_api/wraps.py': [(
+        '            if not app_model.enable_api:\n',
+        '            from company_projects.agent_execution import deny_native\n            deny_native(app_model.id)\n            if not app_model.enable_api:\n')],
+    'controllers/web/wraps.py': [(
+        '            if app_model.enable_site is False:\n',
+        '            from company_projects.agent_execution import deny_native\n            deny_native(app_model.id)\n            if app_model.enable_site is False:\n')],
+    'extensions/ext_celery.py': [(
+        '    imports = [\n',
+        '    imports = [\n        "company_projects.agent_execution",\n'), (
+        '    celery_app.conf.update(beat_schedule=beat_schedule, imports=imports)\n',
+        '    beat_schedule["kara_team_agent_outbox"] = {"task": "kara.team_agent.dispatch", "schedule": timedelta(seconds=15)}\n    celery_app.conf.update(beat_schedule=beat_schedule, imports=imports)\n')],
+    'services/app_generate_service.py': [(
+        '        return cls._run_with_guardrails(\n',
+        '        from company_projects.agent_execution import deny_native\n        deny_native(app_model.id, session=session)\n        return cls._run_with_guardrails(\n')],
+    'core/app/apps/workflow/app_generator.py': [(
+        '        with self._bind_file_access_scope(tenant_id=app_model.tenant_id, user=user, invoke_from=invoke_from):\n',
+        '        from company_projects.agent_execution import assert_execution\n        assert_execution(app_model.tenant_id, app_model.id, workflow.id, user.id, workflow_run_id)\n        with self._bind_file_access_scope(tenant_id=app_model.tenant_id, user=user, invoke_from=invoke_from):\n'), (
+        '        if application_generate_entity.trace_manager is None:\n',
+        '        from company_projects.agent_execution import deny_native\n        deny_native(app_model.id)\n        if application_generate_entity.trace_manager is None:\n')],
+    'core/workflow/workflow_entry.py': [(
+        '        # check call depth\n',
+        '        from company_projects.agent_execution import assert_execution\n        assert_execution(tenant_id, app_id, workflow_id, user_id)\n        # check call depth\n'), (
+        '        node_config = workflow.get_node_config_by_id(node_id)\n',
+        '        from company_projects.agent_execution import deny_native\n        deny_native(workflow.app_id)\n        node_config = workflow.get_node_config_by_id(node_id)\n')],
+    'services/workflow_service.py': [(
+        '        if environment_variable_upserts is None and deleted_environment_variable_ids:\n',
+        '        from company_projects.agent_execution import native_permission\n        native_permission(session, app_model.id, account.id)\n        if environment_variable_upserts is None and deleted_environment_variable_ids:\n'), (
+        '        draft_workflow_stmt = select(Workflow).where(\n',
+        '        from company_projects.agent_execution import native_permission\n        native_permission(session, app_model.id, account.id, "publish_definition")\n        draft_workflow_stmt = select(Workflow).where(\n'), (
+        '        # Check if workflow is a draft version\n',
+        '        from company_projects.agent_execution import protect_source\n        protect_source(session, workflow_id=workflow.id)\n        # Check if workflow is a draft version\n'), (
+        '        files = files or []\n',
+        '        from company_projects.agent_execution import deny_native\n        deny_native(app_model.id)\n        files = files or []\n')],
+    'services/workflow_collaboration_service.py': [(
+        '        if not user_id or not tenant_id:\n',
+        '        from company_projects.agent_execution import managed\n        if managed(session, workflow_id) is not None:\n            session.rollback()\n            return None  # Managed definitions do not use socket collaboration yet.\n        session.rollback()\n        if not user_id or not tenant_id:\n'), (
+        '        workflow_id = mapping["workflow_id"]\n        user_id = mapping["user_id"]\n',
+        '        workflow_id = mapping["workflow_id"]\n        from company_projects.agent_execution import deny_native\n        deny_native(workflow_id)\n        user_id = mapping["user_id"]\n')],
+})
 for filename, replacements in changes.items():
     target = root / filename
     content = target.read_text()

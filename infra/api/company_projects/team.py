@@ -129,6 +129,8 @@ def before_member_removal(session, workspace_id, actor_id, account_id):
         return  # Preserve the native MemberNotInTenantError and its API response.
     reflected = tables(session)
     current = snapshot(session, key, join, reflected=reflected)
+    from company_projects.agents import before_member_removal as revoke_agent_grants
+    revoke_agent_grants(session, key, actor_id, join.id)
     _, _, audit = reflected
     session.execute(audit.insert().values(id=str(uuid4()), project_id=key['project_id'], workspace_id=key['workspace_id'],
         actor_id=str(actor_id), subject_id=str(account_id), membership_id=join.id,

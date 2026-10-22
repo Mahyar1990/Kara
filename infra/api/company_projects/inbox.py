@@ -40,8 +40,13 @@ def recipient_condition(account_id):
 
 
 def run_conditions(session, tenant_id, account):
+    from company_projects.agents import definitions
     filters = visible_filters(session, tenant_id, account.id)
-    app_ids = list(session.scalars(sa.select(App.id).where(*filters))) if filters else []
+    # Team attempts expose selected outputs through their own fresh-grant check.
+    # Do not expose intermediate logs through legacy inbox visibility.
+    managed = definitions(session)
+    app_ids = list(session.scalars(sa.select(App.id).where(*filters,
+        App.id.not_in(sa.select(managed.c.app_id))))) if filters else []
     manageable = [app_id for app_id in app_ids if can_read_payload(session, tenant_id, account, app_id)]
     assigned = sa.select(HumanInputForm.workflow_run_id).join(HumanInputFormRecipient,
         HumanInputFormRecipient.form_id == HumanInputForm.id).join(WorkflowRun,

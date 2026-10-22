@@ -1,15 +1,17 @@
 """Real PostgreSQL checks for pinned definitions, grants and run admission."""
 import json
+from contextlib import nullcontext
+from unittest.mock import patch
 from uuid import uuid4
 
 import sqlalchemy as sa
 from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound, UnprocessableEntity
 
-from company_projects import access, agents
+from company_projects import access, agents, agent_execution
 from company_projects.test_access import ProjectDatabaseFixture
 from models.account import TenantAccountJoin
 from models.model import App
-from models.workflow import Workflow
+from models.workflow import Workflow, WorkflowRun
 
 
 def graph():
@@ -169,3 +171,100 @@ class AgentTests(ProjectDatabaseFixture):
         with self.assertRaises(sa.exc.IntegrityError):
             with self.session.begin_nested():
                 self.session.execute(sa.delete(Workflow).where(Workflow.id == self.workflow.id))
+
+    def test_queued_claim_is_once_and_preserves_real_actor(self):
+        agent = self.register(); self.grant(agent)
+        attempt = self.launch(agent)
+        claimed, definition = agent_execution.claim(self.session, attempt['id'])
+        self.assertEqual(claimed['actor_id'], self.reader.id)
+        self.assertEqual(definition['workflow_id'], self.workflow.id)
+        self.assertIsNone(agent_execution.claim(self.session, attempt['id']))
+
+    def test_queued_revoked_grant_blocks_execution(self):
+        agent = self.register(); self.grant(agent)
+        attempt = self.launch(agent)
+        agents.set_grants(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id,
+            agent['id'], dict(expected_revision=2, grants=[]), str(uuid4()))
+        self.assertIsNone(agent_execution.claim(self.session, attempt['id']))
+        _, _, attempts = agents.tables(self.session)
+        self.assertEqual(self.session.scalar(sa.select(attempts.c.status).where(attempts.c.id == attempt['id'])), 'blocked')
+
+    def test_changed_published_content_is_not_executed(self):
+        agent = self.register(); self.grant(agent)
+        attempt = self.launch(agent)
+        self.workflow._features = '{"changed":true}'; self.session.flush()
+        self.assertIsNone(agent_execution.claim(self.session, attempt['id']))
+
+    def test_engine_boundary_requires_private_capability_and_exact_run(self):
+        agent = self.register(); self.grant(agent)
+        attempt = self.launch(agent)
+        agent_execution.claim(self.session, attempt['id'])
+        with patch.object(agent_execution, 'Session', side_effect=lambda *_args, **_kwargs: nullcontext(self.session)):
+            args = (self.workspace_a.id, self.app_model.id, self.workflow.id, self.reader.id)
+            with self.assertRaises(Forbidden):
+                agent_execution.assert_execution(*args, run_id=attempt['id'])
+            token = agent_execution._execution.set((attempt['id'], self.app_model.id, self.workflow.id, self.reader.id))
+            try:
+                agent_execution.assert_execution(*args, run_id=attempt['id'])
+                with self.assertRaises(Forbidden):
+                    agent_execution.assert_execution(*args, run_id=str(uuid4()))
+                with self.assertRaises(Forbidden):
+                    agent_execution.assert_execution(self.workspace_a.id, self.app_model.id, self.workflow.id, self.editor.id)
+                agents.set_grants(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id,
+                    agent['id'], dict(expected_revision=2, grants=[]), str(uuid4()))
+                with self.assertRaises(Forbidden):
+                    agent_execution.assert_execution(*args, run_id=attempt['id'])
+            finally:
+                agent_execution._execution.reset(token)
+
+    def test_native_edit_and_publish_require_both_permissions(self):
+        agent = self.register()
+        with self.assertRaises(Forbidden):
+            agent_execution.native_permission(self.session, self.app_model.id, self.editor.id)
+        self.grant(agent, target=self.editor, actions=['edit_definition'])
+        agent_execution.native_permission(self.session, self.app_model.id, self.editor.id)
+        with self.assertRaises(Forbidden):
+            agent_execution.native_permission(self.session, self.app_model.id, self.editor.id, 'publish_definition')
+        self.grant(agent, target=self.reader, actions=['edit_definition', 'publish_definition'], expected=2)
+        with self.assertRaises(Forbidden):
+            agent_execution.native_permission(self.session, self.app_model.id, self.reader.id)
+
+    def test_managed_native_paths_and_sources_are_denied_but_old_apps_are_unchanged(self):
+        agent_execution.deny_native(self.app_model.id, session=self.session)
+        agent_execution.native_permission(self.session, self.app_model.id, self.reader.id)
+        self.register()
+        with self.assertRaises(Forbidden):
+            agent_execution.deny_native(self.app_model.id, session=self.session)
+        for kwargs in ({'app_id': self.app_model.id}, {'workflow_id': self.workflow.id}):
+            with self.assertRaises(Conflict):
+                agent_execution.protect_source(self.session, **kwargs)
+
+    def test_managed_runs_do_not_expose_logs_through_legacy_inbox(self):
+        from company_projects.inbox import run_conditions
+        self.register()
+        query = sa.select(WorkflowRun.id).where(
+            *run_conditions(self.session, self.workspace_a.id, self.project_owner))
+        self.assertEqual(list(self.session.scalars(query)), [])
+
+    def test_idempotency_key_is_shared_across_agent_mutations(self):
+        key = str(uuid4()); agent = self.register(key=key); self.grant(agent, target=self.project_owner)
+        with self.assertRaises(Conflict):
+            self.launch(agent, key=key, actor=self.project_owner)
+
+    def test_real_web_factory_installs_guard(self):
+        self.assertIn('guard_managed_app', [function.__name__ for function in self.app.before_request_funcs.get(None, [])])
+
+    def test_http_boundary_denies_managed_debug_node_stop_and_delete(self):
+        from flask import Flask
+        from types import SimpleNamespace
+        application = Flask('agent-boundary-test')
+        application.add_url_rule('/apps/<uuid:app_id>/<path:action>', view_func=lambda **_: 'untouched', methods=['GET', 'POST', 'DELETE'])
+        agent_execution.install_http_guard(application)
+        self.register()
+        with patch.object(agent_execution, 'db', SimpleNamespace(engine=self.connection.engine)), \
+                patch.object(agent_execution, 'Session', side_effect=lambda *_args, **_kwargs: nullcontext(self.session)):
+            client = application.test_client()
+            for suffix in ('workflows/draft/run', 'workflows/draft/nodes/start/run', 'workflows/draft/loop/nodes/loop/run', 'tasks/test/stop', 'workflows/draft/trigger/run-all'):
+                self.assertEqual(client.post(f'/apps/{self.app_model.id}/{suffix}', json={'actor_id': self.project_owner.id}).status_code, 403)
+            self.assertEqual(client.delete(f'/apps/{self.app_model.id}/definition').status_code, 403)
+            self.assertEqual(client.post(f'/apps/{uuid4()}/workflows/draft/run').status_code, 200)

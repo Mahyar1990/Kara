@@ -135,9 +135,11 @@ def list_agents(session, project_id, workspace_id, actor_id):
 
 def sources(session, project_id, workspace_id, actor_id):
     team.scope(session, project_id, workspace_id, actor_id, write=True)
+    registered = definitions(session)
     rows = session.execute(sa.select(App, Workflow).join(Workflow, sa.and_(Workflow.app_id == App.id,
         Workflow.tenant_id == App.tenant_id)).where(App.tenant_id == str(workspace_id), App.mode == 'workflow',
-        App.status == 'normal', Workflow.version != 'draft').order_by(App.name, Workflow.created_at.desc()))
+        App.status == 'normal', Workflow.version != 'draft',
+        App.id.not_in(sa.select(registered.c.app_id))).order_by(App.name, Workflow.created_at.desc()))
     result = []
     for app, workflow in rows:
         try:
@@ -206,7 +208,11 @@ def register(session, project_id, workspace_id, actor_id, data, key):
 def get_grants(session, project_id, workspace_id, actor_id, agent_id):
     scope = team.scope(session, project_id, workspace_id, actor_id, write=True)
     row = load(session, scope, agent_id)
-    return grant_snapshot(session, row)
+    from models.account import TenantAccountJoin
+    members = session.execute(sa.select(Account, TenantAccountJoin).join(TenantAccountJoin,
+        TenantAccountJoin.account_id == Account.id).where(TenantAccountJoin.tenant_id == str(workspace_id)).order_by(Account.name))
+    return grant_snapshot(session, row) | {'members': [dict(account_id=account.id, name=account.name,
+        membership_id=join.id, status=account.status) for account, join in members]}
 
 
 def grant_snapshot(session, row):
@@ -311,6 +317,7 @@ def start(session, project_id, workspace_id, actor_id, agent_id, data, key):
     row = load(session, scope, agent_id, lock=True)
     join = require(session, row, actor_id, 'run')
     request_digest = digest(dict(operation='run', agent_id=row['id'], **data))
+    replay(session, scope, actor_id, key, request_digest)  # Detect keys used by other operations.
     _, _, attempts = tables(session)
     previous = session.execute(sa.select(attempts).where(*(attempts.c[k] == v for k, v in scope.items()),
         attempts.c.actor_id == str(actor_id), attempts.c.correlation_id == key)).mappings().first()
@@ -346,3 +353,14 @@ def get_attempt(session, project_id, workspace_id, actor_id, agent_id, attempt_i
     if not attempt:
         raise NotFound('اجرا پیدا نشد.')
     return attempt_public(attempt)
+
+
+def before_member_removal(session, key, actor_id, membership_id):
+    grants, _, _ = tables(session)
+    rows = list(session.execute(sa.select(grants).where(grants.c.workspace_id == key['workspace_id'],
+        grants.c.account_id == key['account_id'], grants.c.membership_id == membership_id)).mappings())
+    if rows:
+        scope = {k: key[k] for k in ('project_id', 'workspace_id')}
+        event(session, scope, actor_id, str(uuid4()), digest(membership_id), 'agent.grants.member_removed',
+            dict(account_id=key['account_id'], membership_id=membership_id,
+                revoked=[dict(agent_id=row['agent_id'], action=row['action']) for row in rows]))

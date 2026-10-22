@@ -61,6 +61,9 @@ def available_sources(session, project_id, tenant_id, account):
         Workflow.version != Workflow.VERSION_DRAFT).order_by(App.name)).all()
     result = []
     for app, workflow in rows:
+        from company_projects.agent_execution import managed
+        if managed(session, app.id):
+            continue
         if not allowed(session, tenant_id, account, app.id, RBACPermission.APP_IMPORT_EXPORT_DSL):
             continue
         reason, fields = '', []
@@ -118,6 +121,8 @@ def create_automation(session, project_id, tenant_id, account, data):
     if not isinstance(name, str) or not name.strip() or len(name) > 120:
         raise BadRequest('نام اتوماسیون الزامی و حداکثر ۱۲۰ نویسه است.')
     source = visible_app(session, tenant_id, account.id, data.get('source_app_id'))
+    from company_projects.agent_execution import deny_native
+    deny_native(source.id, session=session)
     require_permission(session, tenant_id, account, source.id, RBACPermission.APP_IMPORT_EXPORT_DSL)
     if source.mode != 'workflow' or not source.workflow_id or source.workflow_id != data.get('source_workflow_id'):
         raise Conflict('نسخهٔ منتشرشدهٔ فرایند تغییر کرده است. فهرست فرایندها را به‌روزرسانی کنید.')
