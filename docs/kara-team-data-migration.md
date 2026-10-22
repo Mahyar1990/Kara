@@ -2,7 +2,7 @@
 
 نسخهٔ طراحی `1.0.0` — ۲۱ اکتبر ۲۰۲۶ — خروجی KP-00، همراه [قرارداد رفتاری](kara-team-contract-v1.md).
 
-این سند مدل و ترتیب migrationها را تعیین می‌کند. خروجی KP-00 فقط طراحی بود. مهاجرت `001_team_roles` و آداپتر عضویت واقعی در KP-01 پیاده‌سازی شدند. در KP-02، مهاجرت افزایشی `002_team_agents` تعریف اجرایی، grant، رویداد و تلاش پایدار را اضافه می‌کند؛ جزئیات عملی در [ایجنت‌های تیم](kara-team-agents.md) آمده است. مهاجرت `003_team_flows` در KP-03 پیش‌نویس و نسخه‌های تغییرناپذیر فلو را اضافه می‌کند. مهاجرت `004_team_requests` در KP-04 پرونده، نسخهٔ محتوا، پیوست و تصمیم ورود PO را اضافه می‌کند؛ [قرارداد درخواست](kara-team-requests.md) حدود آن را ثبت می‌کند. جدول‌های مراحل بعد همچنان طراحی‌اند و از پیش ساخته نمی‌شوند.
+این سند مدل و ترتیب migrationها را تعیین می‌کند. خروجی KP-00 فقط طراحی بود. مهاجرت `001_team_roles` و آداپتر عضویت واقعی در KP-01 پیاده‌سازی شدند. در KP-02، مهاجرت افزایشی `002_team_agents` تعریف اجرایی، grant، رویداد و تلاش پایدار را اضافه می‌کند؛ جزئیات عملی در [ایجنت‌های تیم](kara-team-agents.md) آمده است. مهاجرت `003_team_flows` در KP-03 پیش‌نویس و نسخه‌های تغییرناپذیر فلو را اضافه می‌کند. مهاجرت `004_team_requests` در KP-04 پرونده، نسخهٔ محتوا، پیوست و تصمیم ورود PO را اضافه می‌کند؛ [قرارداد درخواست](kara-team-requests.md) حدود آن را ثبت می‌کند. مهاجرت `005_team_stages` در KP-05 اجرای تیمی، مرحله، اتصال تلاش بومی، بازخورد، Artifact و تصمیم نهایی را اضافه می‌کند؛ [قرارداد مرحله](kara-team-stages.md) جزئیات اجرایی را ثبت می‌کند. جدول‌های مراحل بعد همچنان طراحی‌اند و از پیش ساخته نمی‌شوند.
 
 ## ۱. مبنای موجود و تصمیم‌های سازگاری
 
@@ -49,7 +49,7 @@ flowchart TD
 | `company_team_roles` | scope، account_id، business_role، assigned_by/at؛ یکتا روی scope/account/role؛ عضویت بومی همان workspace لازم است. | KP-01 |
 | `company_team_agents` | id، scope، app_id یکتا، workflow_id ثابت، digest، قرارداد ورودی/خروجی v1، نام/توضیح، archived، revision و acl_revision؛ قرارداد v1 فعلاً تنها قالب قابل ثبت است. | KP-02، ساخته‌شده |
 | `company_team_agent_grants` | scope، agent_id، account_id، membership_id، action، granted_by/at؛ manage_access قابل واگذاری نیست و حذف عضویت grant را حذف می‌کند. | KP-02، ساخته‌شده |
-| `company_team_agent_events` | رویداد و نتیجهٔ idempotency عملیات ایجنت؛ از audit نقش‌های عضو جداست. | KP-02، ساخته‌شده |
+| `company_team_agent_events` | رویداد و نتیجهٔ idempotency با پیشوند عملیات ایجنت، فلو، درخواست، Instance و مرحله؛ از audit نقش‌های عضو جداست. | KP-02، ساخته‌شده |
 | `company_team_agent_attempts` | actor، incarnation عضویت، workflow_id، ورودی، کلید اقدام، وضعیت و نتیجه؛ pending نقش outbox آغاز اجرا را دارد و شناسهٔ تلاش همان run بومی است. | KP-02، ساخته‌شده |
 | `company_team_flows` | id، scope، نام یکتا، revision، draft_stages، current_version_id و archived | KP-03، ساخته‌شده |
 | `company_team_flow_versions` | id، scope، flow_id، version، source_revision، contract_version، digest، نام/توضیح، stage_bindings و published_by/at؛ trigger تغییر/حذف نسخه را منع می‌کند. | KP-03، ساخته‌شده |
@@ -57,14 +57,14 @@ flowchart TD
 | `company_team_request_revisions` | id، scope، request_id، version، title/content دقیق، origin=manual، attachment_ids، digest، author_id، membership_id و created_at؛ نسخه immutable است. | KP-04، ساخته‌شده |
 | `company_team_request_attachments` | id، scope، request_id، name، size، digest، content محدود bytea و created_by/at؛ دریافت فقط پس از کنترل نشست و دامنه. | KP-04، ساخته‌شده |
 | `company_team_intake_decisions` | id، scope، request_id، request_revision_id/digest، flow_id/version_id/digest، outcome/mode، actor_id، membership_id، reason، created_at، expires_at و revokes_id؛ immutable و ابطال رکورد مستقل است. | KP-04، ساخته‌شده |
-| `company_team_instances` | id، scope، request_revision_id، flow_version_id، intake_decision_id، وضعیت و زمان؛ هر سه مرجع به همان نسخه‌ها و پروژه تعلق داشته باشند. | KP-04/05 |
-| `company_team_stages` | id، scope، instance_id، step_key، agent_id، workflow_id ثابت، record_revision، input_digest، state، finalizer_id، decision_role و active_attempt_id اختیاری | KP-05 |
-| `company_team_attempts` | id، scope، stage_id، actor، input_digest و snapshot ورودی، workflow_id، workflow_run_id، mode/status/time؛ هر run بومی حداکثر به یک تلاش متصل شود. | KP-05 |
-| `company_team_feedback` | id، scope، stage_id، author، base_revision، parent_artifact_id، متن/تغییر و input_digest جدید؛ append-only | KP-05 |
-| `company_team_artifacts` | id، scope، stage_id، revision، parent، input_digest، digest، محتوا/مرجع فایل، نوع model/human و عامل واقعی؛ یکتا روی scope/stage/revision | KP-05 |
+| `company_team_instances` | scope، request_id/revision_id/digest، flow_id/version_id/digest، intake_decision_id یکتا و ایجادکننده/زمان؛ immutable | KP-05، ساخته‌شده |
+| `company_team_stages` | scope، instance_id، ordinal، step_key، binding ثابت، revision، round، state، inputs/dependencies/digest و active_attempt_id/selected_artifact_id | KP-05، ساخته‌شده |
+| `company_team_stage_attempts` | اتصال یک‌به‌یک attempt_id بومی به stage_id، round و input_digest؛ actor/ورودی/نتیجه/WorkflowRun در تلاش بومی موجود باقی می‌مانند. | KP-05، ساخته‌شده |
+| `company_team_feedback` | scope، stage_id، base_revision، round، parent_artifact_id، message، inputs شامل submitted/effective/feedback_variable، input_digest، author_id/membership_id/time؛ immutable | KP-05، ساخته‌شده |
+| `company_team_artifacts` | scope، stage_id، version، round، input_digest، digest، content، kind=workflow/human، attempt_id، parent_id، author_id/membership_id، reason/time؛ immutable | KP-05، ساخته‌شده |
 | `company_team_artifact_dependencies` | scope، consumer_artifact_id و producer_artifact_id؛ ارجاع به نسخهٔ دقیق خروجی و ممنوعیت وابستگی خارج پروژه | KP-06 |
-| `company_team_stage_decisions` | id، scope، stage_id، base_revision، selected_artifact_id، input_digest، actor، outcome/reason/time؛ تصمیم مؤثر به همان ورودی تعلق دارد. | KP-05/06 |
-| `company_team_action_keys` | scope، actor، operation، key، payload_digest، result_ref و وضعیت؛ تکرار payload متفاوت برای همان کلید تعارض است. | همراه اولین mutation لازم |
+| `company_team_stage_decisions` | scope، stage_id، base_revision، artifact_id، input_digest، actor_id/membership_id، reason/time؛ immutable | KP-05، ساخته‌شده |
+| journal موجودِ عملیات | نقش‌ها از audit و عملیات تیم از `company_team_agent_events` برای scope/actor/key/digest/result استفاده می‌کنند؛ جدول موازی کلید اقدام در KP-05 ساخته نشد. | KP-01 تا KP-05، فعال |
 | `company_team_audit_events` | id، scope، actor یا service_principal واقعی، نوع اقدام، subject_ref، نسخه، زمان، correlation_id و نتیجه؛ append-only، بدون توکن و رمز | از KP-01 |
 | `company_team_outbox` | id، scope، action_key، نوع کار، مرجع و payload حداقلی، وضعیت تحویل، retry/lease؛ یکتا روی رخداد منطقی | همراه اولین dispatch لازم |
 

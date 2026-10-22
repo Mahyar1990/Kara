@@ -68,10 +68,12 @@ make down
 - [ایجنت‌های تیم، مجوزها و اجرای کنترل‌شده](docs/kara-team-agents.md)
 - [فلوهای تیمی نسخه‌دار](docs/kara-team-flows.md)
 - [درخواست نسخه‌دار و تصمیم ورود PO](docs/kara-team-requests.md)
+- [اجرای مرحله و بازخورد انسانی](docs/kara-team-stages.md)
 - [گزارش آزمون و پذیرش KP-01](docs/kara-kp01-validation.md)
 - [گزارش پذیرش KP-02](docs/kara-kp02-validation.md): شواهد مجوز و اجرای واقعی ایجنت تیمی.
 - [گزارش پذیرش KP-03](docs/kara-kp03-validation.md): شواهد فلوهای نسخه‌دار و حفظ تاریخچه.
 - [گزارش پذیرش KP-04](docs/kara-kp04-validation.md): شواهد درخواست، پیوست و تصمیم ورود PO.
+- [گزارش پذیرش KP-05](docs/kara-kp05-validation.md): شواهد اجرای واقعی مراحل، بازخورد و خروجی منتخب.
 - [تکمیل موارد باز KP-01](docs/kara-kp01-closeout.md): نام Kara، ساخت کامل کلاینت و شواهد نهایی آزمون.
 - [ادمین کل و دسترسی مستقل پروژه‌ها](docs/project-ownership.md)
 - [راهنمای استفاده از پروژه](docs/project-setup.md)
