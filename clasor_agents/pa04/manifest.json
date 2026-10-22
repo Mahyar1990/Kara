@@ -1,0 +1,25 @@
+{
+  "kind": "kara-agent-contract",
+  "role_id": "PA-04",
+  "contract_version": "1.0.0",
+  "status": "offline-contract-only",
+  "artifacts": {
+    "schemas/input.schema.json": "fd047ff1e2802ceab27bd0fb6b10be84b94df9939d374bd221d97737a659bbc1",
+    "schemas/output.schema.json": "d994906ce49fb9e9e86e78b0ed26cec9f0acf8de8cd2d3aa636a13713db0cc88",
+    "fixtures/cases.json": "42a9ce02684072de42fe1e4f7ad2c487366202d63de3d566356c4cb5fa58bb37",
+    "contract.py": "d8c8774a6bfe074555f267fb0399792c77c866fa346f24230eaabcedaf206bc6",
+    "package.py": "e588364697ac88277c379c23fee80072d67059c787732ff6cc4988c719be8941"
+  },
+  "synthetic_cases": 4,
+  "workflow_revision": null,
+  "prompt_revision": null,
+  "live_model_test": false,
+  "limits": {
+    "max_payload_bytes": 32768,
+    "max_sources": 4,
+    "source_chars_total": 6000,
+    "automatic_model_retries": 0,
+    "planned_context_tokens": 16384,
+    "planned_output_tokens": 2048
+  }
+}
