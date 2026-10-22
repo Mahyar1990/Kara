@@ -62,7 +62,7 @@ flowchart TD
 | `company_team_stage_attempts` | اتصال یک‌به‌یک attempt_id بومی به stage_id، round و input_digest؛ actor/ورودی/نتیجه/WorkflowRun در تلاش بومی موجود باقی می‌مانند. | KP-05، ساخته‌شده |
 | `company_team_feedback` | scope، stage_id، base_revision، round، parent_artifact_id، message، inputs شامل submitted/effective/feedback_variable، input_digest، author_id/membership_id/time؛ immutable | KP-05، ساخته‌شده |
 | `company_team_artifacts` | scope، stage_id، version، round، input_digest، digest، content، kind=workflow/human، attempt_id، parent_id، author_id/membership_id، reason/time؛ immutable | KP-05، ساخته‌شده |
-| `company_team_artifact_dependencies` | scope، consumer_artifact_id و producer_artifact_id؛ ارجاع به نسخهٔ دقیق خروجی و ممنوعیت وابستگی خارج پروژه | KP-06 |
+| وابستگی تحویل در `company_team_stages.dependencies` | stage_id/artifact_id/digest دقیق پیش‌نیازها هنگام ثبت ورودی ذخیره می‌شود؛ نمای تحویل KP-06 از همان ارجاع و تصمیم immutable استفاده می‌کند. جدول پیشنهادی `company_team_artifact_dependencies` فعلاً لازم نشد و ساخته نشده است. | KP-05 ذخیره؛ KP-06 نمایش و کنترل دسترسی |
 | `company_team_stage_decisions` | scope، stage_id، base_revision، artifact_id، input_digest، actor_id/membership_id، reason/time؛ immutable | KP-05، ساخته‌شده |
 | journal موجودِ عملیات | نقش‌ها از audit و عملیات تیم از `company_team_agent_events` برای scope/actor/key/digest/result استفاده می‌کنند؛ جدول موازی کلید اقدام در KP-05 ساخته نشد. | KP-01 تا KP-05، فعال |
 | `company_team_audit_events` | id، scope، actor یا service_principal واقعی، نوع اقدام، subject_ref، نسخه، زمان، correlation_id و نتیجه؛ append-only، بدون توکن و رمز | از KP-01 |

@@ -4,7 +4,7 @@ import logging
 from flask import request
 from flask_restx import Resource
 
-from company_projects import stages
+from company_projects import stages, team_inbox
 from company_projects.agent_controller import invoke
 from company_projects.agent_execution import execute_task
 from company_projects.controller import guarded, payload
@@ -41,3 +41,10 @@ class StageActionApi(Resource):
             except Exception:
                 logging.getLogger(__name__).exception('Stage dispatch deferred: %s', result['active_attempt_id'])
         return result, 202 if action == 'run' else 200
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/actions')
+class TeamActionsApi(Resource):
+    @guarded()
+    def get(self, project_id):
+        return invoke(team_inbox.list_actions, project_id, request.args.get('page', '1'))

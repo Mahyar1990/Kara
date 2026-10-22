@@ -10,7 +10,7 @@ from company_projects import agents, agent_execution, flows, stages
 from company_projects.test_requests import RequestFixture
 
 
-class StageTests(RequestFixture):
+class StageFixture(RequestFixture):
     def setUp(self):
         super().setUp()
         for agent_id in self.agent_ids:
@@ -53,6 +53,8 @@ class StageTests(RequestFixture):
         stages.complete_attempt(self.session, attempt_id)
         return self.get({'id': row['id']})
 
+
+class StageTests(StageFixture):
     def test_create_is_explicit_unique_and_intake_bound(self):
         self.assertEqual([s['state'] for s in self.inst['stages']], ['ready', 'blocked'])
         self.assertEqual(self.get()['attempts'], [])

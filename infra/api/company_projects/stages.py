@@ -79,11 +79,18 @@ def stage_rows(session, value):
 
 
 def summary(session, value, actor):
+    from company_projects.team_inbox import responsibility
     rows = stage_rows(session, value)
     revision = table(session, 'company_team_request_revisions')
     title = session.scalar(sa.select(revision.c.title).where(revision.c.id == value['request_revision_id']))
-    return requests.serial(value) | dict(title=title, intake_valid=valid_intake(session, value),
-        state='completed' if rows and all(row['state'] == 'completed' for row in rows) else 'active',
+    valid = valid_intake(session, value)
+    current = next((row for row in rows if row['state'] != 'completed'), None)
+    scope = {k: value[k] for k in ('project_id', 'workspace_id')}
+    return requests.serial(value) | dict(title=title, intake_valid=valid,
+        state='completed' if rows and not current else 'active',
+        completed_stages=sum(row['state'] == 'completed' for row in rows), total_stages=len(rows),
+        current_stage_id=current['id'] if current else None,
+        responsibility=responsibility(session, scope, current, valid),
         stages=[dict(id=row['id'], key=row['step_key'], title=row['binding']['title'], state=row['state'],
             revision=row['revision'], executor=row['binding']['executor'], finalizer=row['binding']['finalizer']) for row in rows])
 
@@ -255,6 +262,24 @@ def new_artifact(session, stage, content, actor, membership, attempt_id, *, pare
     return row
 
 
+def available_actions(session, scope, value, stage, actor, *, input_error=None):
+    """One fresh authority/state check for the detail page and personal inbox."""
+    result = []
+    allowed = dict(run=('ready', 'run'), retry=('failed', 'run'), feedback=(('ready', 'failed', 'awaiting_feedback', 'awaiting_decision'), 'feedback'),
+        edit_output=(('awaiting_feedback', 'awaiting_decision'), 'feedback'), request_decision=('awaiting_feedback', 'feedback'), finalize=('awaiting_decision', 'finalize'))
+    if valid_intake(session, value):
+        for action, (states, permission) in allowed.items():
+            if stage['state'] not in ((states,) if isinstance(states, str) else states):
+                continue
+            try:
+                require(session, scope, stage, actor, permission)
+                if not input_error or action == 'feedback':
+                    result.append(action)
+            except HTTPException:
+                pass
+    return result
+
+
 def get_stage(session, project, workspace, actor, instance_id, stage_id):
     scope = scoped(session, project, workspace, actor)
     value = instance(session, scope, instance_id)
@@ -278,19 +303,12 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
     try:
         result['preview_inputs'], _ = resolve(session, value, stage)
         result['editable_inputs'] = result['feedback'][-1]['inputs']['submitted'] if result['feedback'] else result['preview_inputs']
+        agents.validate_inputs(stage['binding']['input_contract'], result['preview_inputs'])
     except HTTPException as exc:
         result['input_error'] = exc.description
-    allowed = dict(run=('ready', 'run'), retry=('failed', 'run'), feedback=(('ready', 'failed', 'awaiting_feedback', 'awaiting_decision'), 'feedback'),
-        edit_output=(('awaiting_feedback', 'awaiting_decision'), 'feedback'), request_decision=('awaiting_feedback', 'feedback'), finalize=('awaiting_decision', 'finalize'))
-    if result['intake_valid']:
-        for action, (states, permission) in allowed.items():
-            if stage['state'] not in ((states,) if isinstance(states, str) else states):
-                continue
-            try:
-                require(session, scope, stage, actor, permission)
-                result['actions'].append(action)
-            except HTTPException:
-                pass
+    result['actions'] = available_actions(session, scope, value, stage, actor, input_error=result['input_error'])
+    from company_projects.team_inbox import handoffs
+    result['handoffs'] = handoffs(session, value, stage) if not result['input_error'] else []
     return result
 
 
