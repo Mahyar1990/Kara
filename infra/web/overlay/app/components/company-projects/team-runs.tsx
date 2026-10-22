@@ -4,9 +4,11 @@ import type { AgentInput } from '@/service/company-agents'
 import type { StageArtifact, TeamInstance, TeamStage } from '@/service/company-stages'
 import { useQuery } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { currentWorkspaceIdAtom } from '@/context/workspace-state'
 import Link from '@/next/link'
+import { useSearchParams } from '@/next/navigation'
+import { stageStates as states, teamStageHref } from '@/utils/company-team-work'
 import { projectApi } from '@/service/company-projects'
 import { stageApi } from '@/service/company-stages'
 
@@ -15,7 +17,7 @@ const button = 'rounded-lg border border-divider-regular px-4 py-2 text-sm disab
 const primary = `${button} bg-components-button-primary-bg text-components-button-primary-text`
 const field = 'mt-2 block w-full rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary'
 const num = (value: number) => value.toLocaleString('fa-IR')
-const states: Record<string, string> = { ready: 'آمادهٔ اجرا', blocked: 'منتظر مرحلهٔ قبل', running: 'در حال اجرا', awaiting_feedback: 'در انتظار بررسی و بازخورد', awaiting_decision: 'در انتظار تصمیم نهایی', completed: 'نهایی‌شده', failed: 'اجرای ناموفق', stale: 'ورودی یا دسترسی نامعتبر', pending: 'در صف', succeeded: 'اجرای موفق', interrupted: 'اجرای متوقف' }
+
 const text = (value: unknown): string => typeof value === 'string' ? value : JSON.stringify(value, null, 2) ?? ''
 
 function useAction() {
@@ -89,6 +91,7 @@ function StageContent({ value, act }: { value: TeamStage; act: Act }) {
       <details open className="space-y-3"><summary className="cursor-pointer font-medium">ورودی نهایی مرحله</summary>{Object.entries(value.preview_inputs).map(([name, content]) => <div key={name}><h4 className="text-sm">{value.binding.input_contract.find(item => item.variable === name)?.label || name}</h4><pre className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-background-section p-3 font-sans text-sm leading-7">{text(content)}</pre></div>)}</details>
       <div className="flex flex-wrap gap-3">{value.actions.includes('run') && <button disabled={action.busy} className={primary} onClick={() => action.run({ run: value.id }, key => act('run', {}, key))}>اجرا با این ورودی‌ها</button>}{value.actions.includes('retry') && <button disabled={action.busy} className={button} onClick={() => action.run({ retry: value.id }, key => act('retry', {}, key))}>آماده‌سازی تلاش مجدد</button>}</div>{action.error && <p role="alert">{action.error}</p>}
     </section>
+    {!!value.handoffs.length && <section className={panel} aria-label="خروجی تحویلی از مراحل قبل"><h3 className="text-lg font-semibold">خروجی تحویلی از مراحل قبل</h3><p className="text-sm leading-7">فقط بخش مورد نیاز از خروجی منتخب و نهایی‌شده نمایش داده می‌شود.</p>{value.handoffs.map(item => <article className="space-y-2 border-t border-divider-regular pt-3" key={item.input}><p className="font-medium">{item.stage_title} · نسخهٔ {num(item.version)} · {item.consumed ? 'در ورودی این مرحله ثبت شده' : 'آمادهٔ دریافت در این مرحله'}</p><p className="text-sm">خروجی {item.output} ← ورودی {value.binding.input_contract.find(input => input.variable === item.input)?.label || item.input}</p><pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">{text(item.content)}</pre><p className="text-xs leading-6">نهایی‌کننده: {person(item.finalized_by)} · {new Date(item.finalized_at).toLocaleString('fa-IR')}</p><details><summary className="cursor-pointer text-sm">شناسه‌های قابل پیگیری تحویل</summary><p className="break-all text-xs leading-7">خروجی: <bdi>{item.artifact_id}</bdi><br />تصمیم: <bdi>{item.decision_id}</bdi><br />اثر انگشت: <bdi>{item.digest}</bdi></p></details></article>)}</section>}
     {value.actions.includes('feedback') && <Feedback key={value.revision} value={value} act={act} />}
     <section className={panel} aria-label="خروجی‌های مرحله"><h3 className="text-lg font-semibold">خروجی‌ها و ویرایش‌های انسانی</h3><p className="text-sm leading-7">موفقیت اجرا خروجی پیش‌نویس می‌سازد. فقط خروجی منتخب و نهایی‌شده به مرحلهٔ بعد می‌رسد.</p>{!value.artifacts.length && <p className="text-sm">هنوز خروجی ثبت نشده است.</p>}{value.artifacts.map(item => {
       const current = item.round === value.round && item.input_digest === value.input_digest
@@ -109,19 +112,22 @@ function StagePanel({ project, instance, stage, changed }: { project: string; in
 
 export default function TeamRuns({ projectId }: { projectId: string }) {
   const workspace = useAtomValue(currentWorkspaceIdAtom)
+  const params = useSearchParams()
+  const linkedInstance = params.get('instance'), linkedStage = params.get('stage'), linkedRequest = params.get('request')
   const context = useQuery({ queryKey: ['company-context', workspace], queryFn: projectApi.context, enabled: !!workspace })
   const entered = context.data?.current_project?.id === projectId
   const list = useQuery({ queryKey: ['team-instances', workspace, projectId], queryFn: () => stageApi.list(projectId), enabled: entered })
   const [selection, setSelection] = useState<{ instance: string; stage: string } | null>(null)
+  useEffect(() => { setSelection(linkedInstance && linkedStage ? { instance: linkedInstance, stage: linkedStage } : null) }, [linkedInstance, linkedStage, projectId, workspace])
   const action = useAction()
   const refresh = async () => { const result = await list.refetch(); if (result.isError) throw new Error('Refresh failed') }
   const choose = (value: TeamInstance) => { const first = value.stages.find(stage => stage.state !== 'completed') || value.stages[0]; if (first) setSelection({ instance: value.id, stage: first.id }) }
   return <main dir="rtl" className="h-full overflow-y-auto bg-background-body p-5 text-text-primary md:p-8"><div className="mx-auto max-w-5xl space-y-6"><Link className="text-sm text-text-accent" href={`/projects/${projectId}`}>نمای کلی پروژه ←</Link><header><h1 className="text-3xl font-bold">اجرای تیمی</h1><p className="mt-3 text-sm leading-7 text-text-secondary">مرحلهٔ خود را اجرا کنید، بازخورد بدهید و خروجی را برای تصمیم انسانی آماده کنید.</p></header>
     {!entered ? <p role="status">ابتدا وارد فضای همین پروژه شوید.</p> : list.isSuccess ? <>
       {!!list.data.available_requests.length && <section className={panel}><h2 className="text-lg font-semibold">درخواست‌های آمادهٔ ورود</h2>{list.data.available_requests.map(request => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3"><p>{request.title}</p><button className={button} disabled={action.busy} onClick={() => action.run(request, async key => { const value = await stageApi.create(projectId, request, key); await refresh(); choose(value) })}>ایجاد اجرای تیمی</button></div>)}<p className="text-xs leading-6 text-text-tertiary">ایجاد پرونده، ایجنت را اجرا نمی‌کند؛ شروع هر مرحله با مسئول مجاز آن است.</p></section>}{action.error && <p role="alert">{action.error}</p>}
-      <section aria-label="اجراهای تیمی" className="space-y-4">{!list.data.data.length && <p className={panel}>هنوز اجرای تیمی ایجاد نشده است؛ درخواست باید تأیید ورود معتبر داشته باشد.</p>}{list.data.data.map(value => <article className={panel} key={value.id}><h2 className="text-xl font-semibold">{value.title}</h2>{!value.intake_valid && <p className="text-sm">تصمیم ورود نیاز به بررسی مجدد دارد.</p>}<ol className="flex flex-wrap gap-3">{value.stages.map(stage => <li key={stage.id}><button className={button} aria-pressed={selection?.stage === stage.id} onClick={() => setSelection({ instance: value.id, stage: stage.id })}>{stage.title} · {states[stage.state]}</button></li>)}</ol></article>)}</section>
-      {selection && <StagePanel key={`${workspace}:${selection.instance}:${selection.stage}`} project={projectId} instance={selection.instance} stage={selection.stage} changed={refresh} />}
+      <section aria-label="اجراهای تیمی" className="space-y-4">{!list.data.data.length && <p className={panel}>هنوز اجرای تیمی ایجاد نشده است؛ درخواست باید تأیید ورود معتبر داشته باشد.</p>}{list.data.data.filter(value => linkedInstance ? value.id === linkedInstance : !linkedRequest || value.request_id === linkedRequest).map(value => <article className={panel} key={value.id}><h2 className="text-xl font-semibold">{value.title}</h2><p className="text-sm">{num(value.completed_stages)} از {num(value.total_stages)} مرحله نهایی شده · مسئول فعلی: {value.responsibility.person?.name || (value.responsibility.kind === 'po' ? 'مالک محصول' : 'فرایند تمام شده است')}</p>{value.responsibility.reason && <p className="text-sm">{value.responsibility.reason}</p>}{!value.intake_valid && <p className="text-sm">تصمیم ورود نیاز به بررسی مجدد دارد.</p>}<ol className="flex flex-wrap gap-3">{value.stages.map(stage => <li key={stage.id}><Link className={`${button} inline-block`} aria-current={selection?.stage === stage.id ? 'step' : undefined} href={teamStageHref(projectId, value.id, stage.id)}>{stage.title} · {states[stage.state]}</Link></li>)}</ol></article>)}</section>
+      {selection && <section className="space-y-4"><h2 className="text-xl font-semibold">درخواست: {list.data.data.find(value => value.id === selection.instance)?.title || 'دریافت جزئیات'}</h2><StagePanel key={`${workspace}:${selection.instance}:${selection.stage}`} project={projectId} instance={selection.instance} stage={selection.stage} changed={refresh} /></section>}
     </> : <p role={list.isError ? 'alert' : 'status'}>{list.isError ? 'دریافت اجراها انجام نشد.' : 'در حال دریافت اجراها…'}</p>}
-    <div className="flex flex-wrap gap-3"><button className={button} disabled={!entered || list.isFetching} onClick={() => list.refetch()}>تازه‌سازی اجراهای تیمی</button><Link className={button} href={`/projects/${projectId}/requests`}>درخواست‌های تیم</Link></div>
+    <div className="flex flex-wrap gap-3"><button className={button} disabled={!entered || list.isFetching} onClick={() => list.refetch()}>تازه‌سازی اجراهای تیمی</button><Link className={button} href={`/projects/${projectId}/requests`}>درخواست‌های تیم</Link><Link className={button} href={`/projects/${projectId}/inbox`}>اقدام‌های من و وضعیت تیم</Link></div>
   </div></main>
 }

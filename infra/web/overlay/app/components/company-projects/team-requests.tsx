@@ -3,9 +3,10 @@
 import type { IntakeDraft, TeamRequest } from '@/service/company-requests'
 import { useQuery } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { currentWorkspaceIdAtom } from '@/context/workspace-state'
 import Link from '@/next/link'
+import { useSearchParams } from '@/next/navigation'
 import { flowApi } from '@/service/company-flows'
 import { projectApi } from '@/service/company-projects'
 import { requestApi } from '@/service/company-requests'
@@ -106,7 +107,10 @@ export default function TeamRequests({ projectId }: { projectId: string }) {
   const context = useQuery({ queryKey: ['company-context', workspace], queryFn: projectApi.context, enabled: !!workspace })
   const entered = context.data?.current_project?.id === projectId
   const list = useQuery({ queryKey: ['team-requests', workspace, projectId], queryFn: () => requestApi.list(projectId), enabled: entered })
-  const [selected, setSelected] = useState<string | null>(null)
+  const params = useSearchParams()
+  const linkedRequest = params.get('request')
+  const [selected, setSelected] = useState<string | null>(linkedRequest)
+  useEffect(() => { setSelected(linkedRequest); setEditing(false) }, [linkedRequest, workspace, projectId])
   const [editing, setEditing] = useState(false)
   const detail = useQuery({ queryKey: ['team-request', workspace, projectId, selected], queryFn: () => requestApi.detail(projectId, selected!), enabled: entered && !!selected })
   const saved = async (value: TeamRequest) => { const fresh = await list.refetch(); if (fresh.isError) throw new Error('Refresh failed'); setSelected(value.id); setEditing(false); if (selected === value.id) { const result = await detail.refetch(); if (result.isError) throw new Error('Refresh failed') } }
@@ -117,7 +121,7 @@ export default function TeamRequests({ projectId }: { projectId: string }) {
       <div className="flex flex-wrap gap-3"><button className={primary} onClick={() => { setSelected(null); setEditing(true) }}>ثبت درخواست تازه</button><Link className={button} href={`/projects/${projectId}/team-flows`}>فلوهای تیم</Link></div>
       {editing && (!selected || detail.data?.can_edit) && <RequestEditor key={`${workspace}:${selected || 'new'}:${detail.data?.revision || 1}`} project={projectId} value={selected ? detail.data || null : null} saved={saved} cancel={() => setEditing(false)} />}
       {selected && !editing && (detail.isSuccess ? <RequestDetail key={`${workspace}:${selected}:${detail.data.revision}`} project={projectId} value={detail.data} saved={saved} edit={() => setEditing(true)} /> : <p role={detail.isError ? 'alert' : 'status'}>{detail.isError ? 'دریافت درخواست انجام نشد.' : 'در حال دریافت درخواست…'}</p>)}
-      <section aria-label="فهرست درخواست‌ها" className="space-y-3">{!list.data.data.length && <p className={panel}>هنوز درخواستی ثبت نشده است.</p>}{list.data.data.map(value => <article key={value.id} className={panel}><h2 className="text-lg font-semibold">{value.title}</h2><p className="text-sm">نسخهٔ {num(value.version)} · {states[value.state] || value.state}</p><button className={button} onClick={() => { setSelected(value.id); setEditing(false) }}>مشاهدهٔ درخواست</button></article>)}</section>
+      <section aria-label="فهرست درخواست‌ها" className="space-y-3">{!list.data.data.length && <p className={panel}>هنوز درخواستی ثبت نشده است.</p>}{list.data.data.map(value => <article key={value.id} className={panel}><h2 className="text-lg font-semibold">{value.title}</h2><p className="text-sm">نسخهٔ {num(value.version)} · {states[value.state] || value.state}</p><button className={button} onClick={() => { setSelected(value.id); setEditing(false) }}>مشاهدهٔ درخواست</button><Link className={`${button} ms-3 inline-block`} href={`/projects/${projectId}/team-runs?request=${value.id}`}>پیگیری اجرای درخواست</Link></article>)}</section>
     </> : <p role={list.isError ? 'alert' : 'status'}>{list.isError ? 'دریافت درخواست‌ها انجام نشد.' : 'در حال دریافت درخواست‌ها…'}</p>}
     <button className={button} disabled={!entered || list.isFetching} onClick={refresh}>دریافت نسخهٔ تازهٔ درخواست‌ها</button>
   </div></main>

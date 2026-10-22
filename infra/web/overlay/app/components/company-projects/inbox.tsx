@@ -9,6 +9,7 @@ import { useSearchParams } from '@/next/navigation'
 import HumanInputForm from '@/app/components/base/chat/chat/answer/human-input-content/human-input-form'
 import Link from '@/next/link'
 import { inboxApi } from '@/service/company-inbox'
+import TeamInbox from './team-inbox'
 import { button, input, panel, ProjectPage, QueryNotice } from './project-page'
 
 const states: Record<string, string> = { all: 'همهٔ اجراها', running: 'در حال اجرا', paused: 'در انتظار تصمیم', succeeded: 'موفق', failed: 'ناموفق', stopped: 'متوقف', 'partial-succeeded': 'بخشی موفق' }
@@ -69,6 +70,11 @@ function Runs({ project }: { project: CompanyProject }) {
     {!runs.isSuccess ? <QueryNotice error={runs.isError} retry={() => runs.refetch()} /> : <><p className="text-sm text-text-tertiary">{number(runs.data.total)} اجرا در این فهرست</p>{runs.data.data.length ? <div className={`${panel} overflow-x-auto`}><table className="w-full min-w-[650px] text-right text-sm"><thead className="text-text-tertiary"><tr>{['فرایند', 'وضعیت', 'زمان شروع', 'نوع اجرا', 'مصرف توکن', 'جزئیات'].map(title => <th className="pb-4 font-medium" key={title}>{title}</th>)}</tr></thead><tbody className="text-text-primary">{runs.data.data.map((run: RunSummary) => <tr key={run.id} className="border-t border-divider-regular"><td className="max-w-60 py-4 pl-4">{run.app_name}</td><td className="pl-4">{states[run.status] || 'وضعیت نامشخص'}</td><td className="pl-4">{date(run.created_at)}</td><td className="pl-4">{sources[run.triggered_from] || 'سایر'}</td><td className="pl-4">{number(run.total_tokens)}</td><td><button aria-label={`جزئیات اجرای ${run.app_name}`} className={button} onClick={() => { setSelected(run.id) }}>مشاهده</button></td></tr>)}</tbody></table></div> : <section className={panel}><p className="text-sm leading-7 text-text-secondary">اجرایی با این شرایط پیدا نشد. فیلترها را تغییر دهید یا یک فرایند را از صفحهٔ برنامه اجرا کنید.</p></section>}{(page > 1 || runs.data.has_more) && <nav aria-label="صفحه‌بندی اجراها" className="flex justify-center gap-4"><button className={button} disabled={page === 1} onClick={() => setPage(page - 1)}>صفحهٔ قبل</button><p className="py-2 text-sm text-text-secondary">صفحهٔ {number(page)}</p><button className={button} disabled={!runs.data.has_more} onClick={() => setPage(page + 1)}>صفحهٔ بعد</button></nav>}</>}
   </>
 }
+function InboxSections({ project }: { project: CompanyProject }) {
+  const params = useSearchParams()
+  const [section, setSection] = useState(params.get('run') ? 'technical' : 'team')
+  return <><nav aria-label="بخش‌های کارتابل" className="flex flex-wrap gap-3"><button className={button} aria-pressed={section === 'team'} onClick={() => setSection('team')}>اقدام‌های من و وضعیت تیم</button><button className={button} aria-pressed={section === 'technical'} onClick={() => setSection('technical')}>اجراها و تأییدهای فنی</button></nav>{section === 'team' ? <TeamInbox key={project.workspace_id} projectId={project.id} /> : <Runs key={project.workspace_id} project={project} />}</>
+}
 export default function ProjectInbox({ projectId }: { projectId: string }) {
-  return <ProjectPage projectId={projectId} title="کارتابل اجراها و تأییدها">{project => <Runs project={project} />}</ProjectPage>
+  return <ProjectPage projectId={projectId} title="کارتابل پروژه">{project => <InboxSections project={project} />}</ProjectPage>
 }

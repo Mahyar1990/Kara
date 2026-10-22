@@ -40,7 +40,7 @@ export function projectNavigation(projectId: string, nativeItems: MainNavItem[])
       .map(entry => entry.href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها' } : entry),
     item(`${base}/templates`, 'قالب‌های آماده', 'i-ri-file-copy-line', path => path === `${base}/templates`),
     item(`${base}/automations`, 'اتوماسیون‌ها', 'i-ri-timer-line', path => path === `${base}/automations`),
-    item(`${base}/inbox`, 'کارتابل اجراها', 'i-ri-inbox-line', path => path === `${base}/inbox`),
+    item(`${base}/inbox`, 'کارتابل و اقدام‌های من', 'i-ri-inbox-line', path => path === `${base}/inbox`),
     item('/users', 'اعضای پروژه', 'i-ri-team-line', path => path === '/users'),
     item(`${base}/setup`, 'راهنمای پروژه', 'i-ri-question-line', path => path === `${base}/setup`),
   ]
