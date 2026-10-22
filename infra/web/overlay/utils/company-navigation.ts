@@ -32,6 +32,7 @@ export function projectNavigation(projectId: string, nativeItems: MainNavItem[])
   const base = `/projects/${projectId}`
   return [
     item(base, 'نمای کلی پروژه', 'i-ri-folder-line', path => path === base),
+    item(`${base}/team-agents`, 'ایجنت‌های تیم', 'i-ri-team-line', path => path === `${base}/team-agents`),
     ...nativeItems.filter(entry => !['/', '/projects', '/users'].includes(entry.href))
       .map(entry => entry.href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها' } : entry),
     item(`${base}/templates`, 'قالب‌های آماده', 'i-ri-file-copy-line', path => path === `${base}/templates`),
