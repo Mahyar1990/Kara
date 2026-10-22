@@ -78,6 +78,8 @@ make down
 - [گزارش پذیرش KP-06](docs/kara-kp06-validation.md): آزمون‌های متمرکز، مرورگر و حفظ دادهٔ اصلی.
 - [لغو، تغییر مسئول و بازیابی](docs/kara-team-recovery.md): اختیار انسانی، توقف پایدار و نامعتبرشدن وابستگان.
 - [گزارش پذیرش KP-07](docs/kara-kp07-validation.md): آزمون‌های بازیابی، مهاجرت و مرورگر.
+- [گزارش پذیرش سراسری KP-08](docs/kara-kp08-validation.md): چرخهٔ چندنقشی، restart، بازیابی پشتیبان و smoke مستقل مدل.
+- [راهنمای اجرای پذیرش هسته](tests/acceptance/README.md): سناریوی قطعی در بانک جداگانه.
 - [تکمیل موارد باز KP-01](docs/kara-kp01-closeout.md): نام Kara، ساخت کامل کلاینت و شواهد نهایی آزمون.
 - [ادمین کل و دسترسی مستقل پروژه‌ها](docs/project-ownership.md)
 - [راهنمای استفاده از پروژه](docs/project-setup.md)
