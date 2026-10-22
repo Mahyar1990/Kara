@@ -2,7 +2,7 @@
 
 نسخهٔ طراحی `1.0.0` — ۲۱ اکتبر ۲۰۲۶ — خروجی KP-00، همراه [قرارداد رفتاری](kara-team-contract-v1.md).
 
-این سند مدل و ترتیب migrationها را تعیین می‌کند. خروجی KP-00 فقط طراحی بود. در KP-01، مهاجرت `001_team_roles` در `infra/api/company_projects/team_migrations.py` و آداپتر عضویت واقعی در `team.py` پیاده‌سازی و روی نسخهٔ بازیابی‌شدهٔ PostgreSQL آزموده شدند. جدول سیاست عضو برای revision و شناسهٔ عضویت نیز همراه نقش‌ها و audit ساخته می‌شود. مهاجرت‌های بعدی همچنان طراحی‌اند؛ جدول‌های آینده از پیش ساخته نمی‌شوند.
+این سند مدل و ترتیب migrationها را تعیین می‌کند. خروجی KP-00 فقط طراحی بود. مهاجرت `001_team_roles` و آداپتر عضویت واقعی در KP-01 پیاده‌سازی شدند. در KP-02، مهاجرت افزایشی `002_team_agents` تعریف اجرایی، grant، رویداد و تلاش پایدار را اضافه می‌کند؛ جزئیات عملی در [ایجنت‌های تیم](kara-team-agents.md) آمده است. جدول‌های مراحل بعد همچنان طراحی‌اند و از پیش ساخته نمی‌شوند.
 
 ## ۱. مبنای موجود و تصمیم‌های سازگاری
 
@@ -47,8 +47,10 @@ flowchart TD
 | --- | --- | --- |
 | `company_team_member_policies` | scope، account_id، membership_id و revision؛ قفل و تشخیص تغییر یا عضویت مجدد | KP-01 |
 | `company_team_roles` | scope، account_id، business_role، assigned_by/at؛ یکتا روی scope/account/role؛ عضویت بومی همان workspace لازم است. | KP-01 |
-| `company_team_agents` | id، scope، app_id، نام/توضیح، نسخهٔ قرارداد، lifecycle، acl_revision؛ هر ثبت متعلق به یک app همان workspace است. | KP-02 |
-| `company_team_grants` | scope، agent_id، account_id، action، granted_by/at؛ یکتا روی scope/agent/account/action؛ manage_access در actionهای این جدول مجاز نیست. | KP-02 |
+| `company_team_agents` | id، scope، app_id یکتا، workflow_id ثابت، digest، قرارداد ورودی/خروجی v1، نام/توضیح، archived، revision و acl_revision؛ قرارداد v1 فعلاً تنها قالب قابل ثبت است. | KP-02، ساخته‌شده |
+| `company_team_agent_grants` | scope، agent_id، account_id، membership_id، action، granted_by/at؛ manage_access قابل واگذاری نیست و حذف عضویت grant را حذف می‌کند. | KP-02، ساخته‌شده |
+| `company_team_agent_events` | رویداد و نتیجهٔ idempotency عملیات ایجنت؛ از audit نقش‌های عضو جداست. | KP-02، ساخته‌شده |
+| `company_team_agent_attempts` | actor، incarnation عضویت، workflow_id، ورودی، کلید اقدام، وضعیت و نتیجه؛ pending نقش outbox آغاز اجرا را دارد و شناسهٔ تلاش همان run بومی است. | KP-02، ساخته‌شده |
 | `company_team_flows` | id، scope، نام، current_revision و وضعیت آرشیو؛ نام در همان پروژه یکتا باشد. | KP-03 |
 | `company_team_flow_versions` | id، scope، flow_id، revision، digest، stage_bindings، published_by/at؛ نسخهٔ منتشرشده immutable است. | KP-03 |
 | `company_team_requests` | id، scope، عنوان، منشأ و external_id اختیاری، created_by/at، current_revision؛ کلید بیرونی فقط در همان scope و سامانهٔ منبع یکتا باشد. | KP-04 |
@@ -64,6 +66,8 @@ flowchart TD
 | `company_team_action_keys` | scope، actor، operation، key، payload_digest، result_ref و وضعیت؛ تکرار payload متفاوت برای همان کلید تعارض است. | همراه اولین mutation لازم |
 | `company_team_audit_events` | id، scope، actor یا service_principal واقعی، نوع اقدام، subject_ref، نسخه، زمان، correlation_id و نتیجه؛ append-only، بدون توکن و رمز | از KP-01 |
 | `company_team_outbox` | id، scope، action_key، نوع کار، مرجع و payload حداقلی، وضعیت تحویل، retry/lease؛ یکتا روی رخداد منطقی | همراه اولین dispatch لازم |
+
+ردیف‌های `company_team_action_keys` و `company_team_outbox` همچنان مدل هدف مراحل بعدند؛ در KP-02 نتیجهٔ کلید اقدام در `company_team_agent_events` و ارسال پایدار در رکورد `pending` جدول تلاش نگهداری می‌شود. جدول موازی برای همین کار ساخته نشده است. تغییرات نقش عضو نیز همچنان audit اختصاصی KP-01 را دارند.
 | `company_team_migrations` | شناسهٔ migration، checksum و applied_at؛ ترتیب افزایشی و تغییرناپذیر | پیش از KP-01 |
 
 برای حداقل‌بودن نسخهٔ اول، مراحل فلو و وابستگی‌های ساده در `stage_bindings` نسخهٔ فلو نگهداری می‌شوند؛ جدول مستقل stage template و موتور گراف دوم ساخته نمی‌شود. هر binding یک step_key پایدار، agent_id، workflow_id منتشرشده، digest قرارداد/تعریف، ورودی‌ها و قانون نهایی‌کننده دارد. انتشار با مرجع گم‌شده، مرحلهٔ تکراری، چرخه یا تصمیم‌گیرندهٔ نامشخص رد می‌شود.

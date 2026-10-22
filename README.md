@@ -65,7 +65,9 @@ make down
 - [پروژه‌ها و برنامه‌های اختصاصی](docs/projects.md)
 - [مدیریت کاربران و نقش‌ها](docs/users.md)
 - [نقش‌های کاری تیم و قرارداد API](docs/kara-team-roles.md)
+- [ایجنت‌های تیم، مجوزها و اجرای کنترل‌شده](docs/kara-team-agents.md)
 - [گزارش آزمون و پذیرش KP-01](docs/kara-kp01-validation.md)
+- [گزارش پذیرش KP-02](docs/kara-kp02-validation.md): شواهد مجوز و اجرای واقعی ایجنت تیمی.
 - [تکمیل موارد باز KP-01](docs/kara-kp01-closeout.md): نام Kara، ساخت کامل کلاینت و شواهد نهایی آزمون.
 - [ادمین کل و دسترسی مستقل پروژه‌ها](docs/project-ownership.md)
 - [راهنمای استفاده از پروژه](docs/project-setup.md)
