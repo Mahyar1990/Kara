@@ -68,7 +68,7 @@ def list_actions(session, project, workspace, actor, page='1'):
         if not stages.valid_intake(session, value):
             continue
         for stage in stages.stage_rows(session, value):
-            if stage['state'] in ('blocked', 'running', 'completed', 'stale'):
+            if stage['state'] in ('blocked', 'running', 'completed', 'cancelled'):
                 continue
             error = None
             try:
@@ -79,7 +79,7 @@ def list_actions(session, project, workspace, actor, page='1'):
             actions = stages.available_actions(session, scope, value, stage, actor, input_error=error)
             if not actions:
                 continue
-            kind = next((action for action in ('finalize', 'run', 'retry', 'request_decision', 'feedback') if action in actions), None)
+            kind = next((action for action in ('finalize', 'revalidate', 'run', 'retry', 'request_decision', 'feedback') if action in actions), None)
             revision = stages.table(session, 'company_team_request_revisions')
             title = session.scalar(sa.select(revision.c.title).where(revision.c.id == value['request_revision_id']))
             result.append(dict(instance_id=value['id'], stage_id=stage['id'], request_id=value['request_id'],

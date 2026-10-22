@@ -89,3 +89,17 @@ class TeamMigrationTests(ProjectDatabaseFixture):
         with self.engine.connect() as c:
             self.assertEqual(list(c.execute(sa.text('SELECT * FROM company_team_roles'))), before)
             self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_agents')), 0)
+
+    def test_failed_kp07_upgrade_keeps_kp05_schema_then_retries_cleanly(self):
+        with patch.object(migrations, 'MIGRATIONS', migrations.MIGRATIONS[:5]):
+            migrations.migrate(self.engine)
+        broken = (*migrations.MIGRATIONS[:5], ('006_team_recovery', migrations.RECOVERY_SCHEMA + '\n-- kara-statement\nINVALID SQL;'))
+        with patch.object(migrations, 'MIGRATIONS', broken), self.assertRaises(sa.exc.ProgrammingError):
+            migrations.migrate(self.engine)
+        with self.engine.connect() as c:
+            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), 5)
+            self.assertNotIn('assignment', {col['name'] for col in sa.inspect(c).get_columns('company_team_stages')})
+            self.assertNotIn('company_team_cancellations', sa.inspect(c).get_table_names())
+        migrations.migrate(self.engine)
+        with self.engine.connect() as c:
+            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), 6)

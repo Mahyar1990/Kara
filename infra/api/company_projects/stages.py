@@ -35,7 +35,8 @@ def scoped(session, project, workspace, actor, *, write=False):
 
 
 def load(session, entity, scope, identity, *, lock=False):
-    return requests.load(session, entity, scope, identity, lock=lock)
+    row = requests.load(session, entity, scope, identity, lock=lock)
+    return effective(row) if entity.name == 'company_team_stages' else row
 
 
 def instance(session, scope, identity):
@@ -72,25 +73,35 @@ def valid_intake(session, value):
         return False
 
 
+def effective(row):
+    value = dict(row)
+    if value.get('assignment'):
+        value['binding'] = dict(value['binding'], **value['assignment'])
+    return value
+
+
 def stage_rows(session, value):
     stages = tables(session)[1]
-    return [dict(row) for row in session.execute(sa.select(stages).where(stages.c.instance_id == value['id'])
+    return [effective(row) for row in session.execute(sa.select(stages).where(stages.c.instance_id == value['id'])
         .order_by(stages.c.ordinal)).mappings()]
 
 
 def summary(session, value, actor):
     from company_projects.team_inbox import responsibility
+    from company_projects.recovery import cancellation
     rows = stage_rows(session, value)
     revision = table(session, 'company_team_request_revisions')
     title = session.scalar(sa.select(revision.c.title).where(revision.c.id == value['request_revision_id']))
+    cancelled = cancellation(session, value)
     valid = valid_intake(session, value)
     current = next((row for row in rows if row['state'] != 'completed'), None)
     scope = {k: value[k] for k in ('project_id', 'workspace_id')}
     return requests.serial(value) | dict(title=title, intake_valid=valid,
-        state='completed' if rows and not current else 'active',
+        state='cancelled' if cancelled else 'completed' if rows and not current else 'active',
+        revision=sum(row['revision'] for row in rows), cancellation=requests.serial(cancelled) if cancelled else None,
         completed_stages=sum(row['state'] == 'completed' for row in rows), total_stages=len(rows),
         current_stage_id=current['id'] if current else None,
-        responsibility=responsibility(session, scope, current, valid),
+        responsibility=dict(kind='cancelled', person=None, reason=cancelled['reason']) if cancelled else responsibility(session, scope, current, valid),
         stages=[dict(id=row['id'], key=row['step_key'], title=row['binding']['title'], state=row['state'],
             revision=row['revision'], executor=row['binding']['executor'], finalizer=row['binding']['finalizer']) for row in rows])
 
@@ -267,16 +278,25 @@ def available_actions(session, scope, value, stage, actor, *, input_error=None):
     result = []
     allowed = dict(run=('ready', 'run'), retry=('failed', 'run'), feedback=(('ready', 'failed', 'awaiting_feedback', 'awaiting_decision'), 'feedback'),
         edit_output=(('awaiting_feedback', 'awaiting_decision'), 'feedback'), request_decision=('awaiting_feedback', 'feedback'), finalize=('awaiting_decision', 'finalize'))
-    if valid_intake(session, value):
+    from company_projects.recovery import cancellation, retry_limit
+    if not cancellation(session, value) and valid_intake(session, value):
         for action, (states, permission) in allowed.items():
             if stage['state'] not in ((states,) if isinstance(states, str) else states):
                 continue
             try:
                 require(session, scope, stage, actor, permission)
+                if action == 'retry' and stage.get('retry_count', 0) >= retry_limit():
+                    continue
                 if not input_error or action == 'feedback':
                     result.append(action)
             except HTTPException:
                 pass
+    if stage['state'] == 'stale' and not cancellation(session, value) and valid_intake(session, value) and not input_error:
+        try:
+            require(session, scope, stage, actor, 'run')
+            result.append('revalidate')
+        except HTTPException:
+            pass
     return result
 
 
@@ -302,11 +322,14 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
         decisions=[requests.serial(row) for row in session.execute(sa.select(decisions).where(decisions.c.stage_id == stage['id']).order_by(decisions.c.created_at)).mappings()])
     try:
         result['preview_inputs'], _ = resolve(session, value, stage)
-        result['editable_inputs'] = result['feedback'][-1]['inputs']['submitted'] if result['feedback'] else result['preview_inputs']
+        current_feedback = [row for row in result['feedback'] if row['round'] == stage['round']]
+        result['editable_inputs'] = current_feedback[-1]['inputs']['submitted'] if current_feedback else result['preview_inputs']
         agents.validate_inputs(stage['binding']['input_contract'], result['preview_inputs'])
     except HTTPException as exc:
         result['input_error'] = exc.description
     result['actions'] = available_actions(session, scope, value, stage, actor, input_error=result['input_error'])
+    from company_projects.recovery import stage_controls
+    result['controls'] = stage_controls(session, scope, value, stage, actor)
     from company_projects.team_inbox import handoffs
     result['handoffs'] = handoffs(session, value, stage) if not result['input_error'] else []
     return result
@@ -326,6 +349,8 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         raise NotFound('مرحله در این اجرا پیدا نشد.')
     permission = 'run' if action in ('run', 'retry') else 'finalize' if action == 'finalize' else 'feedback'
     agent, join = require(session, scope, stage, actor, permission)
+    from company_projects.recovery import ensure_active, retry_limit
+    ensure_active(session, value)
     intake(session, value)
     fingerprint = agents.digest(dict(operation='stage.' + action, instance_id=str(instance_id), stage_id=str(stage_id), body=data))
     replay = agents.replay(session, scope, actor, key, fingerprint)
@@ -353,6 +378,9 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         changes.update(state='running', active_attempt_id=attempt['id'], inputs=inputs, dependencies=dependencies,
             input_digest=digest, selected_artifact_id=None)
     elif action == 'retry':
+        if stage['retry_count'] >= retry_limit():
+            raise Conflict('سقف تلاش مجدد این دور رسیده است؛ بررسی و بازیابی صریح مدیر لازم است.')
+        changes['retry_count'] = stage['retry_count'] + 1
         changes.update(state='ready', active_attempt_id=None, selected_artifact_id=None)
     elif action == 'feedback':
         message = data['message']
@@ -370,7 +398,8 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
             raise BadRequest('ورودی متنی دریافت‌کنندهٔ بازخورد را انتخاب کنید.')
         effective = dict(data['inputs'])
         if variable:
-            history = list(session.scalars(sa.select(feedback.c.message).where(feedback.c.stage_id == stage['id']).order_by(feedback.c.round)))
+            history = list(session.scalars(sa.select(feedback.c.message).where(feedback.c.stage_id == stage['id'],
+                feedback.c.round >= stage['feedback_floor']).order_by(feedback.c.round)))
             context = dict(previous_output=parent['content'] if parent else None, feedback_history=[*history, message])
             effective[variable] = str(effective.get(variable) or '') + '\n\nبازخورد انسانی و خروجی مبنا:\n' + json.dumps(context, ensure_ascii=False)
         agents.validate_inputs(stage['binding']['input_contract'], effective)
@@ -381,7 +410,7 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
             round=stage['round'] + 1, parent_artifact_id=parent['id'] if parent else None, message=message,
             inputs=dict(submitted=data['inputs'], effective=effective, feedback_variable=variable),
             input_digest=digest, author_id=str(actor), membership_id=join.id, created_at=agents.now()))
-        changes.update(state='ready', round=stage['round'] + 1, inputs=effective, dependencies=dependencies,
+        changes.update(state='ready', round=stage['round'] + 1, retry_count=0, inputs=effective, dependencies=dependencies,
             input_digest=digest, active_attempt_id=None, selected_artifact_id=None)
     else:
         selected = artifact(session, stage, data['artifact_id'])
@@ -417,6 +446,8 @@ def validate_attempt(session, attempt):
     scope = {k: attempt[k] for k in ('project_id', 'workspace_id')}
     stage = load(session, tables(session)[1], scope, link['stage_id'])
     value = instance(session, scope, stage['instance_id'])
+    from company_projects.recovery import ensure_active
+    ensure_active(session, value)
     intake(session, value)
     require(session, scope, stage, attempt['actor_id'], 'run')
     inputs, _ = resolve(session, value, stage)

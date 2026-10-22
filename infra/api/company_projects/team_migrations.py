@@ -262,8 +262,28 @@ CREATE TRIGGER company_team_feedback_immutable BEFORE UPDATE OR DELETE ON compan
 CREATE TRIGGER company_team_stage_decision_immutable BEFORE UPDATE OR DELETE ON company_team_stage_decisions
     FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
 """
+RECOVERY_SCHEMA = """
+ALTER TABLE company_team_stages DROP CONSTRAINT company_team_stages_state_check;
+-- kara-statement
+ALTER TABLE company_team_stages ADD CONSTRAINT company_team_stages_state_check
+    CHECK (state IN ('blocked','ready','running','awaiting_feedback','awaiting_decision','completed','failed','stale','cancelled'));
+-- kara-statement
+ALTER TABLE company_team_stages ADD COLUMN assignment jsonb,
+    ADD COLUMN retry_count integer NOT NULL DEFAULT 0 CHECK (retry_count >= 0),
+    ADD COLUMN feedback_floor integer NOT NULL DEFAULT 1 CHECK (feedback_floor > 0);
+-- kara-statement
+CREATE TABLE company_team_cancellations (
+    instance_id uuid PRIMARY KEY, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    actor_id uuid NOT NULL, membership_id uuid NOT NULL, reason varchar(2000) NOT NULL,
+    created_at timestamptz NOT NULL,
+    FOREIGN KEY (instance_id, project_id, workspace_id) REFERENCES company_team_instances(id, project_id, workspace_id)
+);
+-- kara-statement
+CREATE TRIGGER company_team_cancellation_immutable BEFORE UPDATE OR DELETE ON company_team_cancellations
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+"""
 MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
-              ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA))
+              ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA), ('006_team_recovery', RECOVERY_SCHEMA))
 
 
 def checksum(sql):

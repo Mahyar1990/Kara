@@ -48,3 +48,39 @@ class TeamActionsApi(Resource):
     @guarded()
     def get(self, project_id):
         return invoke(team_inbox.list_actions, project_id, request.args.get('page', '1'))
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/instances/<uuid:instance_id>/controls')
+class InstanceControlsApi(Resource):
+    @guarded()
+    def get(self, project_id, instance_id):
+        from company_projects import recovery
+        return invoke(recovery.overview, project_id, instance_id)
+
+
+def signal_stops():
+    from company_projects.agent_execution import dispatch_stops
+    try:
+        dispatch_stops()
+    except Exception:
+        logging.getLogger(__name__).exception('Committed team stop will be retried by outbox')
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/instances/<uuid:instance_id>/cancellations')
+class InstanceCancellationApi(Resource):
+    @guarded()
+    def post(self, project_id, instance_id):
+        from company_projects import recovery
+        result = invoke(recovery.cancel, project_id, instance_id, payload(), request.headers.get('Idempotency-Key'))
+        signal_stops()
+        return result
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/instances/<uuid:instance_id>/stages/<uuid:stage_id>/control/<string:action>')
+class StageControlApi(Resource):
+    @guarded()
+    def post(self, project_id, instance_id, stage_id, action):
+        from company_projects import recovery
+        result = invoke(recovery.mutate, project_id, instance_id, stage_id, action, payload(), request.headers.get('Idempotency-Key'))
+        signal_stops()
+        return result

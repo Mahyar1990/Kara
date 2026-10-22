@@ -68,7 +68,7 @@ changes.update({
         '        from company_projects.agent_execution import deny_native\n        deny_native(app_model.id, session=session)\n        return cls._run_with_guardrails(\n')],
     'core/app/apps/workflow/app_generator.py': [(
         '        with self._bind_file_access_scope(tenant_id=app_model.tenant_id, user=user, invoke_from=invoke_from):\n',
-        '        from company_projects.agent_execution import assert_execution\n        assert_execution(app_model.tenant_id, app_model.id, workflow.id, user.id, workflow_run_id)\n        with self._bind_file_access_scope(tenant_id=app_model.tenant_id, user=user, invoke_from=invoke_from):\n'), (
+        '        from company_projects.agent_execution import assert_execution, native_task_id\n        assert_execution(app_model.tenant_id, app_model.id, workflow.id, user.id, workflow_run_id)\n        with self._bind_file_access_scope(tenant_id=app_model.tenant_id, user=user, invoke_from=invoke_from):\n'), (
         '        if application_generate_entity.trace_manager is None:\n',
         '        from company_projects.agent_execution import deny_native\n        deny_native(app_model.id)\n        if application_generate_entity.trace_manager is None:\n')],
     'core/workflow/workflow_entry.py': [(
@@ -91,6 +91,9 @@ changes.update({
         '        workflow_id = mapping["workflow_id"]\n        user_id = mapping["user_id"]\n',
         '        workflow_id = mapping["workflow_id"]\n        from company_projects.agent_execution import deny_native\n        deny_native(workflow_id)\n        user_id = mapping["user_id"]\n')],
 })
+changes['core/app/apps/workflow/app_generator.py'].append((
+    '            application_generate_entity = WorkflowAppGenerateEntity(\n                task_id=str(uuid.uuid4()),\n',
+    '            application_generate_entity = WorkflowAppGenerateEntity(\n                task_id=native_task_id(app_model.id, workflow_run_id),\n'))
 for filename, replacements in changes.items():
     target = root / filename
     content = target.read_text()

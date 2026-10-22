@@ -5,6 +5,7 @@ again automatically, including after worker loss. KP-07 owns operator recovery.
 """
 import logging
 from contextvars import ContextVar
+from uuid import uuid4
 
 import sqlalchemy as sa
 from celery import shared_task
@@ -142,6 +143,29 @@ def claim(session, attempt_id):
     return dict(row), dict(agent)
 
 
+def native_task_id(app_id, run_id):
+    capability = _execution.get()
+    if capability and capability[0] == str(run_id) and capability[1] == str(app_id):
+        return capability[0]
+    return str(uuid4())
+
+
+def finish(session, attempt_id, status, result):
+    """A terminal fence wins even if the old engine returns success afterwards."""
+    attempts = agents.tables(session)[2]
+    row = session.execute(sa.select(attempts).where(attempts.c.id == str(attempt_id))).mappings().first()
+    if not row:
+        return False
+    session.scalar(sa.select(Tenant).where(Tenant.id == row['workspace_id']).with_for_update())
+    updated = session.execute(attempts.update().where(attempts.c.id == row['id'], attempts.c.status == 'running')
+        .values(status=status, result=result, finished_at=agents.now()))
+    if updated.rowcount != 1:
+        return False
+    from company_projects.stages import complete_attempt
+    complete_attempt(session, row['id'])
+    return True
+
+
 def execute(attempt_id):
     with Session(db.engine) as session, session.begin():
         claimed = claim(session, attempt_id)
@@ -169,18 +193,12 @@ def execute(attempt_id):
                 status, result = 'succeeded', {'outputs': output}
             else:
                 status, result = 'failed', {'error': 'اجرای فرایند موفق نشد. ورودی‌ها و تنظیمات را با مسئول ایجنت بررسی کنید.'}
-            session.execute(attempts.update().where(attempts.c.id == attempt['id']).values(
-                status=status, result=result, finished_at=agents.now()))
-            from company_projects.stages import complete_attempt
-            complete_attempt(session, attempt['id'])
+            finish(session, attempt['id'], status, result)
     except Exception:
         logger.exception('Team agent attempt failed: %s', attempt['id'])
         with Session(db.engine) as session, session.begin():
             _, _, attempts = agents.tables(session)
-            session.execute(attempts.update().where(attempts.c.id == attempt['id']).values(status='failed',
-                result={'error': 'اجرای ایجنت انجام نشد. تنظیمات و دسترسی‌ها را بررسی کنید.'}, finished_at=agents.now()))
-            from company_projects.stages import complete_attempt
-            complete_attempt(session, attempt['id'])
+            finish(session, attempt['id'], 'failed', {'error': 'اجرای ایجنت انجام نشد. تنظیمات و دسترسی‌ها را بررسی کنید.'})
     finally:
         _execution.reset(token)
 
@@ -190,7 +208,31 @@ def execute_task(attempt_id):
     execute(attempt_id)
 
 
+def dispatch_stops():
+    from core.app.apps.base_app_queue_manager import AppQueueManager
+    from extensions.ext_redis import redis_client
+    from graphon.graph_engine.manager import GraphEngineManager
+    with Session(db.engine) as session:
+        attempts = agents.tables(session)[2]
+        rows = list(session.execute(sa.select(attempts.c.id).where(attempts.c.status == 'interrupted',
+            attempts.c.result['stop_requested'].as_boolean() == True,
+            sa.or_(attempts.c.result['stop_sent'].as_boolean().is_(None),
+                attempts.c.result['stop_sent'].as_boolean() == False)).limit(100)).scalars())
+    for identity in rows:
+        try:
+            AppQueueManager.set_stop_flag_no_user_check(identity)
+            GraphEngineManager(redis_client).send_stop_command(identity)
+            with Session(db.engine) as session, session.begin():
+                attempts = agents.tables(session)[2]
+                session.execute(attempts.update().where(attempts.c.id == identity, attempts.c.status == 'interrupted')
+                    .values(result=attempts.c.result.op('||')(sa.func.jsonb_build_object('stop_sent', True))))
+        except Exception:
+            logger.exception('Team stop deferred: %s', identity)
+    return len(rows)
+
+
 def dispatch_pending():
+    dispatch_stops()
     with Session(db.engine) as session:
         _, _, attempts = agents.tables(session)
         ids = list(session.scalars(sa.select(attempts.c.id).where(attempts.c.status == 'pending')

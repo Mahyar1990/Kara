@@ -167,6 +167,8 @@ def save(session, project_id, workspace_id, actor_id, data, key, request_id=None
     session.execute(table.update().where(table.c.id == row['id']).values(revision=row['revision'],
         current_revision_id=row['current_revision_id'], current_decision_id=None, updated_at=row['updated_at']))
     result = public(session, row, po, actor_id, detail=True)
+    from company_projects.recovery import request_changed
+    request_changed(session, scoped, row['id'], actor_id)
     agents.event(session, scoped, actor_id, key, fingerprint, 'request.revised', result)
     return result
 
@@ -243,6 +245,8 @@ def decide(session, project_id, workspace_id, actor_id, request_id, data, key, r
     session.execute(table.update().where(table.c.id == row['id']).values(revision=row['revision'],
         current_decision_id=decision['id'], updated_at=row['updated_at']))
     result = public(session, row, True, actor_id, detail=True)
+    from company_projects.recovery import request_changed
+    request_changed(session, scoped, row['id'], actor_id)
     agents.event(session, scoped, actor_id, key, fingerprint, 'request.intake.' + outcome, result)
     return result
 
