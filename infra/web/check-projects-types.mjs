@@ -7,6 +7,9 @@ const config = ts.readConfigFile(configPath, ts.sys.readFile)
 if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'))
 const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root)
 const files = [
+  'app/components/company-projects/team-runs.tsx',
+  'app/(commonLayout)/projects/[projectId]/team-runs/page.tsx',
+  'service/company-stages.ts',
   'app/components/company-projects/team-requests.tsx',
   'app/(commonLayout)/projects/[projectId]/requests/page.tsx',
   'service/company-requests.ts',

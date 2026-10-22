@@ -35,6 +35,7 @@ export function projectNavigation(projectId: string, nativeItems: MainNavItem[])
     item(`${base}/team-agents`, 'ایجنت‌های تیم', 'i-ri-team-line', path => path === `${base}/team-agents`),
     item(`${base}/team-flows`, 'فلوهای تیم', 'i-ri-route-line', path => path === `${base}/team-flows`),
     item(`${base}/requests`, 'درخواست‌های تیم', 'i-ri-file-list-3-line', path => path === `${base}/requests`),
+    item(`${base}/team-runs`, 'اجرای تیمی', 'i-ri-play-circle-line', path => path === `${base}/team-runs`),
     ...nativeItems.filter(entry => !['/', '/projects', '/users'].includes(entry.href))
       .map(entry => entry.href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها' } : entry),
     item(`${base}/templates`, 'قالب‌های آماده', 'i-ri-file-copy-line', path => path === `${base}/templates`),
