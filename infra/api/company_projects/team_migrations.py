@@ -104,7 +104,78 @@ $$;
 CREATE TRIGGER company_team_flow_version_immutable BEFORE UPDATE OR DELETE ON company_team_flow_versions
     FOR EACH ROW EXECUTE FUNCTION company_team_keep_flow_version();
 """
-MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA))
+REQUEST_SCHEMA = """
+CREATE TABLE company_team_requests (
+    id uuid PRIMARY KEY, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    revision integer NOT NULL CHECK (revision > 0), current_revision_id uuid, current_decision_id uuid,
+    created_by uuid NOT NULL, created_at timestamptz NOT NULL, updated_at timestamptz NOT NULL,
+    UNIQUE (id, project_id, workspace_id),
+    FOREIGN KEY (project_id, workspace_id) REFERENCES company_project_workspaces(project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_request_revisions (
+    id uuid PRIMARY KEY, request_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    version integer NOT NULL CHECK (version > 0), title varchar(200) NOT NULL, content text NOT NULL,
+    origin varchar(16) NOT NULL CHECK (origin = 'manual'), attachment_ids jsonb NOT NULL,
+    digest varchar(64) NOT NULL, author_id uuid NOT NULL, membership_id uuid NOT NULL, created_at timestamptz NOT NULL,
+    UNIQUE (request_id, version), UNIQUE (id, request_id, project_id, workspace_id),
+    FOREIGN KEY (request_id, project_id, workspace_id) REFERENCES company_team_requests(id, project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_request_attachments (
+    id uuid PRIMARY KEY, request_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    name varchar(200) NOT NULL, size integer NOT NULL CHECK (size > 0 AND size <= 2097152),
+    digest varchar(64) NOT NULL, content bytea NOT NULL, created_by uuid NOT NULL, created_at timestamptz NOT NULL,
+    CHECK (octet_length(content) = size),
+    FOREIGN KEY (request_id, project_id, workspace_id) REFERENCES company_team_requests(id, project_id, workspace_id)
+);
+-- kara-statement
+CREATE TABLE company_team_intake_decisions (
+    id uuid PRIMARY KEY, request_id uuid NOT NULL, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+    request_revision_id uuid NOT NULL, request_digest varchar(64) NOT NULL,
+    flow_id uuid, flow_version_id uuid, flow_digest varchar(64),
+    outcome varchar(16) NOT NULL CHECK (outcome IN ('approved','rejected','deferred','revoked')),
+    mode varchar(8) NOT NULL CHECK (mode = 'real'), reason varchar(2000) NOT NULL,
+    actor_id uuid NOT NULL, membership_id uuid NOT NULL, created_at timestamptz NOT NULL, expires_at timestamptz,
+    revokes_id uuid,
+    UNIQUE (id, request_id, project_id, workspace_id),
+    CHECK ((flow_id IS NULL AND flow_version_id IS NULL AND flow_digest IS NULL) OR
+           (flow_id IS NOT NULL AND flow_version_id IS NOT NULL AND flow_digest IS NOT NULL)),
+    CHECK (outcome <> 'approved' OR flow_version_id IS NOT NULL),
+    CHECK ((outcome = 'revoked') = (revokes_id IS NOT NULL)),
+    FOREIGN KEY (request_revision_id, request_id, project_id, workspace_id)
+        REFERENCES company_team_request_revisions(id, request_id, project_id, workspace_id),
+    FOREIGN KEY (flow_version_id, flow_id, project_id, workspace_id)
+        REFERENCES company_team_flow_versions(id, flow_id, project_id, workspace_id),
+    FOREIGN KEY (revokes_id, request_id, project_id, workspace_id)
+        REFERENCES company_team_intake_decisions(id, request_id, project_id, workspace_id)
+);
+-- kara-statement
+ALTER TABLE company_team_requests ADD CONSTRAINT company_team_request_current_revision_fk
+    FOREIGN KEY (current_revision_id, id, project_id, workspace_id)
+    REFERENCES company_team_request_revisions(id, request_id, project_id, workspace_id);
+-- kara-statement
+ALTER TABLE company_team_requests ADD CONSTRAINT company_team_request_current_decision_fk
+    FOREIGN KEY (current_decision_id, id, project_id, workspace_id)
+    REFERENCES company_team_intake_decisions(id, request_id, project_id, workspace_id);
+-- kara-statement
+CREATE FUNCTION company_team_keep_request_record() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'Team request history is immutable';
+END;
+$$;
+-- kara-statement
+CREATE TRIGGER company_team_request_revision_immutable BEFORE UPDATE OR DELETE ON company_team_request_revisions
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+-- kara-statement
+CREATE TRIGGER company_team_request_attachment_immutable BEFORE UPDATE OR DELETE ON company_team_request_attachments
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+-- kara-statement
+CREATE TRIGGER company_team_intake_decision_immutable BEFORE UPDATE OR DELETE ON company_team_intake_decisions
+    FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
+"""
+MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
+              ('004_team_requests', REQUEST_SCHEMA))
 
 
 def checksum(sql):

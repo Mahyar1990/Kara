@@ -13,7 +13,7 @@ from models.model import App
 from models.workflow import Workflow
 
 
-class FlowTests(ProjectDatabaseFixture):
+class FlowFixture(ProjectDatabaseFixture):
     def setUp(self):
         super().setUp()
         access.membership(self.session, self.workspace_a.id, self.admin.id).role = 'normal'
@@ -52,6 +52,8 @@ class FlowTests(ProjectDatabaseFixture):
         return flows.mutate(self.session, self.a['id'], self.workspace_a.id, (actor or self.editor).id,
             dict(expected_revision=row['revision']), key or str(uuid4()), row['id'], 'publish')
 
+
+class FlowTests(FlowFixture):
     def test_native_authority_and_draft_visibility(self):
         with self.assertRaises(Forbidden):
             self.save(actor=self.admin)
