@@ -1,0 +1,19 @@
+{
+  "kind": "kara-agent-contract",
+  "role_id": "TL-PLANNER",
+  "contract_version": "0.1.0",
+  "status": "offline-contract-only",
+  "live_model_test": false,
+  "workflow_revision": null,
+  "artifacts": {
+    "contract.py": "ea4ba414be4c056cea70cbed69c87bcb29660e776766bc2df36fc8248d9a04cd",
+    "handoff.py": "89b13c212aa77af5c0c442fb1ed4577cd8421ba71b367cd576f47ae2e8ced599",
+    "schemas/output.schema.json": "587ed034e2e01e5d8d051c7d56399800796b5cd47a844af6040706d1b7337fea",
+    "fixtures/cases.json": "3bbb58c079c752eb5796cb6a1e35d375c17379fb266c85a32d67452f51279840"
+  },
+  "limits": {
+    "max_payload_bytes": 32768,
+    "max_tasks": 30,
+    "automatic_model_retries": 0
+  }
+}

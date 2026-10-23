@@ -1,0 +1,473 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:kara:clasor:tl-planner:output:0.1.0",
+  "type": "object",
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "role_id": {
+      "const": "TL-PLANNER"
+    },
+    "analysis_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "[0-9a-f]{64}"
+    },
+    "input_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "[0-9a-f]{64}"
+    },
+    "status": {
+      "enum": [
+        "needs_product_decision",
+        "needs_technical_review",
+        "ready_for_technical_discussion"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "minItems": 0,
+          "maxItems": 12
+        },
+        "excluded": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "minItems": 0,
+          "maxItems": 12
+        }
+      },
+      "required": [
+        "included",
+        "excluded"
+      ],
+      "additionalProperties": false
+    },
+    "repository_impact": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "repository": {
+            "enum": [
+              "server",
+              "client",
+              "newman",
+              "playwright"
+            ]
+          },
+          "effect": {
+            "enum": [
+              "change",
+              "run_or_read",
+              "unrelated",
+              "unknown"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "repository",
+          "effect",
+          "reason",
+          "source_refs"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "T-[a-zA-Z0-9_-]+"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "kind": {
+            "enum": [
+              "investigation",
+              "implementation",
+              "test_creation",
+              "verification",
+              "integration"
+            ]
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "server",
+                "client",
+                "newman",
+                "playwright"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true
+          },
+          "ac_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "AC-[a-zA-Z0-9_-]+"
+            },
+            "minItems": 1,
+            "maxItems": 30,
+            "uniqueItems": true
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true
+          },
+          "deliverable": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "T-[a-zA-Z0-9_-]+"
+            },
+            "minItems": 0,
+            "maxItems": 30,
+            "uniqueItems": true
+          },
+          "start_condition": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "verification": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "expected_evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "repositories",
+          "ac_ids",
+          "source_refs",
+          "deliverable",
+          "depends_on",
+          "start_condition",
+          "verification",
+          "expected_evidence"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 30
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ac_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "AC-[a-zA-Z0-9_-]+"
+          },
+          "task_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "T-[a-zA-Z0-9_-]+"
+            },
+            "minItems": 1,
+            "maxItems": 30,
+            "uniqueItems": true
+          },
+          "scenario": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "method": {
+            "enum": [
+              "newman",
+              "playwright",
+              "repository_check",
+              "manual"
+            ]
+          },
+          "test_repository": {
+            "enum": [
+              "server",
+              "client",
+              "newman",
+              "playwright",
+              null
+            ]
+          },
+          "method_source_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "repository": {
+                  "enum": [
+                    "server",
+                    "client",
+                    "newman",
+                    "playwright"
+                  ]
+                },
+                "commit": {
+                  "type": "string",
+                  "pattern": "[0-9a-f]{40}",
+                  "minLength": 40,
+                  "maxLength": 40
+                }
+              },
+              "required": [
+                "repository",
+                "commit"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 4
+          },
+          "expected_evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          }
+        },
+        "required": [
+          "ac_id",
+          "task_ids",
+          "scenario",
+          "method",
+          "test_repository",
+          "method_source_refs",
+          "versions",
+          "expected_evidence"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 60
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "Q-[a-zA-Z0-9_-]+"
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "impact": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "owner": {
+            "enum": [
+              "PO",
+              "TL"
+            ]
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "blocked_stage": {
+            "enum": [
+              "analysis",
+              "planning",
+              "development"
+            ]
+          },
+          "ac_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "AC-[a-zA-Z0-9_-]+"
+            },
+            "minItems": 0,
+            "maxItems": 30,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "question",
+          "impact",
+          "owner",
+          "blocking",
+          "blocked_stage",
+          "ac_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 12
+    },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "statement",
+          "source_refs"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 12
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000,
+        "pattern": "[\\s\\S]*\\S[\\s\\S]*"
+      },
+      "minItems": 0,
+      "maxItems": 12
+    }
+  },
+  "required": [
+    "contract_version",
+    "role_id",
+    "analysis_sha256",
+    "input_sha256",
+    "status",
+    "summary",
+    "scope",
+    "repository_impact",
+    "tasks",
+    "coverage",
+    "questions",
+    "proposals",
+    "limitations"
+  ],
+  "additionalProperties": false
+}

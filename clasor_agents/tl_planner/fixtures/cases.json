@@ -1,0 +1,355 @@
+[
+  {
+    "id": "technical-discussion",
+    "synthetic": true,
+    "prepared_input": {
+      "contract_version": "0.1.0",
+      "role_id": "TL-PLANNER",
+      "binding": {
+        "project_id": "00000000-0000-4000-8000-000000000001",
+        "request_id": "00000000-0000-4000-8000-000000000002",
+        "request_revision_id": "00000000-0000-4000-8000-000000000003",
+        "request_sha256": "54d7e66e9a1459f1a8ea4d6c883eb3f35ef92fc69631c91bd1620eba2c18fec6",
+        "stage_id": "synthetic-tl-stage",
+        "base_revision": 1,
+        "analysis_sha256": "30c754cc57e4a65a83a24dd49aac62714bbaa9876b9871e2d12b086ec25c1f4e",
+        "finalization": {
+          "stage_id": "00000000-0000-4000-8000-000000000004",
+          "artifact_id": "synthetic-artifact",
+          "digest": "native-digest",
+          "decision_id": "synthetic-decision",
+          "finalized_by": "synthetic-po",
+          "finalized_at": "2026-10-23T00:00:00Z"
+        }
+      },
+      "request": "با زدن دکمهٔ بازخوانی، فهرست اسناد دوباره دریافت شود.",
+      "analysis": "{\"acceptance_criteria\":[{\"given\":\"فهرست اسناد باز است.\",\"id\":\"AC-1\",\"requirement_ids\":[\"R-1\"],\"source_refs\":[\"request\"],\"then\":\"فهرست اسناد دوباره دریافت می‌شود.\",\"when\":\"کاربر بازخوانی را انتخاب می‌کند.\"}],\"assumptions\":[],\"conditions\":[{\"id\":\"C-1\",\"quote\":\"فهرست اسناد دوباره دریافت شود\",\"source_refs\":[\"request\"]}],\"contract_version\":\"1.0.0\",\"questions\":[],\"request_sha256\":\"54d7e66e9a1459f1a8ea4d6c883eb3f35ef92fc69631c91bd1620eba2c18fec6\",\"requirements\":[{\"condition_ids\":[\"C-1\"],\"id\":\"R-1\",\"source_refs\":[\"request\"],\"statement\":\"با اقدام بازخوانی کاربر، فهرست اسناد مجدداً دریافت شود.\"}],\"role_id\":\"PA-04\",\"scope\":{\"excluded\":[\"سیاست‌های اعلام‌نشده\"],\"included\":[\"همین درخواست ساختگی\"]},\"status\":\"ready_for_review\",\"summary\":\"تحلیل نمونهٔ ساختگی؛ تصمیم انسانی نیست.\"}",
+      "repositories": {
+        "playwright": {
+          "ref": "refs/remotes/origin/sandbox",
+          "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "repository_rules": [],
+          "evidence": [
+            {
+              "path": "doc/synthetic.md",
+              "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "content": "Synthetic reference: inspect the change; record verification evidence.",
+              "sha256": "2b367f4e73f6161df2f7ce755047cb319d4e2325a384fc8778def339a6535de6"
+            }
+          ]
+        },
+        "client": {
+          "ref": "refs/remotes/origin/sandbox",
+          "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "repository_rules": [],
+          "evidence": [
+            {
+              "path": "doc/synthetic.md",
+              "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "content": "Synthetic reference: inspect the change; record verification evidence.",
+              "sha256": "2b367f4e73f6161df2f7ce755047cb319d4e2325a384fc8778def339a6535de6"
+            }
+          ]
+        },
+        "newman": {
+          "ref": "refs/remotes/origin/sandbox",
+          "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "repository_rules": [],
+          "evidence": [
+            {
+              "path": "doc/synthetic.md",
+              "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "content": "Synthetic reference: inspect the change; record verification evidence.",
+              "sha256": "2b367f4e73f6161df2f7ce755047cb319d4e2325a384fc8778def339a6535de6"
+            }
+          ]
+        },
+        "server": {
+          "ref": "refs/remotes/origin/sandbox",
+          "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "repository_rules": [],
+          "evidence": [
+            {
+              "path": "doc/synthetic.md",
+              "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "content": "Synthetic reference: inspect the change; record verification evidence.",
+              "sha256": "2b367f4e73f6161df2f7ce755047cb319d4e2325a384fc8778def339a6535de6"
+            }
+          ]
+        }
+      },
+      "status": "draft_contract_only"
+    },
+    "expected_input_sha256": "1109fe34e76aaa7c532a0db6fc4a93b2d5642644420dbe05b249e58b50ae0a3b",
+    "reference_output": {
+      "contract_version": "0.1.0",
+      "role_id": "TL-PLANNER",
+      "analysis_sha256": "30c754cc57e4a65a83a24dd49aac62714bbaa9876b9871e2d12b086ec25c1f4e",
+      "input_sha256": "1109fe34e76aaa7c532a0db6fc4a93b2d5642644420dbe05b249e58b50ae0a3b",
+      "status": "ready_for_technical_discussion",
+      "summary": "پیش‌نویس ساختگی بررسی رفتار مصوب",
+      "scope": {
+        "excluded": [
+          "سیاست‌های اعلام‌نشده"
+        ],
+        "included": [
+          "همین درخواست ساختگی"
+        ]
+      },
+      "repository_impact": [
+        {
+          "repository": "client",
+          "effect": "unrelated",
+          "reason": "دامنهٔ ساختگی این نمونه",
+          "source_refs": [
+            "client/evidence/doc/synthetic.md"
+          ]
+        },
+        {
+          "repository": "newman",
+          "effect": "run_or_read",
+          "reason": "دامنهٔ ساختگی این نمونه",
+          "source_refs": [
+            "newman/evidence/doc/synthetic.md"
+          ]
+        },
+        {
+          "repository": "playwright",
+          "effect": "unrelated",
+          "reason": "دامنهٔ ساختگی این نمونه",
+          "source_refs": [
+            "playwright/evidence/doc/synthetic.md"
+          ]
+        },
+        {
+          "repository": "server",
+          "effect": "run_or_read",
+          "reason": "دامنهٔ ساختگی این نمونه",
+          "source_refs": [
+            "server/evidence/doc/synthetic.md"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "T-01",
+          "title": "بررسی رفتار مصوب",
+          "kind": "verification",
+          "repositories": [
+            "server"
+          ],
+          "ac_ids": [
+            "AC-1"
+          ],
+          "source_refs": [
+            "analysis",
+            "server/evidence/doc/synthetic.md"
+          ],
+          "deliverable": "گزارش بررسی نسخهٔ مشخص",
+          "depends_on": [],
+          "start_condition": "نسخه و دادهٔ تست مجاز آماده باشند",
+          "verification": "سناریوهای مصوب بررسی شوند",
+          "expected_evidence": "گزارش واقعی ابزار با نسخه و نتیجه"
+        }
+      ],
+      "coverage": [
+        {
+          "ac_id": "AC-1",
+          "task_ids": [
+            "T-01"
+          ],
+          "scenario": "بررسی رفتار همین معیار در دادهٔ ساختگی",
+          "method": "newman",
+          "test_repository": "newman",
+          "method_source_refs": [
+            "newman/evidence/doc/synthetic.md"
+          ],
+          "versions": [
+            {
+              "repository": "server",
+              "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "repository": "newman",
+              "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          ],
+          "expected_evidence": "خروجی واقعی Newman برای نسخه‌های ثبت‌شده"
+        }
+      ],
+      "questions": [],
+      "proposals": [],
+      "limitations": [
+        "تمام منابع و تصمیم‌ها ساختگی‌اند؛ هیچ تست محصول اجرا نشده است."
+      ]
+    }
+  },
+  {
+    "id": "missing-context",
+    "synthetic": true,
+    "prepared_input": {
+      "contract_version": "0.1.0",
+      "role_id": "TL-PLANNER",
+      "binding": {
+        "project_id": "00000000-0000-4000-8000-000000000001",
+        "request_id": "00000000-0000-4000-8000-000000000002",
+        "request_revision_id": "00000000-0000-4000-8000-000000000003",
+        "request_sha256": "54d7e66e9a1459f1a8ea4d6c883eb3f35ef92fc69631c91bd1620eba2c18fec6",
+        "stage_id": "synthetic-tl-stage",
+        "base_revision": 1,
+        "analysis_sha256": "30c754cc57e4a65a83a24dd49aac62714bbaa9876b9871e2d12b086ec25c1f4e",
+        "finalization": {
+          "stage_id": "00000000-0000-4000-8000-000000000004",
+          "artifact_id": "synthetic-artifact",
+          "digest": "native-digest",
+          "decision_id": "synthetic-decision",
+          "finalized_by": "synthetic-po",
+          "finalized_at": "2026-10-23T00:00:00Z"
+        }
+      },
+      "request": "با زدن دکمهٔ بازخوانی، فهرست اسناد دوباره دریافت شود.",
+      "analysis": "{\"acceptance_criteria\":[{\"given\":\"فهرست اسناد باز است.\",\"id\":\"AC-1\",\"requirement_ids\":[\"R-1\"],\"source_refs\":[\"request\"],\"then\":\"فهرست اسناد دوباره دریافت می‌شود.\",\"when\":\"کاربر بازخوانی را انتخاب می‌کند.\"}],\"assumptions\":[],\"conditions\":[{\"id\":\"C-1\",\"quote\":\"فهرست اسناد دوباره دریافت شود\",\"source_refs\":[\"request\"]}],\"contract_version\":\"1.0.0\",\"questions\":[],\"request_sha256\":\"54d7e66e9a1459f1a8ea4d6c883eb3f35ef92fc69631c91bd1620eba2c18fec6\",\"requirements\":[{\"condition_ids\":[\"C-1\"],\"id\":\"R-1\",\"source_refs\":[\"request\"],\"statement\":\"با اقدام بازخوانی کاربر، فهرست اسناد مجدداً دریافت شود.\"}],\"role_id\":\"PA-04\",\"scope\":{\"excluded\":[\"سیاست‌های اعلام‌نشده\"],\"included\":[\"همین درخواست ساختگی\"]},\"status\":\"ready_for_review\",\"summary\":\"تحلیل نمونهٔ ساختگی؛ تصمیم انسانی نیست.\"}",
+      "repositories": {
+        "playwright": {
+          "ref": "refs/remotes/origin/sandbox",
+          "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "repository_rules": [],
+          "evidence": []
+        },
+        "client": {
+          "ref": "refs/remotes/origin/sandbox",
+          "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "repository_rules": [],
+          "evidence": []
+        },
+        "newman": {
+          "ref": "refs/remotes/origin/sandbox",
+          "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "repository_rules": [],
+          "evidence": []
+        },
+        "server": {
+          "ref": "refs/remotes/origin/sandbox",
+          "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "repository_rules": [],
+          "evidence": []
+        }
+      },
+      "status": "draft_contract_only"
+    },
+    "expected_input_sha256": "e19b4fbcc970982923dda3b902ac63cfca4b405dde7dfd559e390ef0ec9e0d0d",
+    "reference_output": {
+      "contract_version": "0.1.0",
+      "role_id": "TL-PLANNER",
+      "analysis_sha256": "30c754cc57e4a65a83a24dd49aac62714bbaa9876b9871e2d12b086ec25c1f4e",
+      "input_sha256": "e19b4fbcc970982923dda3b902ac63cfca4b405dde7dfd559e390ef0ec9e0d0d",
+      "status": "needs_technical_review",
+      "summary": "پیش‌نویس ساختگی بررسی رفتار مصوب",
+      "scope": {
+        "excluded": [
+          "سیاست‌های اعلام‌نشده"
+        ],
+        "included": [
+          "همین درخواست ساختگی"
+        ]
+      },
+      "repository_impact": [
+        {
+          "repository": "client",
+          "effect": "unknown",
+          "reason": "دامنهٔ ساختگی این نمونه",
+          "source_refs": [
+            "analysis"
+          ]
+        },
+        {
+          "repository": "newman",
+          "effect": "unknown",
+          "reason": "دامنهٔ ساختگی این نمونه",
+          "source_refs": [
+            "analysis"
+          ]
+        },
+        {
+          "repository": "playwright",
+          "effect": "unknown",
+          "reason": "دامنهٔ ساختگی این نمونه",
+          "source_refs": [
+            "analysis"
+          ]
+        },
+        {
+          "repository": "server",
+          "effect": "unknown",
+          "reason": "دامنهٔ ساختگی این نمونه",
+          "source_refs": [
+            "analysis"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "T-01",
+          "title": "بررسی رفتار مصوب",
+          "kind": "investigation",
+          "repositories": [
+            "server"
+          ],
+          "ac_ids": [
+            "AC-1"
+          ],
+          "source_refs": [
+            "analysis"
+          ],
+          "deliverable": "گزارش بررسی نسخهٔ مشخص",
+          "depends_on": [],
+          "start_condition": "نسخه و دادهٔ تست مجاز آماده باشند",
+          "verification": "سناریوهای مصوب بررسی شوند",
+          "expected_evidence": "گزارش واقعی ابزار با نسخه و نتیجه"
+        }
+      ],
+      "coverage": [
+        {
+          "ac_id": "AC-1",
+          "task_ids": [
+            "T-01"
+          ],
+          "scenario": "بررسی رفتار همین معیار در دادهٔ ساختگی",
+          "method": "newman",
+          "test_repository": "newman",
+          "method_source_refs": [
+            "analysis"
+          ],
+          "versions": [
+            {
+              "repository": "server",
+              "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "repository": "newman",
+              "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          ],
+          "expected_evidence": "خروجی واقعی Newman برای نسخه‌های ثبت‌شده"
+        }
+      ],
+      "questions": [
+        {
+          "id": "Q-01",
+          "question": "روش تست واقعی کجاست؟",
+          "impact": "روش اجرا هنوز تأیید نشده",
+          "owner": "TL",
+          "blocking": true,
+          "blocked_stage": "planning",
+          "ac_ids": [
+            "AC-1"
+          ]
+        }
+      ],
+      "proposals": [],
+      "limitations": [
+        "تمام منابع و تصمیم‌ها ساختگی‌اند؛ هیچ تست محصول اجرا نشده است."
+      ]
+    }
+  }
+]
