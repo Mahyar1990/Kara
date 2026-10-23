@@ -194,6 +194,8 @@ def doctor():
         if revision != api_fingerprint():
             raise RuntimeError(f"Projects backend customization is outdated: {name}; run make up")
     print("Dify projects backend check: current custom image")
+    from model_stream import check as check_stream
+    check_stream()
     # Capture the resolved config to validate bindings without printing credentials.
     resolved = json.loads(compose(["config", "--format", "json"], capture=True).stdout)
     sandbox_key = resolved["services"]["sandbox"]["environment"].get("API_KEY")
@@ -257,6 +259,8 @@ def main():
                 raise
         compose(["up", "-d", "--quiet-pull"])
         wait_for_api()
+        from model_stream import check as check_stream
+        check_stream(apply=True)
         print(f"Dify: http://localhost:{settings()['DIFY_HTTP_PORT']}")
     elif action == "down":
         compose(["down"])
