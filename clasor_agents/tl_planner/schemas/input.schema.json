@@ -1,0 +1,540 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:kara:clasor:tl-planner:input:0.1.0",
+  "type": "object",
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "role_id": {
+      "const": "TL-PLANNER"
+    },
+    "status": {
+      "const": "draft_contract_only"
+    },
+    "request": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "analysis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16000
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "request_revision_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "request_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "[0-9a-f]{64}"
+        },
+        "stage_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "analysis_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "[0-9a-f]{64}"
+        },
+        "finalization": {
+          "type": "object",
+          "properties": {
+            "stage_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "artifact_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "digest": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "decision_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "finalized_by": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "finalized_at": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          "required": [
+            "stage_id",
+            "artifact_id",
+            "digest",
+            "decision_id",
+            "finalized_by",
+            "finalized_at"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "project_id",
+        "request_id",
+        "request_revision_id",
+        "request_sha256",
+        "stage_id",
+        "base_revision",
+        "analysis_sha256",
+        "finalization"
+      ],
+      "additionalProperties": false
+    },
+    "repositories": {
+      "type": "object",
+      "properties": {
+        "server": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "const": "refs/remotes/origin/sandbox"
+            },
+            "commit": {
+              "type": "string",
+              "minLength": 40,
+              "maxLength": 40,
+              "pattern": "[0-9a-f]{40}"
+            },
+            "repository_rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 40,
+                    "pattern": "[0-9a-f]{40}"
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "pattern": "[0-9a-f]{64}"
+                  }
+                },
+                "required": [
+                  "path",
+                  "commit",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 40,
+                    "pattern": "[0-9a-f]{40}"
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "pattern": "[0-9a-f]{64}"
+                  }
+                },
+                "required": [
+                  "path",
+                  "commit",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            }
+          },
+          "required": [
+            "ref",
+            "commit",
+            "repository_rules",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "client": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "const": "refs/remotes/origin/sandbox"
+            },
+            "commit": {
+              "type": "string",
+              "minLength": 40,
+              "maxLength": 40,
+              "pattern": "[0-9a-f]{40}"
+            },
+            "repository_rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 40,
+                    "pattern": "[0-9a-f]{40}"
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "pattern": "[0-9a-f]{64}"
+                  }
+                },
+                "required": [
+                  "path",
+                  "commit",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 40,
+                    "pattern": "[0-9a-f]{40}"
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "pattern": "[0-9a-f]{64}"
+                  }
+                },
+                "required": [
+                  "path",
+                  "commit",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            }
+          },
+          "required": [
+            "ref",
+            "commit",
+            "repository_rules",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "newman": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "const": "refs/remotes/origin/sandbox"
+            },
+            "commit": {
+              "type": "string",
+              "minLength": 40,
+              "maxLength": 40,
+              "pattern": "[0-9a-f]{40}"
+            },
+            "repository_rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 40,
+                    "pattern": "[0-9a-f]{40}"
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "pattern": "[0-9a-f]{64}"
+                  }
+                },
+                "required": [
+                  "path",
+                  "commit",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 40,
+                    "pattern": "[0-9a-f]{40}"
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "pattern": "[0-9a-f]{64}"
+                  }
+                },
+                "required": [
+                  "path",
+                  "commit",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            }
+          },
+          "required": [
+            "ref",
+            "commit",
+            "repository_rules",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "playwright": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "const": "refs/remotes/origin/sandbox"
+            },
+            "commit": {
+              "type": "string",
+              "minLength": 40,
+              "maxLength": 40,
+              "pattern": "[0-9a-f]{40}"
+            },
+            "repository_rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 40,
+                    "pattern": "[0-9a-f]{40}"
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "pattern": "[0-9a-f]{64}"
+                  }
+                },
+                "required": [
+                  "path",
+                  "commit",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 40,
+                    "pattern": "[0-9a-f]{40}"
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "pattern": "[0-9a-f]{64}"
+                  }
+                },
+                "required": [
+                  "path",
+                  "commit",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            }
+          },
+          "required": [
+            "ref",
+            "commit",
+            "repository_rules",
+            "evidence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "server",
+        "client",
+        "newman",
+        "playwright"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "contract_version",
+    "role_id",
+    "status",
+    "request",
+    "analysis",
+    "binding",
+    "repositories"
+  ],
+  "additionalProperties": false
+}
