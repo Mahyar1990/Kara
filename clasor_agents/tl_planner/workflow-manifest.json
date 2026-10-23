@@ -1,6 +1,6 @@
 {
   "role_id": "TL-PLANNER",
-  "workflow_revision": "0.1.0",
+  "workflow_revision": "0.1.1",
   "prompt_revision": "0.1.0",
   "contract_version": "0.1.0",
   "artifacts": {
@@ -8,13 +8,13 @@
     "contract.py": "ea4ba414be4c056cea70cbed69c87bcb29660e776766bc2df36fc8248d9a04cd",
     "handoff.py": "89b13c212aa77af5c0c442fb1ed4577cd8421ba71b367cd576f47ae2e8ced599",
     "transport.py": "e2a0e58e522169f1eb744713a7f0c365072ebf4ee40701559a6fdaa2c4c93e4a",
-    "workflow.py": "e4f278025ff4a02ff8ca1c8f9f24571d6230ed49d6d8590c1abe272b48593443",
+    "workflow.py": "a89672a54766e3ad61f609dcf2042a5410a88237d3a32ecceb1db8df00ab6d23",
     "schemas/input.schema.json": "dded177edf6e1cd28319fe012831f578b099c918ec2489c25b0c03320503159b",
     "schemas/output.schema.json": "587ed034e2e01e5d8d051c7d56399800796b5cd47a844af6040706d1b7337fea"
   },
-  "workflow_sha256": "f09a1354670bc65d76078b9955dd7485a5dd4a0b089b7b07075fac4228814b0c",
+  "workflow_sha256": "a9b8f9e5ececf721426ec20f00f0d3f559b101560086841116d8c86074afe26c",
   "shared_contract_sha256": "f755600b1ba68a31def0b3876975a5535b5030921bf7d994191c7fccf561429e",
-  "graph_builder_sha256": "2369b7e27d9cd294d845d053bb7e7efd0349d3d702c1a2bd3b8a7b8c4a2c9d74",
+  "graph_builder_sha256": "777bf86c37e26eb9ed45476ded02cb37d7b1109997763b85db66971ffce9e16f",
   "provider": "langgenius/openai_api_compatible/openai_api_compatible",
   "model_alias": "Clasor TL Planner Pilot v0.1.0",
   "model_profile": {

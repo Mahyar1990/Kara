@@ -99,6 +99,8 @@ class TLWorkflowTests(unittest.TestCase):
         self.assertIn(dict(variable='finish_reason',value_selector=['llm','finish_reason']),self.nodes['validate']['variables'])
         self.assertIn(dict(variable='prepared_input',value_selector=['prepare','prepared_input']),self.nodes['validate']['variables'])
         self.assertEqual(self.nodes['end']['outputs'],[dict(variable='plan',value_selector=['validate','plan'],value_type='string')])
+        self.assertEqual(self.nodes['validate']['kara_output_validator'],
+            dict(version=1,candidate_arguments=dict(text='plan')))
         self.assertFalse(self.nodes['llm']['retry_config']['retry_enabled'])
         self.assertEqual(self.nodes['llm']['model']['completion_params']['max_tokens'],4096)
         for key in ('prepare','validate'):

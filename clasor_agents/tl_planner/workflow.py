@@ -8,7 +8,8 @@ from .handoff import REPOSITORIES
 from .transport import INPUT_SCHEMA, FEEDBACK_SCHEMA, HASH_SCHEMA
 
 canonical, digest = pa04_contract.canonical, pa04_contract.digest
-REVISION = '0.1.0'
+REVISION = '0.1.1'
+PROMPT_REVISION = '0.1.0'
 MODEL = 'Clasor TL Planner Pilot v0.1.0'
 
 
@@ -79,6 +80,7 @@ def build():
                          dict(role='user',text='{{#prepare.prompt_data#}}')])
     nodes['llm']['model']['name'] = MODEL
     nodes['validate'].update(title='اعتبارسنجی برنامه',code=validator_code(),
+        kara_output_validator=dict(version=1,candidate_arguments=dict(text='plan')),
         variables=[var('text',['llm','text']),var('finish_reason',['llm','finish_reason']),
                    var('prepared_input',['prepare','prepared_input']),var('input_sha256',['prepare','input_sha256'])],
         outputs=dict(plan=dict(type='string',children=None)))
@@ -89,7 +91,7 @@ def build():
 def manifest():
     files = ('prompt.md','contract.py','handoff.py','transport.py','workflow.py',
              'schemas/input.schema.json','schemas/output.schema.json')
-    return dict(role_id='TL-PLANNER',workflow_revision=REVISION,prompt_revision=REVISION,
+    return dict(role_id='TL-PLANNER',workflow_revision=REVISION,prompt_revision=PROMPT_REVISION,
         contract_version=VERSION,artifacts={name:digest((ROOT/name).read_text()) for name in files},
         workflow_sha256=digest(canonical(build())),
         shared_contract_sha256=digest((pa04_contract.ROOT/'contract.py').read_text()),

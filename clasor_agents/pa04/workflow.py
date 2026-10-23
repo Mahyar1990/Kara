@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 from .contract import ROOT,SCHEMAS,VERSION,canonical,digest
 
-REVISION='0.1.2'
+REVISION='0.1.3'
+PROMPT_REVISION='0.1.2'
 PROVIDER='langgenius/openai_api_compatible/openai_api_compatible'
 PLUGIN='langgenius/openai_api_compatible:0.0.68@ba61c5eccb814be7364117c0bec3710a51e09b20f31e37243e747a00f9377969'
 MODEL='Clasor PA04 Pilot v0.1.1'
@@ -74,6 +75,7 @@ def build():
             prompt_template=[dict(role='system',text=prompt),dict(role='user',text='{{#prepare.prompt_data#}}')],
             vision=dict(enabled=False),retry_config=dict(retry_enabled=False,max_retries=0,retry_interval=1000)),600),
         node('validate',dict(type='code',title='اعتبارسنجی تحلیل',code_language='python3',code=validator_code(),
+            kara_output_validator=dict(version=1,candidate_arguments=dict(text='analysis')),
             variables=[variable('text',['llm','text']),variable('finish_reason',['llm','finish_reason']),variable('request',['start','request']),variable('source_context',['start','source_context'])],
             outputs={'analysis':{'type':'string','children':None}}),900),
         node('end',dict(type='end',title='پیش‌نویس برای بررسی انسان',outputs=[dict(variable='analysis',value_selector=['validate','analysis'],value_type='string')]),1200)]
@@ -82,7 +84,7 @@ def build():
 
 
 def manifest():
-    return dict(role_id='PA-04',workflow_revision=REVISION,prompt_revision=REVISION,contract_version=VERSION,
+    return dict(role_id='PA-04',workflow_revision=REVISION,prompt_revision=PROMPT_REVISION,contract_version=VERSION,
         prompt_sha256=digest((ROOT/'prompt.md').read_text()),workflow_sha256=digest(canonical(build())),
         builder_sha256=digest(Path(__file__).read_text()),adapter_sha256=digest((ROOT/'native.py').read_text()),contract_sha256=digest((ROOT/'contract.py').read_text()),
         model_alias=MODEL,provider=PROVIDER,model_profile=MODEL_PROFILE,context_cap=16384,response_cap=4096,automatic_retries=0)

@@ -1,5 +1,7 @@
 # Workflow برنامه‌ریز فنی TL
 
+**به‌روزرسانی اتصال نهایی:** بستهٔ 0.1.1 اعلان hook نسخهٔ ۱ Kara را به خروجی plan متصل می‌کند؛ revision دستور 0.1.0 و قرارداد ثابت‌اند. [گزارش اتصال اعتبارسنج](clasor-finalization-hook.md) مرجع جاری است؛ متن و شواهد زیر سابقهٔ نسخهٔ 0.1.0 هستند.
+
 نسخهٔ بسته و دستور 0.1.0؛ قرارداد 0.1.0. **وضعیت جاری: تعریف مستقل در پایلوت import/منتشر و ثبت شده و Codeها در sandbox واقعی با پاسخ مرجع بررسی شدند؛ آزمون مدل و پذیرش PO → TL باقی‌اند.** [گزارش آماده‌سازی بومی](clasor-native-definitions.md) مرجع نصب جاری است.
 
 [دستور](../clasor_agents/tl_planner/prompt.md)، [سازنده](../clasor_agents/tl_planner/workflow.py)، [DSL](../clasor_agents/tl_planner/workflow.json)، [manifest متناظر](../clasor_agents/tl_planner/workflow-manifest.json)، [schema ورودی](../clasor_agents/tl_planner/schemas/input.schema.json) و [مبدل Start](../clasor_agents/tl_planner/transport.py) با هم نسخه‌گذاری می‌شوند. [قرارداد خروجی](clasor-tl-planner-contract.md) و اعتبارسنج قبلی حفظ شده‌اند؛ ساخت prompt و Code از همان schema/توابع انجام می‌شود، نه نسخهٔ دستی جداگانه.

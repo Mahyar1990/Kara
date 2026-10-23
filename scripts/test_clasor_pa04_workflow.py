@@ -23,7 +23,7 @@ class PA04WorkflowTests(unittest.TestCase):
 
     def test_invalid_or_truncated_model_response_has_no_analysis(self):
         case=self.cases[0];wire=build_inputs(case['input'],case['expected_binding'])
-        for text,reason in [('{','stop'),(canonical(case['reference_output']),'length'),('{}','stop')]:
+        for text,reason in [('{','stop'),(canonical(case['reference_output']),None),(canonical(case['reference_output']),'length'),('{}','stop')]:
             with self.subTest(reason=reason),self.assertRaises(self.validate['ContractError']):
                 self.validate['main'](text=text,finish_reason=reason,request=wire['request'],source_context=wire['source_context'])
 
@@ -45,6 +45,8 @@ class PA04WorkflowTests(unittest.TestCase):
         self.assertEqual([(e['source'],e['target']) for e in graph['edges']],[('start','prepare'),('prepare','llm'),('llm','validate'),('validate','end')])
         self.assertIn({'variable':'finish_reason','value_selector':['llm','finish_reason']},nodes['validate']['variables'])
         self.assertEqual(nodes['end']['outputs'][0]['value_selector'],['validate','analysis'])
+        self.assertEqual(nodes['validate']['kara_output_validator'],
+            dict(version=1,candidate_arguments=dict(text='analysis')))
         self.assertFalse(nodes['llm']['retry_config']['retry_enabled'])
         self.assertEqual(nodes['llm']['model']['completion_params']['max_tokens'],4096)
 
