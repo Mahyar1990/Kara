@@ -1,0 +1,19 @@
+{
+  "kind": "kara-clasor-team-flow",
+  "version": "0.1.0",
+  "status": "offline-preflight-only",
+  "template_sha256": "41199610ccec6a0c488dc3d690b16c41912d84796812fe6c6fd866f9cb524014",
+  "builder_sha256": "f16ebf1c7b246e16905298acc6fab284ca128d101298ff833bcc8507ff12321f",
+  "adapters": {
+    "pa04/inputs.py": "15d0d209e24869044dc00f9ccb8e15ac6bf1748e185dd82dd1d4e211e695084e",
+    "tl_planner/handoff.py": "89b13c212aa77af5c0c442fb1ed4577cd8421ba71b367cd576f47ae2e8ced599",
+    "tl_planner/transport.py": "e2a0e58e522169f1eb744713a7f0c365072ebf4ee40701559a6fdaa2c4c93e4a"
+  },
+  "workflows": {
+    "analysis": "07b8443397402de5d48296527797ade57bde75aa15da26319cbfd3f47ff72c25",
+    "planning": "f09a1354670bc65d76078b9955dd7485a5dd4a0b089b7b07075fac4228814b0c"
+  },
+  "published": false,
+  "live_acceptance": false,
+  "automatic_runs": 0
+}

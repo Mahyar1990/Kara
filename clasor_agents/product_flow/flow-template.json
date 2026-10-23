@@ -1,0 +1,66 @@
+{
+  "name": "تحلیل و برنامه‌ریزی کلاسور",
+  "description": "تحلیل با PO و برنامه‌ریزی با TL؛ تصمیم‌ها انسانی‌اند.",
+  "expected_revision": 1,
+  "stages": [
+    {
+      "key": "analysis",
+      "title": "تحلیل درخواست",
+      "agent_id": null,
+      "executor_id": null,
+      "executor_membership_id": null,
+      "finalizer_id": null,
+      "finalizer_membership_id": null,
+      "decision_role": "po",
+      "inputs": {
+        "request": {
+          "source": "request"
+        },
+        "mode": {
+          "source": "constant",
+          "value": "analyze"
+        },
+        "source_context": {
+          "source": "constant",
+          "value": "{\"previous_analysis\":null,\"sources\":[]}"
+        },
+        "feedback_context": {
+          "source": "constant",
+          "value": "هنوز بازخوردی ثبت نشده است."
+        }
+      }
+    },
+    {
+      "key": "planning",
+      "title": "برنامه‌ریزی فنی",
+      "agent_id": null,
+      "executor_id": null,
+      "executor_membership_id": null,
+      "finalizer_id": null,
+      "finalizer_membership_id": null,
+      "decision_role": "tl",
+      "inputs": {
+        "request": {
+          "source": "request"
+        },
+        "analysis": {
+          "source": "stage",
+          "stage_key": "analysis",
+          "output": "analysis"
+        },
+        "planning_context": {
+          "source": "constant",
+          "value": "{}"
+        },
+        "expected_input_sha256": {
+          "source": "constant",
+          "value": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "feedback_context": {
+          "source": "constant",
+          "value": "هنوز بازخوردی ثبت نشده است."
+        }
+      }
+    }
+  ]
+}
