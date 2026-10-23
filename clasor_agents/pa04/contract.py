@@ -150,11 +150,29 @@ def build_inputs(envelope, expected_binding):
 def validate_output(text, envelope, expected_binding):
     """Traceability/shape checks; cannot prove semantic completeness or PO approval."""
     validate_input(envelope, expected_binding)
+    return validate_analysis(text, envelope['request']['text'], envelope['sources'])
+
+
+def validate_context(request, sources):
+    shape(request, SCHEMAS['input']['properties']['request']['properties']['text'])
+    shape(sources, SCHEMAS['input']['properties']['sources'])
+    ids = [s['id'] for s in sources]
+    if len(ids) != len(set(ids)):
+        raise ContractError('duplicate_source')
+    if any(digest(s['content']) != s['sha256'] for s in sources):
+        raise ContractError('source_digest_mismatch')
+    if sum(len(s['content']) for s in sources) > 6000:
+        raise ContractError('source_budget')
+
+
+def validate_analysis(text, request, context_sources):
+    # Content-only gate in the sandbox; authorization remains in Kara/caller.
+    validate_context(request, context_sources)
     result = parse(text)
     bounded(result, SCHEMAS['output'])
-    if result['request_sha256'] != envelope['request']['sha256']:
+    if result['request_sha256'] != digest(request):
         raise ContractError('output_request_mismatch')
-    sources = {'request': envelope['request']['text']} | {s['id']: s['content'] for s in envelope['sources']}
+    sources = {'request': request} | {s['id']: s['content'] for s in context_sources}
     groups = {name: {r['id']: r for r in result[name]} for name in ('conditions', 'requirements', 'acceptance_criteria', 'questions', 'assumptions')}
     if any(len(groups[name]) != len(result[name]) for name in groups):
         raise ContractError('duplicate_id')

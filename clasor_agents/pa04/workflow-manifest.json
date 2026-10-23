@@ -1,0 +1,21 @@
+{
+  "role_id": "PA-04",
+  "workflow_revision": "0.1.2",
+  "prompt_revision": "0.1.2",
+  "contract_version": "1.0.0",
+  "prompt_sha256": "fb97aba61c0de7cb5f66539cee1a5997203229d6e5dc7c598f7c8cf38288a509",
+  "workflow_sha256": "07b8443397402de5d48296527797ade57bde75aa15da26319cbfd3f47ff72c25",
+  "builder_sha256": "2369b7e27d9cd294d845d053bb7e7efd0349d3d702c1a2bd3b8a7b8c4a2c9d74",
+  "adapter_sha256": "56d819158bd1ef522d87f2991fb2fca29a27b76d9099866c6297fa0d68c86648",
+  "contract_sha256": "f755600b1ba68a31def0b3876975a5535b5030921bf7d994191c7fccf561429e",
+  "model_alias": "Clasor PA04 Pilot v0.1.1",
+  "provider": "langgenius/openai_api_compatible/openai_api_compatible",
+  "model_profile": {
+    "stream_include_usage": "disabled",
+    "compatibility_mode": "extended",
+    "agent_thought_support": "not_supported"
+  },
+  "context_cap": 16384,
+  "response_cap": 4096,
+  "automatic_retries": 0
+}
