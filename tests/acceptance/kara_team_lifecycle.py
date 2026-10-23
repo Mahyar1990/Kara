@@ -25,7 +25,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from app_factory import create_app
 from company_projects import access, agents, agent_execution, stages
-from company_projects.test_agents import graph
+from company_projects.test_stages import feedback_graph as graph
 from extensions.ext_database import db
 from libs.password import hash_password
 from libs.token import generate_csrf_token
@@ -250,7 +250,7 @@ def exercise():
         session.add(future);session.flush();source.workflow_id=future.id;state['future_workflow_id']=future.id
     for index in range(2):
         row=act(instance,row,'feedback','runner1',artifact_id=row['artifacts'][0]['id'],message='Synthetic feedback '+str(index+1),
-            inputs={'request':'Synthetic revised '+str(index+1)},feedback_variable='request')
+            inputs=dict(row['preview_inputs'], feedback_context='Synthetic revision '+str(index+1)),feedback_variable='feedback_context')
         assert row['state']=='ready' and len(row['attempts'])==index+1
         row=run(instance,row,'runner1')
     assert len(row['attempts'])==3 and len(row['feedback'])==2
@@ -269,7 +269,7 @@ def exercise():
     assert get(instance,second,'runner2')['handoffs'][0]['artifact_id']==selected['id'];grant(0,state['grants'][0])
     second_row=run(instance,second_row,'runner2')
     second_row=act(instance,second_row,'feedback','runner2',artifact_id=second_row['artifacts'][0]['id'],message='Second person review',
-        inputs={'request':'Second person revision'},feedback_variable='request')
+        inputs=dict(second_row['preview_inputs'], feedback_context='Second person revision'),feedback_variable='feedback_context')
     second_row=run(instance,second_row,'runner2');finalize(instance,select(instance,second_row,'runner2'))
     summary=expect('po','GET',ip(instance)+'/controls');assert summary['state']=='completed'
     first_row=get(instance,first,'po');old_artifact=first_row['selected_artifact_id'];ctl(instance,first_row,'reopen','po')

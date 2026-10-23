@@ -8,11 +8,20 @@ from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound
 
 from company_projects import agents, agent_execution, flows, stages
 from company_projects.test_requests import RequestFixture
+from company_projects.test_agents import graph
+
+
+def feedback_graph():
+    value = graph()
+    value['nodes'][0]['data']['variables'].append(dict(variable='feedback_context', label='بازخورد',
+        type='paragraph', required=False, max_length=8000))
+    return value
 
 
 class StageFixture(RequestFixture):
     def setUp(self):
-        super().setUp()
+        with patch('company_projects.test_flows.graph', feedback_graph):
+            super().setUp()
         for agent_id in self.agent_ids:
             row = agents.load(self.session, dict(project_id=self.a['id'], workspace_id=self.workspace_a.id), agent_id)
             grants = agents.grant_snapshot(self.session, row)['grants']
@@ -38,9 +47,12 @@ class StageFixture(RequestFixture):
 
     def act(self, row, action, actor=None, key=None, **data):
         if action == 'feedback':
-            data.setdefault('feedback_variable', 'request' if data.get('artifact_id') else None)
+            data.setdefault('feedback_variable', 'feedback_context' if data.get('artifact_id') else None)
         return stages.mutate(self.session, self.a['id'], self.workspace_a.id, (actor or self.editor).id,
             self.inst['id'], row['id'], action, dict(expected_revision=row['revision'], **data), key or str(uuid4()))
+
+    def feedback_inputs(self, row, text=''):
+        return dict(row['preview_inputs'], feedback_context=text)
 
     def complete(self, row=None, output=None, status='succeeded'):
         row = row or self.act(self.get(), 'run')
@@ -55,6 +67,39 @@ class StageFixture(RequestFixture):
 
 
 class StageTests(StageFixture):
+    def test_feedback_cannot_replace_or_append_to_original_request(self):
+        row = self.get()
+        for request in ('متن تازه', row['preview_inputs']['request'].strip()):
+            with self.assertRaises(Conflict):
+                self.act(row, 'feedback', artifact_id=None, message='change', inputs={'request': request})
+        row = self.complete()
+        before = row
+        with self.assertRaises(BadRequest):
+            self.act(row, 'feedback', artifact_id=row['artifacts'][0]['id'], message='append',
+                inputs=row['preview_inputs'], feedback_variable='request')
+        self.assertEqual(self.get(), before)
+        row = self.act(row, 'feedback', artifact_id=row['artifacts'][0]['id'], message='clarify',
+            inputs=self.feedback_inputs(row))
+        self.assertEqual(row['preview_inputs']['request'], self.req['current']['content'])
+        self.assertIn('clarify', row['preview_inputs']['feedback_context'])
+        self.assertEqual(row['feedback'][0]['inputs']['submitted']['request'], self.req['current']['content'])
+
+    def test_legacy_overridden_request_is_blocked_at_claim_and_finalize(self):
+        entity = stages.tables(self.session)[1]
+        running = self.act(self.get(), 'run')
+        self.session.execute(entity.update().where(entity.c.id == running['id']).values(inputs={'request': 'tampered'}))
+        self.assertIsNone(agent_execution.claim(self.session, running['active_attempt_id']))
+        self.assertEqual(self.get()['state'], 'stale')
+        self.inst = self.create_instance(req=self.decision(self.request()))
+        self.first, self.second = self.inst['stages']
+        row = self.complete()
+        row = self.act(row, 'request_decision', artifact_id=row['artifacts'][0]['id'])
+        self.session.execute(entity.update().where(entity.c.id == row['id']).values(inputs={'request': 'tampered'}))
+        with self.assertRaises(Conflict):
+            self.act(row, 'finalize', actor=self.project_owner, artifact_id=row['artifacts'][0]['id'], reason='blocked')
+        self.assertEqual(self.get()['decisions'], [])
+        self.assertEqual(self.get(self.second)['state'], 'blocked')
+
     def test_create_is_explicit_unique_and_intake_bound(self):
         self.assertEqual([s['state'] for s in self.inst['stages']], ['ready', 'blocked'])
         self.assertEqual(self.get()['attempts'], [])
@@ -80,7 +125,7 @@ class StageTests(StageFixture):
         row = self.complete()
         self.assertEqual(row['state'], 'awaiting_feedback'); self.assertIsNone(row['selected_artifact_id'])
         old = row['artifacts'][0]
-        row = self.act(row, 'feedback', artifact_id=old['id'], message='دقیق‌تر کن', inputs={'request': 'revised input'})
+        row = self.act(row, 'feedback', artifact_id=old['id'], message='دقیق‌تر کن', inputs=self.feedback_inputs(row))
         self.assertEqual(row['round'], 2); self.assertEqual(row['state'], 'ready')
         self.assertEqual(len(row['attempts']), 1); self.assertEqual(len(row['feedback']), 1)
         row = self.complete(self.act(row, 'run'), {'answer': 'second output'})
@@ -110,7 +155,7 @@ class StageTests(StageFixture):
     def test_two_feedback_rounds_are_independent_from_attempts(self):
         row = self.complete()
         for text in ('round two', 'round three'):
-            row = self.act(row, 'feedback', artifact_id=row['artifacts'][0]['id'], message=text, inputs={'request': text})
+            row = self.act(row, 'feedback', artifact_id=row['artifacts'][0]['id'], message=text, inputs=self.feedback_inputs(row))
             row = self.complete(self.act(row, 'run'), {'answer': text})
         self.assertEqual(row['round'], 3); self.assertEqual(len(row['feedback']), 2)
         self.assertEqual(len(row['attempts']), 3); self.assertEqual(len(row['artifacts']), 3)
@@ -123,7 +168,7 @@ class StageTests(StageFixture):
         finished = self.complete(running)
         stages.complete_attempt(self.session, running['active_attempt_id'])
         self.assertEqual(self.get(), finished)
-        row = self.act(finished, 'feedback', artifact_id=finished['artifacts'][0]['id'], message='new round', inputs={'request': 'new'})
+        row = self.act(finished, 'feedback', artifact_id=finished['artifacts'][0]['id'], message='new round', inputs=self.feedback_inputs(finished))
         next_run = self.act(row, 'run')
         stages.complete_attempt(self.session, running['active_attempt_id'])
         self.assertEqual(self.get()['active_attempt_id'], next_run['active_attempt_id'])
@@ -202,7 +247,9 @@ class StageTests(StageFixture):
         row = self.get()
         with self.assertRaises(BadRequest):
             self.act(row, 'feedback', artifact_id=None, message='', inputs={'request': 'new'})
-        row = self.act(row, 'feedback', artifact_id=None, message='قبل از اجرا اصلاح شد', inputs={'request': 'new'})
+        with self.assertRaises(Conflict):
+            self.act(row, 'feedback', artifact_id=None, message='تغییر ممنوع', inputs={'request': 'new'})
+        row = self.act(row, 'feedback', artifact_id=None, message='قبل از اجرا اصلاح شد', inputs=self.feedback_inputs(row, 'context'))
         self.assertEqual(row['round'], 2); self.assertEqual(row['attempts'], [])
         row = self.complete(self.act(row, 'run'))
         with self.assertRaises(NotFound):
@@ -212,7 +259,7 @@ class StageTests(StageFixture):
 
     def test_scope_and_history_immutability(self):
         row = self.complete()
-        row = self.act(row, 'feedback', artifact_id=row['artifacts'][0]['id'], message='history', inputs={'request': 'history'})
+        row = self.act(row, 'feedback', artifact_id=row['artifacts'][0]['id'], message='history', inputs=self.feedback_inputs(row))
         row = self.complete(self.act(row, 'run')); output = row['artifacts'][0]
         row = self.act(row, 'request_decision', artifact_id=output['id'])
         row = self.act(row, 'finalize', actor=self.project_owner, artifact_id=output['id'], reason='done')

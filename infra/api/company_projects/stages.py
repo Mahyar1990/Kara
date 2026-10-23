@@ -238,6 +238,16 @@ def input_digest(value, stage, inputs, dependencies, feedback=None):
         round=stage['round'], inputs=inputs, dependencies=dependencies, feedback=feedback))
 
 
+def request_inputs(stage):
+    return {name for name, source in stage['binding']['inputs'].items() if source['source'] == 'request'}
+
+
+def validate_request_inputs(session, value, stage, inputs):
+    original = intake(session, value)['content']
+    if any(inputs.get(name) != original for name in request_inputs(stage)):
+        raise Conflict('متن اصلی درخواست در بازخورد تغییر نمی‌کند؛ برای تغییر نیازمندی نسخهٔ تازهٔ درخواست و تصمیم ورود تازه لازم است.')
+
+
 def artifact(session, stage, identity):
     artifacts = tables(session)[4]
     row = session.execute(sa.select(artifacts).where(artifacts.c.id == uid(identity), artifacts.c.stage_id == stage['id'])).mappings().first()
@@ -324,6 +334,7 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
         result['preview_inputs'], _ = resolve(session, value, stage)
         current_feedback = [row for row in result['feedback'] if row['round'] == stage['round']]
         result['editable_inputs'] = current_feedback[-1]['inputs']['submitted'] if current_feedback else result['preview_inputs']
+        validate_request_inputs(session, value, stage, result['preview_inputs'])
         agents.validate_inputs(stage['binding']['input_contract'], result['preview_inputs'])
     except HTTPException as exc:
         result['input_error'] = exc.description
@@ -364,6 +375,8 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
     if stage['state'] not in states[action]:
         raise Conflict('این اقدام در وضعیت فعلی مرحله مجاز نیست.')
     inputs, dependencies = resolve(session, value, stage)
+    if action != 'feedback':
+        validate_request_inputs(session, value, stage, inputs)
     changes = dict(revision=expected + 1, updated_at=agents.now())
     if action == 'run':
         agents.validate_inputs(stage['binding']['input_contract'], inputs)
@@ -390,8 +403,11 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         if stage['state'] in ('awaiting_feedback', 'awaiting_decision') and not parent:
             raise BadRequest('خروجی مبنای بازخورد را انتخاب کنید.')
         agents.validate_inputs(stage['binding']['input_contract'], data['inputs'])
+        validate_request_inputs(session, value, stage, data['inputs'])
         variable = data['feedback_variable']
         textual = {item['variable'] for item in stage['binding']['input_contract'] if item['type'] in ('text-input', 'paragraph')}
+        if isinstance(variable, str) and variable in request_inputs(stage):
+            raise BadRequest('بازخورد باید ورودی متنی جدا از متن اصلی درخواست داشته باشد.')
         if variable is not None and (not isinstance(variable, str) or variable not in textual):
             raise BadRequest('برای بازخورد، یک ورودی متنی معتبر انتخاب کنید.')
         if parent and textual and variable is None:
@@ -403,6 +419,7 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
             context = dict(previous_output=parent['content'] if parent else None, feedback_history=[*history, message])
             effective[variable] = str(effective.get(variable) or '') + '\n\nبازخورد انسانی و خروجی مبنا:\n' + json.dumps(context, ensure_ascii=False)
         agents.validate_inputs(stage['binding']['input_contract'], effective)
+        validate_request_inputs(session, value, stage, effective)
         feedback_id = str(uuid4())
         digest = input_digest(value, dict(stage, round=stage['round'] + 1), effective, dependencies,
             dict(id=feedback_id, previous_digest=stage['input_digest'], message=message, parent_id=parent['id'] if parent else None))
@@ -451,6 +468,7 @@ def validate_attempt(session, attempt):
     intake(session, value)
     require(session, scope, stage, attempt['actor_id'], 'run')
     inputs, _ = resolve(session, value, stage)
+    validate_request_inputs(session, value, stage, inputs)
     if stage['active_attempt_id'] != attempt['id'] or stage['state'] != 'running' or (
             stage['round'] != link['round'] or stage['input_digest'] != link['input_digest']
             or inputs != attempt['inputs'] or stage['binding']['workflow_id'] != attempt['workflow_id']):
