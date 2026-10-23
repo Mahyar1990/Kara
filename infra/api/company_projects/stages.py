@@ -434,8 +434,15 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         if action in ('edit_output', 'finalize') and (not isinstance(data['reason'], str)
                 or not data['reason'].strip() or len(data['reason']) > 2000):
             raise BadRequest('علت لازم و حداکثر ۲۰۰۰ نویسه است.')
+        from company_projects import output_validation
+        normalized, validation_proof = output_validation.validate(session, stage, selected,
+            data['content'] if action == 'edit_output' else selected['content'])
+        if action != 'edit_output' and normalized != selected['content']:
+            raise Conflict('خروجی منتخب با نتیجهٔ اعتبارسنج یکسان نیست؛ ویرایش تازه ثبت کنید.')
         if action == 'edit_output':
-            new_artifact(session, stage, data['content'], actor, join.id, selected['attempt_id'], parent=selected['id'], reason=data['reason'])
+            edited = new_artifact(session, stage, normalized, actor, join.id, selected['attempt_id'], parent=selected['id'], reason=data['reason'])
+            if validation_proof:
+                validation_proof.update(parent_artifact_id=selected['id'], artifact_id=edited['id'])
             changes.update(state='awaiting_feedback', selected_artifact_id=None)
         elif action == 'request_decision':
             changes.update(state='awaiting_decision', selected_artifact_id=selected['id'])
@@ -450,6 +457,8 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
                 stages.c.state == 'blocked').values(state='ready', revision=stages.c.revision + 1, updated_at=agents.now()))
     session.execute(stages.update().where(stages.c.id == stage['id']).values(**changes))
     result = get_stage(session, project, workspace, actor, instance_id, stage_id)
+    if action in ('edit_output', 'request_decision', 'finalize') and validation_proof:
+        result['output_validation'] = validation_proof
     agents.event(session, scope, actor, key, fingerprint, 'stage.' + action, result)
     return result
 

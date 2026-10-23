@@ -89,6 +89,8 @@ def contracts(workflow):
         for item in node['data'].get('outputs', []) if isinstance(item.get('variable'), str)})
     if not outputs:
         raise UnprocessableEntity('خروجی فرایند را پیش از ثبت ایجنت مشخص کنید.')
+    from company_projects.output_validation import definition
+    definition(workflow)
     return result, outputs
 
 
