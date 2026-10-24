@@ -252,3 +252,26 @@ class ProjectAppBindingApi(Resource):
     @guarded(write=True)
     def delete(self, project_id, app_id):
         raise Conflict('برنامه متعلق به فضای مستقل پروژه است. برای حذف برنامه از ابزار حذف Dify استفاده کنید.')
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/members/candidates')
+class ProjectMemberCandidatesApi(Resource):
+    @guarded()
+    def get(self, project_id):
+        from company_projects import members
+        account, workspace = identity()
+        with Session(db.engine) as session:
+            return members.candidates(session, project_id, workspace, account.id)
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/members')
+class ProjectMembersApi(Resource):
+    @guarded()
+    def post(self, project_id):
+        from company_projects import members
+        account, workspace = identity()
+        data = payload()
+        with db.engine.begin() as connection, Session(bind=connection, join_transaction_mode='create_savepoint') as session:
+            result = members.add(session, project_id, workspace, account.id, data.get('account_id'), data.get('role'))
+            session.commit()
+            return result

@@ -18,3 +18,9 @@ def validate_role(session, tenant_id, role):
 def available_roles(session, tenant_id):
     return PRODUCT_ROLES if is_product_workspace(session, tenant_id) else (
         'owner', 'admin', 'editor', 'normal', 'dataset_operator')
+
+
+def validate_invitation(session, tenant_id, role):
+    validate_role(session, tenant_id, role)
+    if access.workspace_project(session, tenant_id):
+        raise BadRequest('برای پروژه، کاربر موجود کارا را از فهرست کاربران انتخاب کنید؛ دعوت ایمیلی پروژه غیرفعال است.')

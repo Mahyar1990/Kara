@@ -27,9 +27,10 @@ RUN if [ "$KARA_WEB_OFFLINE" = "true" ]; then \
     fi
 
 FROM packages AS builder
+ARG KARA_WEB_SKIP_CHECKS=false
 COPY . .
-RUN rm -rf web/.next && NODE_OPTIONS=--max-old-space-size=4096 node .company-web/check-projects-types.mjs
-RUN node .company-web/localize-literals.mjs web && node --test .company-web/rtl.spec.mjs .company-web/members.spec.mjs .company-web/navigation.spec.mjs
+RUN rm -rf web/.next && if [ "$KARA_WEB_SKIP_CHECKS" != "true" ]; then NODE_OPTIONS=--max-old-space-size=4096 node .company-web/check-projects-types.mjs; fi
+RUN node .company-web/localize-literals.mjs web && if [ "$KARA_WEB_SKIP_CHECKS" != "true" ]; then node --test .company-web/rtl.spec.mjs .company-web/members.spec.mjs .company-web/navigation.spec.mjs; fi
 WORKDIR /app/web
 ENV NODE_OPTIONS=--max-old-space-size=4096
 ENV pnpm_config_verify_deps_before_run=false

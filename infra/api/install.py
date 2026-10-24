@@ -96,7 +96,7 @@ changes['core/app/apps/workflow/app_generator.py'].append((
     '            application_generate_entity = WorkflowAppGenerateEntity(\n                task_id=native_task_id(app_model.id, workflow_run_id),\n'))
 changes['services/account_service.py'].extend([
     ('        tenant_join_role = TenantAccountRole.NORMAL.value if dify_config.RBAC_ENABLED else role\n',
-     '        from company_members.product import validate_role, is_product_workspace\n        validate_role(session, tenant.id, role)\n        tenant_join_role = TenantAccountRole.NORMAL.value if dify_config.RBAC_ENABLED else role\n'),
+     '        from company_members.product import validate_invitation, is_product_workspace\n        validate_invitation(session, tenant.id, role)\n        tenant_join_role = TenantAccountRole.NORMAL.value if dify_config.RBAC_ENABLED else role\n'),
     ('        new_tenant_role = TenantAccountRole(new_role)\n',
      '        from company_members.product import validate_role\n        validate_role(session, tenant.id, new_role)\n        new_tenant_role = TenantAccountRole(new_role)\n'),
 ])

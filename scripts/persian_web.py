@@ -121,6 +121,8 @@ def prepare_source():
 def build_image():
     source = prepare_source()
     command = ["docker", "build"]
+    if os.environ.get("KARA_WEB_SKIP_CHECKS") == "true":
+        command.extend(["--build-arg", "KARA_WEB_SKIP_CHECKS=true"])
     cached_packages = os.environ.get("KARA_WEB_BUILD_CACHE_IMAGE")
     if cached_packages:
         # The cache supplies tools/store only. Both installers still validate the

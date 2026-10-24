@@ -35,6 +35,14 @@
                  <span>
                    <Tooltip>
                      <TooltipTrigger
+@@ -172,6 +175,6 @@
+           {isMemberFull && <UpgradeBtn className="mr-2" loc="member-invite" />}
+           <div className="shrink-0">
+-            {canManageMembers && (
++            {canManageMembers && !company.data?.current_project && (
+               <InviteModal
+                 open={inviteModalVisible}
+                 trigger={<InviteButton />}
 @@ -202,10 +205,8 @@
                  member={account}
                  roles={account.roles}

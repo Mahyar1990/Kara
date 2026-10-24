@@ -43,6 +43,8 @@ export const teamApi = {
 
 // These company endpoints have no upstream generated SDK contract.
 export const projectApi = {
+  memberCandidates: (id: string) => get<{ data: { id: string; name: string; email: string }[]; roles: { id: string; name: string }[] }>(`${base}/${id}/members/candidates`),
+  addMember: (id: string, body: { account_id: string; role: string }) => post(`${base}/${id}/members`, { body }),
   list: () => get<{ data: CompanyProject[]; is_product_owner: boolean; can_create_projects: boolean }>(base),
   context: () => get<CompanyContext>('/company/context'),
   owners: () => get<{ data: { id: string; name: string; email: string }[] }>(`${base}/owners`),

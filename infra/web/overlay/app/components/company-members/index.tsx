@@ -15,6 +15,7 @@ import { useMembers } from '@/service/use-common'
 import { filterWorkspaceMembers } from '@/utils/company-members'
 import { hasPermission } from '@/utils/permission'
 import BusinessRoles from './business-roles'
+import AddProjectMember from './add-project-member'
 
 const number = (value: number) => value.toLocaleString('fa-IR')
 
@@ -40,7 +41,7 @@ export default function CompanyMembers() {
         <h1 className="text-3xl font-bold text-text-primary">{project ? 'اعضای پروژه' : 'مدیریت کاربران محصول'}</h1>
         <p className="mt-3 text-sm leading-7 text-text-secondary">{project ? 'کاربران تیم، دعوت‌نامه‌ها و نقش هر عضو را در این بخش مدیریت کنید.' : 'دسترسی ورود کاربران به کارا و نقش آن‌ها در محصول را مدیریت کنید.'}</p>
       </header>
-      <p className="text-sm leading-7 text-text-tertiary">{project ? `دعوت و نقش کاربران فقط برای پروژهٔ «${project.name}» اعمال می‌شود. ${canManage ? 'برای افزودن همکار، ایمیل و نقش او را در فرم دعوت وارد کنید.' : 'مدیریت اعضا با مالک پروژه است.'}` : 'مدیر می‌تواند پروژه ایجاد کند و کاربران محصول را مدیریت کند. کاربر عادی می‌تواند وارد کارا شود؛ دسترسی و نقش او در هر پروژه جداگانه تعیین می‌شود.'}</p>
+      <p className="text-sm leading-7 text-text-tertiary">{project ? `عضویت و نقش کاربران فقط برای پروژهٔ «${project.name}» اعمال می‌شود. ${canManage ? 'برای افزودن همکار، او را از کاربران فعال کارا انتخاب و نقش پروژه را تعیین کنید.' : 'مدیریت اعضا با مالک پروژه است.'}` : 'مدیر می‌تواند پروژه ایجاد کند و کاربران محصول را مدیریت کند. کاربر عادی می‌تواند وارد کارا شود؛ دسترسی و نقش او در هر پروژه جداگانه تعیین می‌شود.'}</p>
       <Link href="/projects" className="inline-block text-sm text-text-accent">مشاهده و انتخاب پروژه‌ها ←</Link>
       {members.isPending ? <p role="status" className="text-sm text-text-secondary">در حال دریافت کاربران…</p> : members.isError ? <section role="alert" className="rounded-2xl border border-divider-regular bg-background-default p-6"><p className="mb-4 text-text-primary">دریافت فهرست کاربران انجام نشد.</p><button className="rounded-lg bg-components-button-primary-bg px-4 py-2 text-white" onClick={() => members.refetch()}>تلاش دوباره</button></section> : <>
         <section aria-label="آمار کاربران" className="grid grid-cols-3 gap-3">
@@ -50,6 +51,7 @@ export default function CompanyMembers() {
           <label className="min-w-52 flex-1 text-sm text-text-secondary">جستجوی کاربر<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="نام یا ایمیل" className="mt-2 block w-full rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary" /></label>
           <label className="text-sm text-text-secondary">وضعیت کاربر<select value={status} onChange={event => setStatus(event.target.value as MemberStatusFilter)} className="mt-2 block rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary"><option value="all">همهٔ کاربران</option><option value="active">فعال</option><option value="pending">در انتظار پذیرش دعوت</option></select></label>
         </div>
+        {project?.can_manage_members && <AddProjectMember key={`${workspaceId}:${project.id}`} projectId={project.id} />}
         <section aria-label="فهرست کاربران" className="rounded-2xl border border-divider-regular bg-background-default p-5">
           <h2 className="mb-4 text-lg font-semibold text-text-primary">{project ? 'اعضا و سطح دسترسی فنی' : 'کاربران و نقش محصول'}</h2>
           <p role="status" className="mb-5 text-sm text-text-tertiary">{number(visibleCount)} کاربر در این فهرست{!visibleCount && '؛ کاربری با این جستجو و وضعیت پیدا نشد.'}</p>
