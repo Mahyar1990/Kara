@@ -1,0 +1,10 @@
+# First run: docker compose -f compose.setup.yaml run --build --rm setup
+name: ${DIFY_PROJECT_NAME:-company-agent-local}
+include:
+  - path:
+      - .runtime/dify/docker/docker-compose.yaml
+      - infra/compose.local.yaml
+      - infra/compose.build.yaml
+      - .runtime/compose.build.json
+    project_directory: .runtime/dify/docker
+    env_file: .runtime/compose.env

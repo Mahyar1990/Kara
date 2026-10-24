@@ -1,0 +1,16 @@
+# Paths are relative to the included upstream docker/ project directory.
+services:
+  api:
+    build:
+      context: ../../company-api-source
+  web:
+    build:
+      context: ../../dify-web-source
+      dockerfile: .company-web/Dockerfile
+  # Start the local stack even without COMPOSE_PROFILES in the host shell.
+  db_postgres:
+    profiles: !reset []
+  weaviate:
+    profiles: !reset []
+  api_websocket:
+    profiles: !reset []

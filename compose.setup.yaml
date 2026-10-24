@@ -1,0 +1,13 @@
+# Separate from compose.yaml so a fresh clone needs no generated files.
+name: kara-setup
+services:
+  setup:
+    build:
+      context: infra/bootstrap
+    working_dir: /workspace
+    environment:
+      PYTHONUTF8: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - .:/workspace
+    command: ["python", "scripts/compose_setup.py"]

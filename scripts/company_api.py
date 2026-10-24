@@ -19,8 +19,14 @@ def catalog_files():
     def blob(filename):
         if not re.fullmatch(r'[a-z][a-z0-9-]*\.json', filename):
             raise RuntimeError('Invalid catalog file name')
-        return subprocess.run(['git', 'show', f"{lock['commit']}:{lock['directory']}/{filename}"],
-            cwd=ROOT, capture_output=True, check=True).stdout
+        result = subprocess.run(['git', 'show', f"{lock['commit']}:{lock['directory']}/{filename}"],
+            cwd=ROOT, capture_output=True)
+        if result.returncode:
+            raise RuntimeError(
+                f"Pinned template catalog is missing from Git history. Run git fetch origin {lock['commit']} "
+                "on the host, then retry setup. Use a full clone rather than a source ZIP."
+            )
+        return result.stdout
     files = {'catalog.json': blob('catalog.json')}
     catalog = json.loads(files['catalog.json'])
     if catalog['schema_version'] != 1 or len(catalog['templates']) > 50:
@@ -49,7 +55,7 @@ def image_is_current():
     return result.returncode == 0 and result.stdout.strip() == fingerprint()
 
 
-def build_image():
+def prepare_source():
     from local_dify import verify_checkout
     verify_checkout()
     context = ROOT / '.runtime/company-api-source'
@@ -61,6 +67,11 @@ def build_image():
     for name, content in catalog_files().items():
         (templates / name).write_bytes(content)
     shutil.copyfile(ROOT / 'infra/catalog.lock.json', templates / 'source.json')
+    return context
+
+
+def build_image():
+    context = prepare_source()
     subprocess.run(['docker', 'build', '--label', f'company-agent.projects={fingerprint()}',
                     '-t', IMAGE, str(context)], check=True)
 
