@@ -154,7 +154,7 @@ def public_project(session, row, account_id):
 
 
 def restrict_central_workspace(app):
-    """The original workspace is private to the product owner, including direct APIs."""
+    """Protect central workspace content without blocking account authentication."""
     from flask import request
     from libs.login import current_account_with_tenant_optional
     from extensions.ext_database import db
@@ -166,6 +166,15 @@ def restrict_central_workspace(app):
             return
         # These endpoints are account/global context, not workspace content.
         path = request.path.removeprefix('/console/api')
+        # An invitation check can run again after login has set the regular
+        # user's session cookie. Leave credential/token validation to the native
+        # auth endpoints, even when the active workspace is still central.
+        if path in ('/login', '/activate', '/activate/check', '/reset-password',
+                '/email-code-login', '/email-code-login/validity',
+                '/email-register', '/email-register/send-email', '/email-register/validity',
+                '/forgot-password', '/forgot-password/validity', '/forgot-password/resets') \
+                or path.startswith(('/oauth/login/', '/oauth/authorize/')):
+            return
         if path.startswith(('/company/projects', '/company/context', '/account/', '/system-features', '/logout', '/refresh-token', '/workspaces/switch')) or path in ('/workspaces', '/features', '/workspaces/current/summary', '/workspaces/current/rbac/my-permissions'):
             return
         account, tenant_id = current_account_with_tenant_optional()
