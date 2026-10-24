@@ -35,3 +35,12 @@ test('member search combines name, email and status without changing membership'
   assert.equal(filterWorkspaceMembers(members, '', 'all').length, 2)
   assert.equal(members.length, 2)
 })
+
+
+test('product roles differ from project roles without changing their IDs', () => {
+  assert.equal(localizeWorkspaceRole({ id: 'admin', name: 'admin' }, true).name, 'مدیر')
+  assert.equal(localizeWorkspaceRole({ id: 'normal', name: 'normal' }, true).name, 'کاربر عادی')
+  assert.equal(localizeWorkspaceRole({ id: 'owner', name: 'owner' }, true).name, 'مدیر')
+  assert.equal(localizeWorkspaceRole({ id: 'admin', name: 'admin' }).name, 'مدیر فنی')
+  assert.equal(localizeWorkspaceRole({ id: 'normal', name: 'normal' }).name, 'کاربر')
+})

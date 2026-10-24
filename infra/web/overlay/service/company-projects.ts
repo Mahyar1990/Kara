@@ -14,7 +14,7 @@ export type CompanyProject = {
   can_edit: boolean
   is_product_owner: boolean
 }
-export type CompanyContext = { is_product_owner: boolean; product_owner_id: string; root_workspace_id: string; current_project: CompanyProject | null; can_manage_members: boolean }
+export type CompanyContext = { is_product_owner: boolean; is_product_admin: boolean; product_owner_id: string; root_workspace_id: string; current_project: CompanyProject | null; can_manage_members: boolean }
 export type ProjectApp = {
   id: string
   name: string
@@ -43,7 +43,7 @@ export const teamApi = {
 
 // These company endpoints have no upstream generated SDK contract.
 export const projectApi = {
-  list: () => get<{ data: CompanyProject[]; is_product_owner: boolean }>(base),
+  list: () => get<{ data: CompanyProject[]; is_product_owner: boolean; can_create_projects: boolean }>(base),
   context: () => get<CompanyContext>('/company/context'),
   owners: () => get<{ data: { id: string; name: string; email: string }[] }>(`${base}/owners`),
   setOwner: (id: string, owner_id: string) => put<CompanyProject>(`${base}/${id}/owner`, { body: { owner_id } }),

@@ -7,6 +7,8 @@ import sqlalchemy as sa
 metadata = sa.MetaData()
 schema = sa.Table('company_project_schema', metadata,
     sa.Column('version', sa.Integer, primary_key=True))
+product_access_schema = sa.Table('company_product_access_schema', metadata,
+    sa.Column('version', sa.Integer, primary_key=True))
 projects = sa.Table('company_projects', metadata,
     sa.Column('id', sa.Uuid(as_uuid=False), primary_key=True),
     sa.Column('tenant_id', sa.Uuid(as_uuid=False), nullable=False, index=True),

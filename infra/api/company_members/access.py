@@ -10,6 +10,8 @@ from services.errors.account import CannotOperateSelfError, NoPermissionError
 def require_role_change(tenant_id, operator_id, member_id, role_ids, *, session):
     if len(role_ids) != 1 or not TenantAccountRole.is_valid_role(role_ids[0]):
         raise BadRequest('یک نقش معتبر انتخاب کنید.')
+    from company_members.product import validate_role
+    validate_role(session, tenant_id, role_ids[0])
     if role_ids[0] == TenantAccountRole.OWNER:
         raise BadRequest('تغییر مالکیت از بخش انتقال مالکیت انجام می‌شود.')
     tenant = session.get(Tenant, tenant_id)

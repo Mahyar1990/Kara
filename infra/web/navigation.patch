@@ -41,7 +41,7 @@
          activeIcon: route.activeIcon,
 -      })),
 +      }))
-+      return project ? projectNavigation(project.id, nativeItems) : productNavigation(context.data?.is_product_owner === true)
++      return project ? projectNavigation(project.id, nativeItems) : productNavigation(context.data?.is_product_admin === true)
 +    },
      [
 +      project?.id,

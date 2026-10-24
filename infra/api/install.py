@@ -94,6 +94,26 @@ changes.update({
 changes['core/app/apps/workflow/app_generator.py'].append((
     '            application_generate_entity = WorkflowAppGenerateEntity(\n                task_id=str(uuid.uuid4()),\n',
     '            application_generate_entity = WorkflowAppGenerateEntity(\n                task_id=native_task_id(app_model.id, workflow_run_id),\n'))
+changes['services/account_service.py'].extend([
+    ('        tenant_join_role = TenantAccountRole.NORMAL.value if dify_config.RBAC_ENABLED else role\n',
+     '        from company_members.product import validate_role, is_product_workspace\n        validate_role(session, tenant.id, role)\n        tenant_join_role = TenantAccountRole.NORMAL.value if dify_config.RBAC_ENABLED else role\n'),
+    ('        new_tenant_role = TenantAccountRole(new_role)\n',
+     '        from company_members.product import validate_role\n        validate_role(session, tenant.id, new_role)\n        new_tenant_role = TenantAccountRole(new_role)\n'),
+])
+changes['services/account_service.py'].append((
+    '            if not ta and (account.status == AccountStatus.PENDING or dify_config.RBAC_ENABLED):\n',
+    '            if not ta and (account.status == AccountStatus.PENDING or dify_config.RBAC_ENABLED or is_product_workspace(session, tenant.id)):\n'))
+changes['repositories/account_activation_repository.py'] = [(
+    '            membership_created = membership is None\n',
+    '            from company_members.product import is_product_workspace\n            if membership is None and is_product_workspace(session, tenant_id):\n                return None  # A revoked central invitation cannot restore product authority.\n            membership_created = membership is None\n')]
+changes['controllers/console/workspace/rbac.py'] = [
+    ('    options: svc.ListOption | None = None, *, include_owner: int = 0, billing_enabled: bool = True\n',
+     '    options: svc.ListOption | None = None, *, include_owner: int = 0, billing_enabled: bool = True, role_names: tuple[str, ...] | None = None\n'),
+    ('    for role_name in ("owner", "admin", "editor", "normal", "dataset_operator"):\n',
+     '    for role_name in role_names or ("owner", "admin", "editor", "normal", "dataset_operator"):\n'),
+    ('            result = _legacy_workspace_roles(\n                options,\n',
+     '            from company_members.product import available_roles\n            result = _legacy_workspace_roles(\n                options,\n                role_names=available_roles(db.session(), tenant_id),\n'),
+]
 for filename, replacements in changes.items():
     target = root / filename
     content = target.read_text()

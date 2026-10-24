@@ -11,6 +11,7 @@ def initialize(connection):
     if connection.dialect.name == 'postgresql':
         connection.execute(sa.text('SELECT pg_advisory_xact_lock(210610002)'))
     if connection.execute(sa.select(store.product)).first():
+        initialize_product_access(connection)
         return
     first = connection.execute(sa.select(TenantAccountJoin.account_id, TenantAccountJoin.tenant_id)
         .join(Tenant, Tenant.id == TenantAccountJoin.tenant_id)
@@ -19,6 +20,19 @@ def initialize(connection):
         .order_by(Tenant.created_at, Tenant.id).limit(1)).first()
     if first:
         connection.execute(store.product.insert().values(id=1, account_id=first.account_id, tenant_id=first.tenant_id))
+        initialize_product_access(connection)
+
+
+def initialize_product_access(connection):
+    # Legacy central invitations had project roles, never product authority.
+    # Normalize once so old "admin" invitations do not gain new privileges.
+    if connection.execute(sa.select(store.product_access_schema)).first():
+        return
+    root = connection.execute(sa.select(store.product)).mappings().one()
+    connection.execute(sa.update(TenantAccountJoin).where(
+        TenantAccountJoin.tenant_id == str(root['tenant_id']),
+        TenantAccountJoin.account_id != str(root['account_id'])).values(role=TenantAccountRole.NORMAL))
+    connection.execute(store.product_access_schema.insert().values(version=1))
 
 
 def authority(session):
@@ -32,9 +46,21 @@ def is_product_owner(session, account_id):
     return str(authority(session)['account_id']) == str(account_id)
 
 
+def is_product_admin(session, account_id):
+    if is_product_owner(session, account_id):
+        return True
+    member = membership(session, authority(session)['tenant_id'], account_id)
+    return bool(member and member.role == TenantAccountRole.ADMIN)
+
+
+def require_product_admin(session, account_id):
+    if not is_product_admin(session, account_id):
+        raise Forbidden('ساخت پروژه و مدیریت کاربران محصول فقط با مدیر کارا است.')
+
+
 def require_product_owner(session, account_id):
     if not is_product_owner(session, account_id):
-        raise Forbidden('ساخت پروژه و تعیین مالک آن فقط با ادمین کل Kara است.')
+        raise Forbidden('ویرایش پروژه و تغییر مالک آن فقط با ادمین کل Kara است.')
 
 
 def workspace_project(session, workspace_id):
@@ -75,6 +101,8 @@ def owner_of(session, workspace_id):
 
 
 def can_manage_members(session, workspace_id, account_id):
+    if str(workspace_id) == str(authority(session)['tenant_id']):
+        return is_product_admin(session, account_id)
     owner = owner_of(session, workspace_id)
     return is_product_owner(session, account_id) or bool(owner and owner.id == str(account_id))
 
@@ -146,5 +174,5 @@ def restrict_central_workspace(app):
                 root = authority(session)
                 if path == '/workspaces/info' and request.method == 'POST' and workspace_project(session, tenant_id):
                     raise Forbidden('نام پروژه را ادمین کل Kara از صفحهٔ پروژه ویرایش می‌کند.')
-                if str(tenant_id) == str(root['tenant_id']) and not is_product_owner(session, account.id):
-                    raise Forbidden('این بخش مخصوص ادمین کل Kara است؛ از صفحهٔ پروژه‌ها وارد پروژهٔ خود شوید.')
+                if str(tenant_id) == str(root['tenant_id']) and not is_product_admin(session, account.id):
+                    raise Forbidden('این بخش مخصوص مدیر کارا است؛ از صفحهٔ پروژه‌ها وارد پروژهٔ خود شوید.')

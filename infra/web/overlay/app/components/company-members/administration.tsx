@@ -15,7 +15,7 @@ export default function ProductMembers() {
   const [error, setError] = useState(false)
   const switchToProduct = useCallback(async () => {
     const company = context.data
-    if (!company?.is_product_owner || switching.current || workspace === company.root_workspace_id) return
+    if (!company?.is_product_admin || switching.current || workspace === company.root_workspace_id) return
     switching.current = true
     setError(false)
     try {
@@ -26,7 +26,7 @@ export default function ProductMembers() {
   }, [context.data, workspace])
   useEffect(() => { void switchToProduct() }, [switchToProduct])
 
-  if (!context.data?.is_product_owner) return <main dir="rtl" className="p-8 text-text-primary">
+  if (!context.data?.is_product_admin) return <main dir="rtl" className="p-8 text-text-primary">
     <h1 className="mb-4 text-2xl font-bold">دسترسی به مدیریت محصول ندارید</h1>
     <Link href="/projects" className="text-text-accent">مشاهدهٔ پروژه‌ها</Link>
   </main>

@@ -7,8 +7,15 @@ const builtinRoles: Record<string, { name: string; description: string }> = {
   dataset_operator: { name: 'مدیر دانش', description: 'مدیریت پایگاه‌های دانش' },
 }
 
-export function localizeWorkspaceRole<T extends { id: string; name: string }>(role: T): T {
-  return Object.hasOwn(builtinRoles, role.id) ? { ...role, ...builtinRoles[role.id] } : role
+const productRoles: Record<string, { name: string; description: string }> = {
+  owner: { name: 'مدیر', description: 'مدیریت کاربران کارا و امکان ایجاد پروژه' },
+  admin: { name: 'مدیر', description: 'مدیریت کاربران کارا و امکان ایجاد پروژه' },
+  normal: { name: 'کاربر عادی', description: 'ورود به کارا؛ دسترسی هر پروژه جداگانه تعیین می‌شود' },
+}
+
+export function localizeWorkspaceRole<T extends { id: string; name: string }>(role: T, product = false): T {
+  const labels = product ? productRoles : builtinRoles
+  return Object.hasOwn(labels, role.id) ? { ...role, ...labels[role.id] } : role
 }
 
 export type MemberStatusFilter = 'all' | 'active' | 'pending'

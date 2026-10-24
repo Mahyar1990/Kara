@@ -116,7 +116,8 @@ class ProjectsApi(Resource):
         account, _ = identity()
         with Session(db.engine) as session:
             return dict(data=[access.public_project(session, row, account.id) for row in access.list_for_account(session, account.id)],
-                is_product_owner=access.is_product_owner(session, account.id))
+                is_product_owner=access.is_product_owner(session, account.id),
+                can_create_projects=access.is_product_admin(session, account.id))
 
     @guarded()
     def post(self):
@@ -159,6 +160,7 @@ class CompanyContextApi(Resource):
             root = access.authority(session)
             row = access.workspace_project(session, tenant_id)
             return dict(is_product_owner=access.is_product_owner(session, account.id),
+                is_product_admin=access.is_product_admin(session, account.id),
                 product_owner_id=str(root['account_id']),
                 root_workspace_id=str(root['tenant_id']),
                 current_project=access.public_project(session, row, account.id) if row else None,
@@ -171,7 +173,7 @@ class ProjectOwnersApi(Resource):
     def get(self):
         account, _ = identity()
         with Session(db.engine) as session:
-            access.require_product_owner(session, account.id)
+            access.require_product_admin(session, account.id)
             return dict(data=[dict(id=user.id, name=user.name, email=user.email) for user in
                 session.scalars(sa.select(Account).where(Account.status == AccountStatus.ACTIVE).order_by(Account.name))])
 

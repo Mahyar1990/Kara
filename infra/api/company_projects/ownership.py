@@ -29,11 +29,13 @@ def provision(session, row, owner_id, product_owner_id):
 
 
 def create_project(session, actor_id, name, description, owner_id):
-    access.require_product_owner(session, actor_id)
+    access.require_product_admin(session, actor_id)
     resolve_owner(session, owner_id)
     root = access.authority(session)
     row = store.create_project(session.connection(), root['tenant_id'], actor_id, name, description)
-    provision(session, row, owner_id, root['account_id'])
+    tenant = provision(session, row, owner_id, root['account_id'])
+    if str(actor_id) not in (str(owner_id), str(root['account_id'])):
+        TenantService.create_tenant_member(tenant, session.get(Account, str(actor_id)), session, role='admin')
     return access.project_for_account(session, row['id'], actor_id)
 
 
