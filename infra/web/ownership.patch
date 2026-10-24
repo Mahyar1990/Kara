@@ -1,10 +1,11 @@
 --- a/web/app/components/header/account-setting/members-page/index.tsx
 +++ b/web/app/components/header/account-setting/members-page/index.tsx
-@@ -21,6 +21,7 @@
+@@ -21,6 +21,8 @@
  import { consoleQuery } from '@/service/console'
  import { useMembers } from '@/service/use-common'
  import { hasPermission } from '@/utils/permission'
 +import { projectApi } from '@/service/company-projects'
++import AddProjectMember from '@/app/components/company-members/add-project-member'
  import { filterWorkspaceMembers } from '@/utils/company-members'
  import EditWorkspaceModal from './edit-workspace-modal'
  import InviteButton from './invite-button'
@@ -35,9 +36,10 @@
                  <span>
                    <Tooltip>
                      <TooltipTrigger
-@@ -172,6 +175,6 @@
+@@ -172,6 +175,7 @@
            {isMemberFull && <UpgradeBtn className="mr-2" loc="member-invite" />}
            <div className="shrink-0">
++            {canManageMembers && company.data?.current_project && <AddProjectMember projectId={company.data.current_project.id} />}
 -            {canManageMembers && (
 +            {canManageMembers && !company.data?.current_project && (
                <InviteModal

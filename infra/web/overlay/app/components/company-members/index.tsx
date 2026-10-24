@@ -15,7 +15,6 @@ import { useMembers } from '@/service/use-common'
 import { filterWorkspaceMembers } from '@/utils/company-members'
 import { hasPermission } from '@/utils/permission'
 import BusinessRoles from './business-roles'
-import AddProjectMember from './add-project-member'
 
 const number = (value: number) => value.toLocaleString('fa-IR')
 
@@ -51,7 +50,6 @@ export default function CompanyMembers() {
           <label className="min-w-52 flex-1 text-sm text-text-secondary">جستجوی کاربر<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="نام یا ایمیل" className="mt-2 block w-full rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary" /></label>
           <label className="text-sm text-text-secondary">وضعیت کاربر<select value={status} onChange={event => setStatus(event.target.value as MemberStatusFilter)} className="mt-2 block rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary"><option value="all">همهٔ کاربران</option><option value="active">فعال</option><option value="pending">در انتظار پذیرش دعوت</option></select></label>
         </div>
-        {project?.can_manage_members && <AddProjectMember key={`${workspaceId}:${project.id}`} projectId={project.id} />}
         <section aria-label="فهرست کاربران" className="rounded-2xl border border-divider-regular bg-background-default p-5">
           <h2 className="mb-4 text-lg font-semibold text-text-primary">{project ? 'اعضا و سطح دسترسی فنی' : 'کاربران و نقش محصول'}</h2>
           <p role="status" className="mb-5 text-sm text-text-tertiary">{number(visibleCount)} کاربر در این فهرست{!visibleCount && '؛ کاربری با این جستجو و وضعیت پیدا نشد.'}</p>
