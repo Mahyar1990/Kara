@@ -282,8 +282,26 @@ CREATE TABLE company_team_cancellations (
 CREATE TRIGGER company_team_cancellation_immutable BEFORE UPDATE OR DELETE ON company_team_cancellations
     FOR EACH ROW EXECUTE FUNCTION company_team_keep_request_record();
 """
+JIRA_SCHEMA = """
+ALTER TABLE company_team_request_revisions DROP CONSTRAINT company_team_request_revisions_origin_check;
+-- kara-statement
+ALTER TABLE company_team_request_revisions ADD CONSTRAINT company_team_request_revisions_origin_check
+    CHECK (origin IN ('manual', 'jira'));
+-- kara-statement
+CREATE TABLE company_team_jira_sources (
+    project_id uuid NOT NULL, workspace_id uuid NOT NULL, base_url varchar(512) NOT NULL,
+    issue_id varchar(64) NOT NULL, request_id uuid NOT NULL UNIQUE,
+    source_updated_at timestamptz NOT NULL, snapshot jsonb NOT NULL,
+    applied_digest varchar(64) NOT NULL, needs_review boolean NOT NULL DEFAULT false,
+    last_run_id uuid, last_seen_at timestamptz NOT NULL,
+    PRIMARY KEY (project_id, workspace_id, base_url, issue_id),
+    FOREIGN KEY (request_id, project_id, workspace_id)
+        REFERENCES company_team_requests(id, project_id, workspace_id)
+);
+"""
 MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
-              ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA), ('006_team_recovery', RECOVERY_SCHEMA))
+              ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA), ('006_team_recovery', RECOVERY_SCHEMA),
+              ('007_jira_intake', JIRA_SCHEMA))
 
 
 def checksum(sql):

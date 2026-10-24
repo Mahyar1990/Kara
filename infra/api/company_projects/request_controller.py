@@ -43,6 +43,23 @@ class RequestsApi(Resource):
         return save(project_id), 201
 
 
+@console_ns.route('/company/projects/<uuid:project_id>/team/requests/jira/runs')
+class JiraImportRunsApi(Resource):
+    @guarded()
+    def get(self, project_id):
+        from company_projects.jira_intake import recent_runs
+        return invoke(recent_runs, project_id)
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/requests/jira/import')
+class JiraImportApi(Resource):
+    @guarded()
+    def post(self, project_id):
+        from company_projects.jira_intake import import_response
+        request.max_content_length = 2200000
+        return invoke(import_response, project_id, payload(), request.headers.get('Idempotency-Key'))
+
+
 @console_ns.route('/company/projects/<uuid:project_id>/team/requests/<uuid:request_id>')
 class RequestApi(Resource):
     @guarded()

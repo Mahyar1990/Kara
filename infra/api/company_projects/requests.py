@@ -73,6 +73,8 @@ def public(session, row, po, actor_id, *, detail=False):
             sa.select(revisions).where(revisions.c.request_id == row['id']).order_by(revisions.c.version.desc())).mappings()]
         result['decisions'] = [serial(value) for value in session.execute(sa.select(decisions)
             .where(decisions.c.request_id == row['id']).order_by(decisions.c.created_at, decisions.c.id)).mappings()]
+    from company_projects.jira_intake import source_info
+    result['jira'] = source_info(session, row['id'], detail=detail)
     return result
 
 
@@ -82,7 +84,9 @@ def list_requests(session, project_id, workspace_id, actor_id):
     table, _, _, _ = tables(session)
     rows = session.execute(sa.select(table).where(*(table.c[k] == v for k, v in scoped.items()))
         .order_by(table.c.updated_at.desc(), table.c.id)).mappings()
-    return dict(can_decide=po, data=[public(session, row, po, actor_id) for row in rows])
+    from company_projects.jira_intake import allowed
+    return dict(can_decide=po, can_import_jira=allowed(session, scoped, actor_id),
+        data=[public(session, row, po, actor_id) for row in rows])
 
 
 def get_request(session, project_id, workspace_id, actor_id, request_id):
@@ -91,7 +95,7 @@ def get_request(session, project_id, workspace_id, actor_id, request_id):
         is_po(session, scoped, actor_id), actor_id, detail=True)
 
 
-def validate(data, uploads):
+def validate(data, uploads, *, origin='manual'):
     agents.body(data, ('title', 'content', 'attachment_ids', 'expected_revision'))
     agents.revision(data['expected_revision'])
     if not isinstance(data['title'], str) or not data['title'].strip() or len(data['title']) > 200:
@@ -100,7 +104,7 @@ def validate(data, uploads):
         size = len(data['content'].encode()) if isinstance(data['content'], str) else 0
     except UnicodeError:
         raise BadRequest('متن درخواست باید UTF-8 معتبر باشد.') from None
-    if not isinstance(data['content'], str) or not data['content'].strip() or size > 262144:
+    if not isinstance(data['content'], str) or (origin == 'manual' and not data['content'].strip()) or size > 262144:
         raise BadRequest('متن درخواست لازم و حداکثر ۲۵۶ کیلوبایت است.')
     ids = data['attachment_ids']
     if not isinstance(ids, list) or len(ids) + len(uploads) > MAX_FILES:
@@ -118,17 +122,24 @@ def validate(data, uploads):
     return ids, prepared
 
 
-def save(session, project_id, workspace_id, actor_id, data, key, request_id=None, uploads=()):
-    ids, files = validate(data, uploads)
+def save(session, project_id, workspace_id, actor_id, data, key, request_id=None, uploads=(), *, origin='manual'):
+    if origin not in ('manual', 'jira'):
+        raise BadRequest('منشأ درخواست معتبر نیست.')
+    ids, files = validate(data, uploads, origin=origin)
     key = agents.action_key(key)
     scoped = scope(session, project_id, workspace_id, actor_id, write=True)
     table, revisions, attachments, _ = tables(session)
     row = load(session, table, scoped, request_id, lock=True) if request_id else None
     po = is_po(session, scoped, actor_id)
-    if row and not (po or row['created_by'] == str(actor_id)):
+    from company_projects import access
+    importer = origin == 'jira' and access.can_manage_members(session, workspace_id, actor_id)
+    if row and not (po or row['created_by'] == str(actor_id) or importer):
         raise Forbidden('اصلاح درخواست با ثبت‌کننده یا PO پروژه است.')
-    fingerprint = agents.digest(dict(operation='request.save', request_id=str(request_id) if request_id else None,
-        body=data, uploads=[{k: v for k, v in value.items() if k != 'content'} for value in files]))
+    operation = dict(operation='request.save', request_id=str(request_id) if request_id else None,
+        body=data, uploads=[{k: v for k, v in value.items() if k != 'content'} for value in files])
+    if origin != 'manual':
+        operation['origin'] = origin
+    fingerprint = agents.digest(operation)
     replay = agents.replay(session, scoped, actor_id, key, fingerprint)
     if replay:
         return replay
@@ -156,9 +167,9 @@ def save(session, project_id, workspace_id, actor_id, data, key, request_id=None
         session.execute(attachments.insert().values(**record))
         retained.append({k: record[k] for k in ('id', 'name', 'size', 'digest')})
     version = (session.scalar(sa.select(sa.func.max(revisions.c.version)).where(revisions.c.request_id == row['id'])) or 0) + 1
-    content = dict(title=data['title'], content=data['content'], origin='manual', attachments=retained)
+    content = dict(title=data['title'], content=data['content'], origin=origin, attachments=retained)
     revision = dict(id=str(uuid4()), request_id=row['id'], **scoped, version=version,
-        title=data['title'], content=data['content'], origin='manual', attachment_ids=[v['id'] for v in retained],
+        title=data['title'], content=data['content'], origin=origin, attachment_ids=[v['id'] for v in retained],
         digest=agents.digest(content), author_id=str(actor_id), membership_id=team.member(session, workspace_id, actor_id).id,
         created_at=agents.now())
     session.execute(revisions.insert().values(**revision))

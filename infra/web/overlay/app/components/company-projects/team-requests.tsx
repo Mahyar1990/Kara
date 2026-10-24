@@ -10,6 +10,7 @@ import { useSearchParams } from '@/next/navigation'
 import { flowApi } from '@/service/company-flows'
 import { projectApi } from '@/service/company-projects'
 import { requestApi } from '@/service/company-requests'
+import JiraImport from './jira-import'
 
 const panel = 'space-y-4 rounded-2xl border border-divider-regular bg-background-default p-5'
 const button = 'rounded-lg border border-divider-regular px-4 py-2 text-sm disabled:opacity-50'
@@ -91,6 +92,12 @@ function RequestDetail({ project, value, saved, edit }: { project: string; value
   const [version, setVersion] = useState(value.current_revision_id)
   const current = value.revisions?.find(item => item.id === version) || value.current
   return <section aria-label="جزئیات درخواست" className="space-y-5">
+    {value.jira && <section className={panel} aria-label="منشأ جیرا">
+      <a className="text-text-accent" href={`${value.jira.base_url}/browse/${encodeURIComponent(value.jira.key)}`} target="_blank" rel="noreferrer">جیرا: <span dir="ltr">{value.jira.key}</span></a>
+      <p className="mt-2 text-sm">وضعیت جیرا: {value.jira.status || 'نامشخص'} · اولویت جیرا: {value.jira.priority || 'نامشخص'} · مسئول جیرا: {value.jira.assignee || 'تعیین نشده یا در پاسخ موجود نیست'}</p>
+      <p className="mt-2 text-xs text-text-tertiary">آخرین دریافت: {new Date(value.jira.last_seen_at).toLocaleString('fa-IR')} · نوع درخواست هنوز باید مشخص شود.</p>
+      {value.jira.needs_review && <div role="alert" className="mt-4 space-y-2 text-sm"><p>متن کارا جداگانه ویرایش شده است؛ تغییر جیرا خودکار جایگزین نشد. PO باید دو متن را بررسی و نسخهٔ مناسب را با «اصلاح درخواست» ثبت کند.</p><h3 className="font-semibold">آخرین عنوان جیرا: {value.jira.source_title}</h3><p className="whitespace-pre-wrap leading-7">{value.jira.source_content ?? 'توضیحات در جیرا موجود نیست.'}</p></div>}
+    </section>}
     <article className={panel}><div className="flex flex-wrap justify-between gap-3"><h2 className="text-xl font-semibold">{value.title}</h2>{value.can_edit && <button className={button} onClick={edit}>اصلاح درخواست</button>}</div><p role="status">{states[value.state] || value.state}</p>
       <div aria-label="نسخه‌های درخواست" className="flex flex-wrap gap-2">{value.revisions?.map(item => <button className={button} aria-pressed={current.id === item.id} key={item.id} onClick={() => setVersion(item.id)}>نمایش نسخهٔ {num(item.version)}</button>)}</div>
       <h3 className="font-semibold">نسخهٔ {num(current.version)} · {current.title}</h3><p className="whitespace-pre-wrap text-sm leading-8">{current.content}</p>
@@ -118,10 +125,10 @@ export default function TeamRequests({ projectId }: { projectId: string }) {
   return <main dir="rtl" className="h-full overflow-y-auto bg-background-body p-5 text-text-primary md:p-8"><div className="mx-auto max-w-5xl space-y-6">
     <Link className="text-sm text-text-accent" href={`/projects/${projectId}`}>نمای کلی پروژه ←</Link><header><h1 className="text-3xl font-bold">درخواست‌های تیم</h1><p className="mt-3 text-sm leading-7 text-text-secondary">نیازمندی را ثبت کنید، اصلاحات را نگه دارید و تصمیم ورود را به نسخهٔ مشخص یک فلو متصل کنید.</p></header>
     {!entered ? <p role="status">ابتدا وارد فضای همین پروژه شوید.</p> : list.isSuccess ? <>
-      <div className="flex flex-wrap gap-3"><button className={primary} onClick={() => { setSelected(null); setEditing(true) }}>ثبت درخواست تازه</button><Link className={button} href={`/projects/${projectId}/team-flows`}>فلوهای تیم</Link></div>
+      <div className="flex flex-wrap gap-3"><button className={primary} onClick={() => { setSelected(null); setEditing(true) }}>ثبت درخواست تازه</button>{list.data.can_import_jira && <JiraImport projectId={projectId} saved={refresh} />}<Link className={button} href={`/projects/${projectId}/team-flows`}>فلوهای تیم</Link></div>
       {editing && (!selected || detail.data?.can_edit) && <RequestEditor key={`${workspace}:${selected || 'new'}:${detail.data?.revision || 1}`} project={projectId} value={selected ? detail.data || null : null} saved={saved} cancel={() => setEditing(false)} />}
       {selected && !editing && (detail.isSuccess ? <RequestDetail key={`${workspace}:${selected}:${detail.data.revision}`} project={projectId} value={detail.data} saved={saved} edit={() => setEditing(true)} /> : <p role={detail.isError ? 'alert' : 'status'}>{detail.isError ? 'دریافت درخواست انجام نشد.' : 'در حال دریافت درخواست…'}</p>)}
-      <section aria-label="فهرست درخواست‌ها" className="space-y-3">{!list.data.data.length && <p className={panel}>هنوز درخواستی ثبت نشده است.</p>}{list.data.data.map(value => <article key={value.id} className={panel}><h2 className="text-lg font-semibold">{value.title}</h2><p className="text-sm">نسخهٔ {num(value.version)} · {states[value.state] || value.state}</p><button className={button} onClick={() => { setSelected(value.id); setEditing(false) }}>مشاهدهٔ درخواست</button><Link className={`${button} ms-3 inline-block`} href={`/projects/${projectId}/team-runs?request=${value.id}`}>پیگیری اجرای درخواست</Link></article>)}</section>
+      <section aria-label="فهرست درخواست‌ها" className="space-y-3">{!list.data.data.length && <p className={panel}>هنوز درخواستی ثبت نشده است.</p>}{list.data.data.map(value => <article key={value.id} className={panel}><h2 className="text-lg font-semibold">{value.title}</h2><p className="text-sm">نسخهٔ {num(value.version)} · {states[value.state] || value.state}</p><p className="mt-2 text-xs text-text-tertiary">{value.jira ? `جیرا · ${value.jira.key} · ${value.jira.status || 'وضعیت نامشخص'}` : 'ثبت دستی'}{value.jira?.needs_review && ' · تغییر جیرا نیازمند بررسی است'}</p><button className={button} onClick={() => { setSelected(value.id); setEditing(false) }}>مشاهدهٔ درخواست</button><Link className={`${button} ms-3 inline-block`} href={`/projects/${projectId}/team-runs?request=${value.id}`}>پیگیری اجرای درخواست</Link></article>)}</section>
     </> : <p role={list.isError ? 'alert' : 'status'}>{list.isError ? 'دریافت درخواست‌ها انجام نشد.' : 'در حال دریافت درخواست‌ها…'}</p>}
     <button className={button} disabled={!entered || list.isFetching} onClick={refresh}>دریافت نسخهٔ تازهٔ درخواست‌ها</button>
   </div></main>
