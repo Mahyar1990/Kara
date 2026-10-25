@@ -30,18 +30,31 @@ export function productNavigation(isOwner: boolean): MainNavItem[] {
 
 export function projectNavigation(projectId: string, nativeItems: MainNavItem[]): MainNavItem[] {
   const base = `/projects/${projectId}`
+  const native = (href: string) => nativeItems.filter(entry => entry.href === href)
+    .map(entry => href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها' } : entry)
+  const group = (entries: MainNavItem[]) => entries.map((entry, index) => index === 0 ? { ...entry, separatorBefore: true } : entry)
   return [
     item(base, 'نمای کلی پروژه', 'i-ri-folder-line', path => path === base),
-    item(`${base}/team-agents`, 'ایجنت‌های تیم', 'i-ri-team-line', path => path === `${base}/team-agents`),
-    item(`${base}/team-flows`, 'فلوهای تیم', 'i-ri-route-line', path => path === `${base}/team-flows`),
-    item(`${base}/requests`, 'درخواست‌های تیم', 'i-ri-file-list-3-line', path => path === `${base}/requests`),
-    item(`${base}/team-runs`, 'اجرای تیمی', 'i-ri-play-circle-line', path => path === `${base}/team-runs`),
-    ...nativeItems.filter(entry => !['/', '/projects', '/users'].includes(entry.href))
-      .map(entry => entry.href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها' } : entry),
-    item(`${base}/templates`, 'قالب‌های آماده', 'i-ri-file-copy-line', path => path === `${base}/templates`),
-    item(`${base}/automations`, 'اتوماسیون‌ها', 'i-ri-timer-line', path => path === `${base}/automations`),
-    item(`${base}/inbox`, 'کارتابل و اقدام‌های من', 'i-ri-inbox-line', path => path === `${base}/inbox`),
-    item('/users', 'اعضای پروژه', 'i-ri-team-line', path => path === '/users'),
-    item(`${base}/setup`, 'راهنمای پروژه', 'i-ri-question-line', path => path === `${base}/setup`),
+    ...group([
+      item(`${base}/requests`, 'درخواست‌های پروژه', 'i-ri-file-list-3-line', path => path === `${base}/requests`),
+      ...native('/apps'),
+      item(`${base}/team-agents`, 'ایجنت‌های تیم', 'i-ri-team-line', path => path === `${base}/team-agents`),
+      item(`${base}/team-flows`, 'فلوهای تیم', 'i-ri-route-line', path => path === `${base}/team-flows`),
+    ]),
+    ...group([
+      item(`${base}/team-runs`, 'اجرای تیمی', 'i-ri-play-circle-line', path => path === `${base}/team-runs`),
+      item(`${base}/inbox`, 'کارتابل و اقدام‌های من', 'i-ri-inbox-line', path => path === `${base}/inbox`),
+    ]),
+    ...group([
+      ...native('/datasets'),
+      ...native('/skills'),
+      item(`${base}/templates`, 'قالب‌های آماده', 'i-ri-file-copy-line', path => path === `${base}/templates`),
+      item(`${base}/automations`, 'اتوماسیون‌ها', 'i-ri-timer-line', path => path === `${base}/automations`),
+    ]),
+    ...group([
+      item('/users', 'اعضای پروژه', 'i-ri-team-line', path => path === '/users'),
+      item(`${base}/setup`, 'راهنمای پروژه', 'i-ri-question-line', path => path === `${base}/setup`),
+    ]),
+    ...nativeItems.filter(entry => !['/', '/projects', '/users', '/apps', '/datasets', '/skills'].includes(entry.href)),
   ]
 }

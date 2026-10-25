@@ -1,6 +1,6 @@
 import TeamRequests from '@/app/components/company-projects/team-requests'
 
-export const metadata = { title: 'درخواست‌های تیم' }
+export const metadata = { title: 'درخواست‌های پروژه' }
 
 export default async function TeamRequestsPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params

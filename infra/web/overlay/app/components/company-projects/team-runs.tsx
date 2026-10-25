@@ -161,6 +161,6 @@ export default function TeamRuns({ projectId }: { projectId: string }) {
       {controlInstance && <TeamRecovery key={`${workspace}:${controlInstance}`} projectId={projectId} instanceId={controlInstance} changed={async () => { await refresh(); await queryStageRefresh() }} close={() => setControlInstance(null)} />}
       {selection && <StagePanel key={`${workspace}:${selection.instance}:${selection.stage}`} project={projectId} instance={selection.instance} stage={selection.stage} title={list.data.data.find(value => value.id === selection.instance)?.title || 'در حال دریافت اطلاعات'} changed={refresh} close={() => setSelection(null)} />}
     </> : <p role={list.isError ? 'alert' : 'status'}>{list.isError ? 'دریافت اجراها انجام نشد.' : 'در حال دریافت اجراها…'}</p>}
-    <div className="flex flex-wrap gap-3"><button className={button} disabled={!entered || list.isFetching} onClick={() => list.refetch()}>تازه‌سازی اجراهای تیمی</button><Link className={button} href={`/projects/${projectId}/requests`}>درخواست‌های تیم</Link><Link className={button} href={`/projects/${projectId}/inbox`}>اقدام‌های من و وضعیت تیم</Link></div>
+    <div className="flex flex-wrap gap-3"><button className={button} disabled={!entered || list.isFetching} onClick={() => list.refetch()}>تازه‌سازی اجراهای تیمی</button><Link className={button} href={`/projects/${projectId}/requests`}>درخواست‌های پروژه</Link><Link className={button} href={`/projects/${projectId}/inbox`}>اقدام‌های من و وضعیت تیم</Link></div>
   </div></main>
 }
