@@ -51,6 +51,34 @@ class PersonalModelTests(ProjectDatabaseFixture):
             plugin_id='langgenius/openai', provider='openai', model='synthetic-model', credentials={'api_key': 'SHARED-KEY-MUST-NOT-BE-USED'},
             prompt_messages=[], model_parameters={}, stream=True)
 
+    def test_copy_preserves_only_owned_secrets_and_rejects_changed_destination(self):
+        source = self.save_connection()
+        original = models.load(self.session, self.editor.id, source['id'])
+        draft = dict(name='Copied connection', provider=PROVIDER, model_name='second-model', model_type='llm',
+            credentials={'endpoint_url': 'https://model.example.test/v1', 'api_key': ''},
+            is_default=False, expected_revision=source['revision'])
+        with self.assertRaises(NotFound):
+            models.copy_connection(self.session, self.workspace_a.id, self.project_owner.id, source['id'], draft)
+        with self.assertRaises(Conflict):
+            models.copy_connection(self.session, self.workspace_a.id, self.editor.id, source['id'], dict(draft, expected_revision=99))
+        with self.assertRaises(BadRequest):
+            models.copy_connection(self.session, self.workspace_a.id, self.editor.id, source['id'],
+                dict(draft, credentials={'endpoint_url': 'https://other.example.test/v1', 'api_key': ''}))
+        with self.assertRaises(Conflict):
+            models.copy_connection(self.session, self.workspace_a.id, self.editor.id, source['id'], dict(draft, model_name='synthetic-model'))
+        copied = models.copy_connection(self.session, self.workspace_a.id, self.editor.id, source['id'], draft)
+        row = models.load(self.session, self.editor.id, copied['id'])
+        self.assertNotEqual(row['id'], source['id'])
+        self.assertEqual(models.decrypt(row), models.decrypt(original))
+        self.assertNotEqual(row['encrypted_credentials'], original['encrypted_credentials'])
+        self.assertEqual(original, models.load(self.session, self.editor.id, source['id']))
+        self.assertNotIn('synthetic-key-', json.dumps(copied))
+        self.assertFalse(copied['is_default'])
+        destination = dict(draft, name='New destination', model_name='third-model',
+            credentials={'endpoint_url': 'https://other.example.test/v1', 'api_key': 'synthetic-new-key'})
+        changed = models.copy_connection(self.session, self.workspace_a.id, self.editor.id, source['id'], destination)
+        self.assertEqual(models.decrypt(models.load(self.session, self.editor.id, changed['id']))['api_key'], 'synthetic-new-key')
+
     def test_personal_storage_crypto_metadata_update_and_deletion(self):
         first = self.save_connection()
         self.save_connection(actor=self.project_owner)

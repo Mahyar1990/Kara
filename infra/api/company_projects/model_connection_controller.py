@@ -53,6 +53,14 @@ class ModelConnectionApi(Resource):
         return invoke(personal_models.delete, connection_id, payload())
 
 
+@console_ns.route('/company/me/model-connections/<uuid:connection_id>/copy')
+class ModelConnectionCopyApi(Resource):
+    @guarded()
+    def post(self, connection_id):
+        request.max_content_length = 65536
+        return invoke(personal_models.copy_connection, connection_id, payload(), workspace=True), 201
+
+
 @console_ns.route('/company/me/model-connections/<uuid:connection_id>/test')
 class ModelConnectionTestApi(Resource):
     @guarded()

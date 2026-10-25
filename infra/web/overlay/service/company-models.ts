@@ -10,6 +10,7 @@ export const modelConnectionApi = {
   providers: () => get<{ data: PersonalProvider[] }>(`${base}/providers`),
   detail: (id: string) => get<PersonalModel>(`${base}/${id}`),
   save: (id: string | null, body: PersonalModelDraft) => id ? put<PersonalModel>(`${base}/${id}`, { body }) : post<PersonalModel>(base, { body }),
+  copy: (id: string, body: PersonalModelDraft) => post<PersonalModel>(`${base}/${id}/copy`, { body }),
   remove: (value: PersonalModel) => del(`${base}/${value.id}`, { body: { expected_revision: value.revision } }),
   test: (id: string) => post<{ connected: boolean; message: string }>(`${base}/${id}/test`),
 }

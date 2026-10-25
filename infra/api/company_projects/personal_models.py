@@ -220,6 +220,32 @@ def save(session, tenant_id, actor_id, data, identity=None):
     return public(row)
 
 
+def copy_connection(session, tenant_id, actor_id, identity, data):
+    """Explicitly copy only this account's secrets; never return them to the client."""
+    agents.body(data, ('name', 'provider', 'model_name', 'model_type', 'credentials', 'is_default', 'expected_revision'))
+    jira_connections.account(session, actor_id, lock=True)
+    team.member(session, tenant_id, actor_id)
+    source = load(session, actor_id, identity, lock=True)
+    if agents.revision(data['expected_revision']) != source['revision']:
+        raise Conflict('اتصال مبدا تغییر کرده است؛ فرم کپی را دوباره باز کنید.')
+    if not isinstance(data['credentials'], dict):
+        raise BadRequest('اطلاعات اتصال معتبر نیست.')
+    provider = provider_id(data['provider'])
+    schema = selected_schema(tenant_id, actor_id, provider)
+    fields = form_schema(schema)
+    previous = decrypt(source)
+    credentials = dict(data['credentials'])
+    unchanged = provider == source['provider'] and all(
+        credentials.get(field.variable, field.default) == previous.get(field.variable)
+        for field in fields if not secret_field(field))
+    if unchanged:
+        for field in fields:
+            if secret_field(field) and credentials.get(field.variable) in (None, ''):
+                if field.variable in previous:
+                    credentials[field.variable] = previous[field.variable]
+    return save(session, tenant_id, actor_id, dict(data, credentials=credentials, expected_revision=1))
+
+
 def delete(session, actor_id, identity, data):
     agents.body(data, ('expected_revision',))
     jira_connections.account(session, actor_id, lock=True)
