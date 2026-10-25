@@ -15,6 +15,7 @@ export const flowApi = {
   options: (project: string) => get<FlowOptions>(`${base(project)}/options`),
   save: (project: string, id: string | null, body: FlowDraft, key: string) => id ? put<TeamFlow>(`${base(project)}/${id}`, { body, headers: headers(key) }) : post<TeamFlow>(base(project), { body, headers: headers(key) }),
   publish: (project: string, id: string, expected_revision: number, key: string) => post<TeamFlow>(`${base(project)}/${id}/publish`, { body: { expected_revision }, headers: headers(key) }),
+  remove: (project: string, id: string, expected_revision: number, confirmation_name: string, key: string) => post<{ id: string; deleted: boolean }>(`${base(project)}/${id}/delete`, { body: { expected_revision, confirmation_name }, headers: headers(key) }),
   archive: (project: string, id: string, expected_revision: number, key: string) => post<TeamFlow>(`${base(project)}/${id}/archive`, { body: { expected_revision }, headers: headers(key) }),
   versions: (project: string, id: string) => get<{ data: FlowVersion[] }>(`${base(project)}/${id}/versions`),
 }

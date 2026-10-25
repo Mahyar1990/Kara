@@ -15,6 +15,7 @@ export const agentApi = {
   register: (project: string, body: { app_id: string; workflow_id: string; name: string; description: string; expected_revision: number }, key: string) => post<TeamAgent>(base(project), { body, headers: headers(key) }),
   grants: (project: string, agent: string) => get<AgentGrants>(`${base(project)}/${agent}/grants`),
   replaceGrants: (project: string, agent: string, body: { expected_revision: number; grants: AgentGrant[] }, key: string) => put<AgentGrants>(`${base(project)}/${agent}/grants`, { body, headers: headers(key) }),
+  remove: (project: string, id: string, expected_revision: number, confirmation_name: string, key: string) => post<{ id: string; deleted: boolean }>(`${base(project)}/${id}/delete`, { body: { expected_revision, confirmation_name }, headers: headers(key) }),
   archive: (project: string, agent: string, revision: number, key: string) => post<TeamAgent>(`${base(project)}/${agent}/archive`, { body: { expected_revision: revision }, headers: headers(key) }),
   run: (project: string, agent: string, body: { inputs: Record<string, unknown>; expected_revision: number }, key: string) => post<AgentAttempt>(`${base(project)}/${agent}/attempts`, { body, headers: headers(key) }),
   attempt: (project: string, agent: string, attempt: string) => get<AgentAttempt>(`${base(project)}/${agent}/attempts/${attempt}`),

@@ -9,6 +9,7 @@ import { currentWorkspaceIdAtom } from '@/context/workspace-state'
 import Link from '@/next/link'
 import { flowApi } from '@/service/company-flows'
 import { projectApi } from '@/service/company-projects'
+import DeleteTeamEntity from './delete-team-entity'
 import FormDialog, { FieldHelp } from './form-dialog'
 
 const panel = 'space-y-4 rounded-2xl border border-divider-regular bg-background-default p-5'
@@ -122,6 +123,7 @@ export default function TeamFlows({ projectId }: { projectId: string }) {
   const options = useQuery({ queryKey: ['team-flow-options', workspace, projectId], queryFn: () => flowApi.options(projectId), enabled: entered && !!list.data?.can_edit })
   const [selected, setSelected] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [deleting, setDeleting] = useState<TeamFlow | null>(null)
   const value = list.data?.data.find(flow => flow.id === selected) || null
   const saved = async (flow: TeamFlow) => { const fresh = await list.refetch(); if (fresh.isError) throw new Error('Refresh failed'); setSelected(flow.id); setEditing(!flow.archived) }
   return <main dir="rtl" className="h-full overflow-y-auto bg-background-body p-5 text-text-primary md:p-8"><div className="mx-auto max-w-5xl space-y-6">
@@ -131,8 +133,9 @@ export default function TeamFlows({ projectId }: { projectId: string }) {
       {list.data.can_edit && <div className="flex flex-wrap gap-3"><button className={primary} onClick={() => { setSelected(null); setEditing(true) }}>ساخت فلو</button><Link className={button} href={`/projects/${projectId}/team-agents`}>ایجنت‌ها و مجوزهای تیم</Link><button className={button} disabled={options.isFetching} onClick={() => options.refetch()}>دریافت مسئولان تازه</button></div>}
       {editing && list.data.can_edit && (options.isSuccess ? <FlowEditor key={`${workspace}:${value?.id || 'new'}:${value?.revision || 1}`} project={projectId} value={value} options={options.data} saved={saved} cancel={() => setEditing(false)} /> : <FormDialog open title={selected ? 'ویرایش فلو' : 'ساخت فلو'} description="ایجنت‌ها و اعضای مجاز پروژه برای تنظیم مراحل دریافت می‌شوند." close={() => setEditing(false)}><p role={options.isError ? 'alert' : 'status'}>{options.isError ? 'دریافت ایجنت‌ها و اعضا انجام نشد.' : 'در حال دریافت مسئولان…'}</p>{options.isError && <button className={button} onClick={() => options.refetch()}>تلاش دوباره</button>}</FormDialog>)}
       {!list.data.data.length && <p className={panel}>هنوز فلویی برای نمایش وجود ندارد.</p>}
-      {list.data.data.map(flow => <article key={flow.id} className={panel}><header className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">{flow.name}{flow.archived && ' · بایگانی‌شده'}</h2>{list.data.can_edit && !flow.archived && <button className={button} onClick={() => { setSelected(flow.id); setEditing(true) }}>ویرایش فلو</button>}</header><p className="text-sm text-text-secondary">{flow.description}</p>{flow.published ? <History key={flow.current_version_id} project={projectId} flow={flow} /> : <p className="text-sm text-text-tertiary">پیش‌نویس · هنوز منتشر نشده است</p>}</article>)}
+      {list.data.data.map(flow => <article key={flow.id} className={panel}><header className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">{flow.name}{flow.archived && ' · بایگانی‌شده'}</h2>{list.data.can_edit && !flow.archived && <button className={button} onClick={() => { setSelected(flow.id); setEditing(true) }}>ویرایش فلو</button>}{list.data.can_edit && <button className={button} onClick={() => setDeleting(flow)}>حذف فلو</button>}</header><p className="text-sm text-text-secondary">{flow.description}</p>{flow.published ? <History key={flow.current_version_id} project={projectId} flow={flow} /> : <p className="text-sm text-text-tertiary">پیش‌نویس · هنوز منتشر نشده است</p>}</article>)}
     </> : <p role={list.isError ? 'alert' : 'status'}>{list.isError ? 'دریافت فلوها انجام نشد.' : 'در حال دریافت فلوها…'}</p>}
+    {deleting && list.data?.can_edit && <DeleteTeamEntity project={projectId} kind="flow" value={deleting} close={() => setDeleting(null)} deleted={async () => { await list.refetch(); setEditing(false); setSelected(null) }} />}
     <button className={button} disabled={!entered || list.isFetching} onClick={() => { setEditing(false); void list.refetch() }}>دریافت فهرست تازهٔ فلوها</button>
   </div></main>
 }

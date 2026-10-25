@@ -74,3 +74,12 @@ class AgentAttemptApi(Resource):
     @guarded()
     def get(self, project_id, agent_id, attempt_id):
         return invoke(agents.get_attempt, project_id, agent_id, attempt_id)
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/agents/<uuid:agent_id>/delete')
+class AgentDeleteApi(Resource):
+    @guarded()
+    def post(self, project_id, agent_id):
+        from company_projects.entity_deletion import remove
+        return invoke(remove, project_id, agent_id, payload(), request.headers.get('Idempotency-Key'), \
+            'agent')

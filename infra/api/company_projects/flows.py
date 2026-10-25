@@ -89,7 +89,7 @@ def list_flows(session, project_id, workspace_id, actor_id):
     scoped = scope(session, project_id, workspace_id, actor_id)
     author = can_author(session, workspace_id, actor_id)
     table, _ = tables(session)
-    query = sa.select(table).where(*(table.c[k] == v for k, v in scoped.items())).order_by(table.c.created_at, table.c.id)
+    query = sa.select(table).where(table.c.deleted_at.is_(None), *(table.c[k] == v for k, v in scoped.items())).order_by(table.c.created_at, table.c.id)
     if not author:
         query = query.where(table.c.current_version_id.is_not(None))
     return dict(can_edit=author, data=[public(session, row, author) for row in session.execute(query).mappings()])
@@ -98,6 +98,8 @@ def list_flows(session, project_id, workspace_id, actor_id):
 def get_flow(session, project_id, workspace_id, actor_id, flow_id):
     scoped = scope(session, project_id, workspace_id, actor_id)
     row = load(session, scoped, flow_id)
+    if row.get('deleted_at') is not None:
+        raise NotFound('فلو حذف شده است.')
     author = can_author(session, workspace_id, actor_id)
     if not author and not row['current_version_id']:
         raise NotFound('فلو منتشر نشده است.')
@@ -184,7 +186,7 @@ def mutate(session, project_id, workspace_id, actor_id, data, key, flow_id=None,
     if action == 'save':
         values = validate_draft(data)
         if session.scalar(sa.select(table.c.id).where(*(table.c[k] == v for k, v in scoped.items()),
-                table.c.name_key == values['name_key'], table.c.id != (row['id'] if row else str(uuid4())))):
+                table.c.deleted_at.is_(None), table.c.name_key == values['name_key'], table.c.id != (row['id'] if row else str(uuid4())))):
             raise Conflict('نام این فلو در پروژه استفاده شده است.')
         if row:
             row.update(**values, revision=expected + 1, updated_at=agents.now())

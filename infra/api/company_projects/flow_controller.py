@@ -67,3 +67,12 @@ class FlowVersionApi(Resource):
     @guarded()
     def get(self, project_id, flow_id, version_id):
         return invoke(flows.get_version, project_id, flow_id, version_id)
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/flows/<uuid:flow_id>/delete')
+class FlowDeleteApi(Resource):
+    @guarded()
+    def post(self, project_id, flow_id):
+        from company_projects.entity_deletion import remove
+        return invoke(remove, project_id, flow_id, payload(), request.headers.get('Idempotency-Key'), \
+            'flow')

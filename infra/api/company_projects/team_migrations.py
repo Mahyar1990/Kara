@@ -324,10 +324,17 @@ CREATE TABLE company_user_model_connections (
 CREATE UNIQUE INDEX company_user_model_default_idx
     ON company_user_model_connections(account_id, model_type) WHERE is_default;
 """
+TEAM_DELETE_SCHEMA = """
+ALTER TABLE company_team_agents ADD COLUMN deleted_at timestamptz;
+ALTER TABLE company_team_flows ADD COLUMN deleted_at timestamptz;
+ALTER TABLE company_team_flows DROP CONSTRAINT company_team_flows_project_id_workspace_id_name_key_key;
+CREATE UNIQUE INDEX company_team_flow_live_name_idx
+    ON company_team_flows(project_id, workspace_id, name_key) WHERE deleted_at IS NULL;
+"""
 MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
               ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA), ('006_team_recovery', RECOVERY_SCHEMA),
               ('007_jira_intake', JIRA_SCHEMA), ('008_shared_agent_apps', SHARED_AGENT_APP_SCHEMA),
-              ('009_personal_jira_connections', PERSONAL_JIRA_SCHEMA), ('010_personal_models', PERSONAL_MODEL_SCHEMA))
+              ('009_personal_jira_connections', PERSONAL_JIRA_SCHEMA), ('010_personal_models', PERSONAL_MODEL_SCHEMA), ('011_team_deletion', TEAM_DELETE_SCHEMA))
 
 
 def checksum(sql):

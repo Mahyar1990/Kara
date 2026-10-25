@@ -28,7 +28,7 @@ def managed(session, app_id):
     if not app_id:
         return None
     table = agents.definitions(session)
-    return session.execute(sa.select(table).where(table.c.app_id == str(app_id))).mappings().first()
+    return session.execute(sa.select(table).where(table.c.app_id == str(app_id), table.c.deleted_at.is_(None))).mappings().first()
 
 
 def deny_native(app_id, *, session=None):
@@ -41,9 +41,14 @@ def deny_native(app_id, *, session=None):
 
 def assert_execution(tenant_id, app_id, workflow_id, user_id, run_id=None):
     with Session(db.engine) as session:
-        if managed(session, app_id) is None:
-            return
         capability = _execution.get()
+        if managed(session, app_id) is None and capability is None:
+            # Deleting the final binding releases fresh native runs, never old team attempts.
+            if run_id:
+                attempts = agents.reflected(session, 'company_team_agent_attempts')
+                if session.scalar(sa.select(attempts.c.id).where(attempts.c.id == str(run_id)).limit(1)):
+                    raise Forbidden('اجرای تیمی قبلی از مسیر اجرای بومی قابل شروع یا ادامه نیست.')
+            return
         if capability is None or capability[1:] != (str(app_id), str(workflow_id), str(user_id)):
             raise Forbidden('اجرای ایجنت تیمی فقط از مسیر کنترل‌شده مجاز است.')
         _, _, attempts = agents.tables(session)
@@ -69,7 +74,7 @@ def assert_execution(tenant_id, app_id, workflow_id, user_id, run_id=None):
 
 def native_permission(session, app_id, actor_id, action='edit_definition'):
     table = agents.definitions(session)
-    linked = list(session.execute(sa.select(table).where(table.c.app_id == str(app_id))).mappings())
+    linked = list(session.execute(sa.select(table).where(table.c.app_id == str(app_id), table.c.deleted_at.is_(None))).mappings())
     if not linked:
         return
     active = [agent for agent in linked if not agent['archived']]

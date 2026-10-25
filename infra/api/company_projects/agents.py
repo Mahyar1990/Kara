@@ -136,7 +136,7 @@ def list_agents(session, project_id, workspace_id, actor_id):
     scope = team.scope(session, project_id, workspace_id, actor_id)
     manager = access.can_manage_members(session, workspace_id, actor_id)
     table = definitions(session)
-    rows = session.execute(sa.select(table).where(*(table.c[k] == v for k, v in scope.items()))
+    rows = session.execute(sa.select(table).where(table.c.deleted_at.is_(None), *(table.c[k] == v for k, v in scope.items()))
         .order_by(table.c.created_at, table.c.id)).mappings()
     return dict(can_manage=manager, data=[public(session, row, actor_id) for row in rows
         if manager or permissions(session, row, actor_id)])
