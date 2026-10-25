@@ -79,6 +79,10 @@ def contracts(workflow):
     result = []
     for item in values:
         kind, name = item.get('type'), item.get('variable')
+        from company_projects.runtime_models import INPUT, policy
+        if name == INPUT:
+            policy(workflow.graph_dict)
+            continue
         if kind not in {'text-input', 'paragraph', 'select', 'number', 'checkbox'} or not isinstance(name, str) or not name or name.startswith('sys.'):
             raise UnprocessableEntity('نوع ورودی این فرایند برای اجرای تیمی پشتیبانی نمی‌شود.')
         result.append(dict(variable=name, label=item.get('label') or name, type=kind,
@@ -121,8 +125,11 @@ def require(session, agent, actor_id, action):
 
 
 def public(session, row, actor_id):
+    from company_projects.runtime_models import policy, llm_nodes
+    source = session.get(Workflow, row['workflow_id'])
     return {k: row[k] for k in ('id', 'name', 'description', 'app_id', 'workflow_id', 'revision',
-        'acl_revision', 'archived', 'input_contract', 'output_contract')} | {'actions': permissions(session, row, actor_id)}
+        'acl_revision', 'archived', 'input_contract', 'output_contract')} | {
+        'actions': permissions(session, row, actor_id), 'runtime_model': policy(source.graph_dict) if source and llm_nodes(source.graph_dict) else None}
 
 
 def list_agents(session, project_id, workspace_id, actor_id):
@@ -325,9 +332,11 @@ def start(session, project_id, workspace_id, actor_id, agent_id, data, key):
         return attempt_public(previous)
     if row['revision'] != expected:
         raise Conflict('تعریف ایجنت تغییر کرده است.')
-    validate_inputs(row['input_contract'], data['inputs'])
+    from company_projects.runtime_models import attempt_inputs, business_inputs
+    inputs = attempt_inputs(session, session.get(Workflow, row['workflow_id']), actor_id, data['inputs'])
+    validate_inputs(row['input_contract'], business_inputs(inputs))
     attempt = dict(id=str(uuid4()), agent_id=row['id'], **scope, actor_id=str(actor_id), membership_id=join.id,
-        workflow_id=row['workflow_id'], inputs=data['inputs'], request_digest=request_digest,
+        workflow_id=row['workflow_id'], inputs=inputs, request_digest=request_digest,
         correlation_id=key, status='pending', result=None, created_at=now())
     session.execute(attempts.insert().values(**attempt))
     event(session, scope, actor_id, key, request_digest, 'agent.run.requested', attempt_public(attempt))

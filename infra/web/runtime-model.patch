@@ -1,0 +1,421 @@
+--- a/web/app/components/workflow/nodes/start/default.ts
++++ b/web/app/components/workflow/nodes/start/default.ts
+@@ -1,3 +1,4 @@
++import { runtimeModelInput } from '@/utils/company-runtime-model'
+ import type { NodeDefault } from '../../types'
+ import type { StartNodeType } from './types'
+ import { BlockEnum } from '@/app/components/workflow/types'
+@@ -15,7 +16,7 @@
+ const nodeDefault: NodeDefault<StartNodeType> = {
+   metaData,
+   defaultValue: {
+-    variables: [],
++    variables: [runtimeModelInput()],
+   },
+   checkValid() {
+     return {
+--- a/web/app/components/workflow/nodes/start/panel.tsx
++++ b/web/app/components/workflow/nodes/start/panel.tsx
+@@ -1,3 +1,4 @@
++import RuntimeModelConfig from '@/app/components/company-projects/runtime-model-config'
+ import type { FC } from 'react'
+ import type { StartNodeType } from './types'
+ import type { InputVar, NodePanelProps } from '@/app/components/workflow/types'
+@@ -38,6 +39,7 @@
+   return (
+     <div className="mt-2">
+       <div className="space-y-4 px-4 pb-2">
++        <RuntimeModelConfig id={id} data={data} disabled={readOnly} />
+         <Field
+           title={t(($) => $[`${i18nPrefix}.inputField`], { ns: 'workflow' })}
+           operations={
+--- a/web/app/components/workflow/nodes/llm/default.ts
++++ b/web/app/components/workflow/nodes/llm/default.ts
+@@ -1,3 +1,4 @@
++import { RUNTIME_MODEL_PROVIDER } from '@/utils/company-runtime-model'
+ import type { TFunction } from 'i18next'
+ import type { EnvironmentVariable, NodeDefault, PromptItem } from '../../types'
+ import type { LLMNodeType } from './types'
+@@ -43,8 +44,8 @@
+   metaData,
+   defaultValue: {
+     model: {
+-      provider: '',
+-      name: '',
++      provider: RUNTIME_MODEL_PROVIDER,
++      name: 'executor-model',
+       mode: AppModeEnum.CHAT,
+       completion_params: {
+         temperature: 0.7,
+--- a/web/app/components/workflow/nodes/llm/use-config.ts
++++ b/web/app/components/workflow/nodes/llm/use-config.ts
+@@ -1,3 +1,5 @@
++import { useRuntimeProgramModel } from '@/app/components/company-projects/runtime-model-config'
++import { RUNTIME_MODEL_PROVIDER } from '@/utils/company-runtime-model'
+ import type { LLMDefaultConfig } from './hooks/use-llm-input-manager'
+ import type { LLMNodeType } from './types'
+ import type { EnvironmentVariable, ValueSelector } from '@/app/components/workflow/types'
+@@ -26,6 +28,7 @@
+ const useConfig = (id: string, payload: LLMNodeType) => {
+   const { nodesReadOnly: readOnly } = useNodesReadOnly()
+   const isChatMode = useIsChatMode()
++  const runtimeModel = useRuntimeProgramModel()
+ 
+   const defaultConfig = useStore((s) => s.nodesDefaultConfigs)?.[payload.type] as
+     | LLMDefaultConfig
+@@ -39,7 +42,7 @@
+     inputs.model_selector,
+     environmentVariables,
+   )
+-  const model = resolvedModel ?? {
++  const model = runtimeModel ? { ...inputs.model, provider: RUNTIME_MODEL_PROVIDER, name: 'executor-model' } : resolvedModel ?? {
+     ...inputs.model,
+     provider: '',
+     name: '',
+@@ -162,7 +165,7 @@
+ 
+   useEffect(() => {
+     if (
+-      !isEnvironmentModelSource &&
++      !runtimeModel && !isEnvironmentModelSource &&
+       currentProvider?.provider &&
+       currentModel?.model &&
+       !model.provider
+@@ -173,7 +176,7 @@
+         mode: currentModel?.model_properties?.mode as string,
+       })
+     }
+-  }, [model.provider, currentProvider, currentModel, handleModelChanged, isEnvironmentModelSource])
++  }, [model.provider, currentProvider, currentModel, handleModelChanged, isEnvironmentModelSource, runtimeModel])
+ 
+   const handleCompletionParamsChange = useCallback(
+     (newParams: LLMNodeType['model']['completion_params']) => {
+@@ -223,7 +226,7 @@
+     isCompletionModel,
+     hasSetBlockStatus: promptConfig.hasSetBlockStatus,
+     shouldShowContextTip: promptConfig.shouldShowContextTip,
+-    isVisionModel,
++    isVisionModel: runtimeModel || isVisionModel,
+     handleModelChanged,
+     handleModelSourceChange,
+     handleModelSelectorChange,
+@@ -243,7 +246,7 @@
+     handleSyeQueryChange: promptConfig.handleSyeQueryChange,
+     handleVisionResolutionEnabledChange,
+     handleVisionResolutionChange,
+-    isModelSupportStructuredOutput: structuredOutputConfig.isModelSupportStructuredOutput,
++    isModelSupportStructuredOutput: runtimeModel || structuredOutputConfig.isModelSupportStructuredOutput,
+     handleStructureOutputChange: structuredOutputConfig.handleStructureOutputChange,
+     structuredOutputCollapsed: structuredOutputConfig.structuredOutputCollapsed,
+     setStructuredOutputCollapsed: structuredOutputConfig.setStructuredOutputCollapsed,
+--- a/web/app/components/workflow/nodes/llm/panel.tsx
++++ b/web/app/components/workflow/nodes/llm/panel.tsx
+@@ -1,3 +1,5 @@
++import { useRuntimeProgramModel } from '@/app/components/company-projects/runtime-model-config'
++import RuntimeModelParameters from '@/app/components/company-projects/runtime-model-parameters'
+ import type { FC } from 'react'
+ import type { LLMNodeType } from './types'
+ import type { NodePanelProps } from '@/app/components/workflow/types'
+@@ -47,6 +49,7 @@
+ 
+ const Panel: FC<NodePanelProps<LLMNodeType>> = ({ id, data }) => {
+   const { t } = useTranslation()
++  const runtimeModel = useRuntimeProgramModel()
+   const flowType = useHooksStore((s) => s.configsMap?.flowType)
+   const {
+     readOnly,
+@@ -92,6 +95,7 @@
+     getLLMModelIssue({ modelProvider: model?.provider }) === LLMModelIssueCode.providerRequired
+   const { data: isModelProviderInstalled = isProviderRequired } = useQuery(
+     consoleQuery.workspaces.current.modelProviders.summary.get.queryOptions({
++      enabled: !runtimeModel,
+       select: (response) =>
+         isProviderRequired ||
+         response.data.some(
+@@ -100,7 +104,7 @@
+     }),
+   )
+   const hasModelWarning =
+-    getLLMModelIssue({
++    !runtimeModel && getLLMModelIssue({
+       modelProvider: model?.provider,
+       isModelProviderInstalled,
+     }) !== null
+@@ -213,7 +217,7 @@
+           required
+           warningDot={hasModelWarning}
+           operations={
+-            flowType === FlowType.snippet && !isEnvironmentModelSource ? undefined : (
++            runtimeModel || (flowType === FlowType.snippet && !isEnvironmentModelSource) ? undefined : (
+               <FormInputTypeSwitch
+                 value={isEnvironmentModelSource ? VarType.variable : VarType.constant}
+                 readonly={readOnly}
+@@ -227,7 +231,7 @@
+             )
+           }
+         >
+-          <div className="space-y-2">
++          {runtimeModel ? <RuntimeModelParameters value={inputs.model.completion_params || {}} change={handleCompletionParamsChange} disabled={readOnly} /> : <div className="space-y-2">
+             {isEnvironmentModelSource && (
+               <Select
+                 value={selectedEnvironmentVariableName ?? null}
+@@ -267,7 +271,7 @@
+               nodesOutputVars={availableVars}
+               availableNodes={availableNodesWithParent}
+             />
+-          </div>
++          </div>}
+         </Field>
+ 
+         {/* knowledge */}
+--- a/web/app/components/workflow/nodes/llm/node.tsx
++++ b/web/app/components/workflow/nodes/llm/node.tsx
+@@ -1,3 +1,4 @@
++import { useRuntimeProgramModel } from '@/app/components/company-projects/runtime-model-config'
+ import type { FC } from 'react'
+ import type { LLMNodeType } from './types'
+ import type { NodeProps } from '@/app/components/workflow/types'
+@@ -10,6 +11,8 @@
+   const { textGenerationModelList } = useTextGenerationCurrentProviderAndModelAndModelList()
+   const hasSetModel = provider && modelId
+ 
++  const runtimeModel = useRuntimeProgramModel()
++  if (runtimeModel) return <p className="px-3 py-1 text-xs text-text-secondary">مدل شخصی اجراکننده</p>
+   if (!hasSetModel) return null
+ 
+   return (
+--- a/web/app/components/workflow/nodes/_base/components/before-run-form/form-item.tsx
++++ b/web/app/components/workflow/nodes/_base/components/before-run-form/form-item.tsx
+@@ -1,4 +1,6 @@
+ 'use client'
++import RuntimeModelPicker from '@/app/components/company-projects/runtime-model-picker'
++import { RUNTIME_MODEL_INPUT } from '@/utils/company-runtime-model'
+ import type { FC } from 'react'
+ import type { InputVar } from '../../../../types'
+ import type { FileEntity } from '@/app/components/base/file-uploader/types'
+@@ -140,6 +142,8 @@
+     [onChange, payload.variable],
+   )
+ 
++  if (payload.variable === RUNTIME_MODEL_INPUT) return <div className={className}><p className="mb-2 text-sm font-medium">مدل اجرای برنامه</p><RuntimeModelPicker value={value || ''} onChange={onChange} capabilities={payload.options || []} /></div>
++
+   return (
+     <div className={cn(className)}>
+       {!isArrayLikeType && !isBooleanType && (
+--- a/web/app/components/workflow/nodes/start/components/var-list.tsx
++++ b/web/app/components/workflow/nodes/start/components/var-list.tsx
+@@ -1,4 +1,5 @@
+ 'use client'
++import { RUNTIME_MODEL_INPUT } from '@/utils/company-runtime-model'
+ import type { FC } from 'react'
+ import type { InputVar, MoreInfo } from '@/app/components/workflow/types'
+ import { cn } from '@langgenius/dify-ui/cn'
+@@ -134,7 +135,7 @@
+             )}
+             <VarItem
+               className={cn(canDrag && 'handle')}
+-              readonly={readonly}
++              readonly={readonly || itemWithId.variable.variable === RUNTIME_MODEL_INPUT}
+               payload={itemWithId.variable}
+               onChange={handleVarChange(keyboardSort.getItemKey(index))}
+               onRemove={handleVarRemove(keyboardSort.getItemKey(index))}
+--- a/web/app/components/workflow/nodes/_base/components/before-run-form/index.tsx
++++ b/web/app/components/workflow/nodes/_base/components/before-run-form/index.tsx
+@@ -1,4 +1,7 @@
+ 'use client'
++import RuntimeModelPicker from '@/app/components/company-projects/runtime-model-picker'
++import { useRuntimeProgramPolicy } from '@/app/components/company-projects/runtime-model-config'
++import { RUNTIME_MODEL_INPUT } from '@/utils/company-runtime-model'
+ import type { FC } from 'react'
+ import type { Props as FormProps } from './form'
+ import type { BeforeRunFormTranslator } from './helpers'
+@@ -10,7 +13,7 @@
+ import { cn } from '@langgenius/dify-ui/cn'
+ import { toast } from '@langgenius/dify-ui/toast'
+ import * as React from 'react'
+-import { useEffect, useRef } from 'react'
++import { useEffect, useRef, useState } from 'react'
+ import { useTranslation } from 'react-i18next'
+ import Split from '@/app/components/workflow/nodes/_base/components/split'
+ import SingleRunForm from '@/app/components/workflow/nodes/human-input/components/single-run-form'
+@@ -65,6 +68,10 @@
+   const { t } = useTranslation()
+   const translateFormError: BeforeRunFormTranslator = (selector, options) => t(selector, options)
+ 
++  const runtimePolicy = useRuntimeProgramPolicy()
++  const programRuntimeModel = !!runtimePolicy
++  const runtimeModel = programRuntimeModel && [BlockEnum.LLM, BlockEnum.Iteration, BlockEnum.Loop].includes(nodeType!)
++  const [modelConnection, setModelConnection] = useState('')
+   const isHumanInput = nodeType === BlockEnum.HumanInput
+   const showBackButton = filteredExistVarForms.length > 0
+ 
+@@ -86,7 +93,7 @@
+     }
+ 
+     if (isHumanInput) handleShowGeneratedForm?.(submitData)
+-    else onRun(submitData)
++    else onRun(runtimeModel ? { ...submitData, [RUNTIME_MODEL_INPUT]: modelConnection } : submitData)
+   }
+ 
+   const handleHumanInputFormSubmit = async (data: any) => {
+@@ -99,16 +106,17 @@
+     // React 18 run twice in dev mode
+     if (hasRun.current) return
+     hasRun.current = true
+-    if (shouldAutoRunBeforeRunForm(filteredExistVarForms, isHumanInput)) onRun({})
++    if (!runtimeModel && shouldAutoRunBeforeRunForm(filteredExistVarForms, isHumanInput)) onRun({})
+     if (shouldAutoShowGeneratedForm(filteredExistVarForms, isHumanInput))
+       handleShowGeneratedForm?.({})
+-  }, [filteredExistVarForms, handleShowGeneratedForm, isHumanInput, onRun])
++  }, [filteredExistVarForms, handleShowGeneratedForm, isHumanInput, onRun, runtimeModel])
+ 
+-  if (shouldAutoRunBeforeRunForm(filteredExistVarForms, isHumanInput)) return null
++  if (!runtimeModel && shouldAutoRunBeforeRunForm(filteredExistVarForms, isHumanInput)) return null
+ 
+   return (
+     <PanelWrap nodeName={nodeName} onHide={onHide}>
+       <div className="h-0 grow overflow-y-auto pb-4">
++        {runtimeModel && !showGeneratedForm && <div className="px-4 pt-3"><RuntimeModelPicker value={modelConnection} onChange={setModelConnection} capabilities={runtimePolicy?.capabilities || []} /></div>}
+         {!showGeneratedForm && (
+           <div className="mt-3 space-y-4 px-4">
+             {filteredExistVarForms.map((form, index) => (
+--- a/web/app/components/base/chat/chat-with-history/inputs-form/content.tsx
++++ b/web/app/components/base/chat/chat-with-history/inputs-form/content.tsx
+@@ -1,3 +1,5 @@
++import RuntimeModelPicker from '@/app/components/company-projects/runtime-model-picker'
++import { RUNTIME_MODEL_INPUT } from '@/utils/company-runtime-model'
+ import { Input } from '@langgenius/dify-ui/input'
+ import {
+   Select,
+@@ -78,7 +80,8 @@
+               )}
+             </div>
+           )}
+-          {form.type === InputVarType.textInput && (
++          {form.variable === RUNTIME_MODEL_INPUT && <RuntimeModelPicker value={String(inputsFormValue?.[form.variable] || '')} onChange={value => handleFormChange(form.variable, value)} capabilities={form.options || []} />}
++          {form.type === InputVarType.textInput && form.variable !== RUNTIME_MODEL_INPUT && (
+             <Input
+               aria-labelledby={`${baseId}-${form.variable}-label`}
+               value={inputsFormValue?.[form.variable] || ''}
+--- a/web/utils/model-config.ts
++++ b/web/utils/model-config.ts
+@@ -86,7 +86,7 @@
+         required: getBoolean(content.required, true),
+         type,
+         max_length: getNumber(content.max_length),
+-        options: [],
++        options: variable === '__kara_model_connection' ? getStringArray(content.options) : [],
+         is_context_var,
+         hide: getBoolean(content.hide),
+         default: getDefaultValue(content.default),
+--- a/web/app/components/share/text-generation/run-once/index.tsx
++++ b/web/app/components/share/text-generation/run-once/index.tsx
+@@ -1,3 +1,5 @@
++import RuntimeModelPicker from '@/app/components/company-projects/runtime-model-picker'
++import { RUNTIME_MODEL_INPUT } from '@/utils/company-runtime-model'
+ import type { FC, FormEvent } from 'react'
+ import type { InputValueTypes } from '../types'
+ import type { FileEntity } from '@/app/components/base/file-uploader/types'
+@@ -171,7 +173,8 @@
+                             </SelectContent>
+                           </Select>
+                         )}
+-                        {item.type === 'string' && (
++                        {item.key === RUNTIME_MODEL_INPUT && <RuntimeModelPicker value={String(inputs[item.key] || '')} onChange={value => handleInputsChange({ ...inputsRef.current, [item.key]: value })} capabilities={item.options || []} />}
++                        {item.type === 'string' && item.key !== RUNTIME_MODEL_INPUT && (
+                           <Input
+                             aria-labelledby={`${baseId}-${item.key}-label`}
+                             type="text"
+--- a/web/app/components/workflow/panel/inputs-panel.tsx
++++ b/web/app/components/workflow/panel/inputs-panel.tsx
+@@ -1,3 +1,5 @@
++import { useRuntimeProgramPolicy } from '@/app/components/company-projects/runtime-model-config'
++import { RUNTIME_MODEL_INPUT } from '@/utils/company-runtime-model'
+ import type { StartNodeType } from '../nodes/start/types'
+ import { Button } from '@langgenius/dify-ui/button'
+ import { memo, useCallback, useMemo } from 'react'
+@@ -28,6 +30,7 @@
+   const { handleRun } = useWorkflowRun()
+   const startNode = nodes.find((node) => node.data.type === BlockEnum.Start)
+   const startVariables = startNode?.data.variables
++  const runtimePolicy = useRuntimeProgramPolicy()
+   const { checkInputsForm } = useCheckInputsForms()
+ 
+   const initialInputs = useMemo(() => {
+@@ -43,7 +46,7 @@
+   }, [inputs, startVariables])
+ 
+   const variables = useMemo(() => {
+-    const data = startVariables || []
++    const data = (startVariables || []).filter(item => item.variable !== RUNTIME_MODEL_INPUT || nodes.some(node => node.data.type === BlockEnum.LLM)).map(item => item.variable === RUNTIME_MODEL_INPUT ? { ...item, options: runtimePolicy?.capabilities || [] } : item)
+     if (fileSettings?.image?.enabled) {
+       return [
+         ...data,
+@@ -57,7 +60,7 @@
+     }
+ 
+     return data
+-  }, [fileSettings?.image?.enabled, startVariables])
++  }, [fileSettings?.image?.enabled, startVariables, runtimePolicy, nodes])
+ 
+   const handleValueChange = (variable: string, v: any) => {
+     const { inputs, setInputs } = workflowStore.getState()
+--- a/web/app/components/workflow/run/index.tsx
++++ b/web/app/components/workflow/run/index.tsx
+@@ -1,4 +1,5 @@
+ 'use client'
++import RuntimeModelSummary from '@/app/components/company-projects/runtime-model-summary'
+ import type { FC } from 'react'
+ import type { WorkflowRunDetailResponse } from '@/models/log'
+ import type { NodeTracing } from '@/types/workflow'
+@@ -150,6 +151,7 @@
+         {!loading && currentTab === 'RESULT' && runDetail && (
+           <OutputPanel outputs={runDetail.outputs} error={runDetail.error} height={height} />
+         )}
++        {!loading && currentTab === 'DETAIL' && runDetail && <RuntimeModelSummary graph={runDetail.graph} />}
+         {!loading && currentTab === 'DETAIL' && runDetail && (
+           <ResultPanel
+             inputs={runDetail.inputs}
+--- a/web/app/components/workflow/hooks/use-checklist.ts
++++ b/web/app/components/workflow/hooks/use-checklist.ts
+@@ -1,3 +1,4 @@
++import { hasRuntimeModel, RUNTIME_MODEL_PROVIDER } from '@/utils/company-runtime-model'
+ import type { ModelProviderSummaryResponse } from '@dify/contracts/api/console/workspaces/types.gen'
+ import type { AgentNodeType } from '../nodes/agent/types'
+ import type { DataSourceNodeType } from '../nodes/data-source/types'
+@@ -421,7 +422,7 @@
+       }
+ 
+       if (node!.type === CUSTOM_NODE) {
+-        const checkData = getCheckData(node!.data)
++        const checkData = hasRuntimeModel(nodes) && node!.data.type === BlockEnum.LLM ? { ...node!.data, model_selector: undefined, model: { ...(node!.data as LLMNodeType).model, provider: RUNTIME_MODEL_PROVIDER, name: 'executor-model' } } : getCheckData(node!.data)
+         const validator = resolveNodeValidator(node!.data, nodesExtraData)
+         const isPluginMissing = isNodePluginMissing(node!.data, {
+           builtInTools: buildInTools,
+@@ -438,7 +439,7 @@
+         if (isPluginMissing) {
+           errorMessages.push(t(($) => $['nodes.common.pluginNotInstalled'], { ns: 'workflow' }))
+         } else {
+-          if (node!.data.type === BlockEnum.LLM) {
++          if (!hasRuntimeModel(nodes) && node!.data.type === BlockEnum.LLM) {
+             const llmNodeData = node!.data as LLMNodeType
+             const modelProvider = resolveLLMNodeModel(
+               llmNodeData.model,
+@@ -810,7 +811,7 @@
+         }
+       }
+ 
+-      if (node!.data.type === BlockEnum.LLM) {
++      if (!hasRuntimeModel(nodes) && node!.data.type === BlockEnum.LLM) {
+         const llmNodeData = node!.data as LLMNodeType
+         const modelProvider = resolveLLMNodeModel(
+           llmNodeData.model,
+@@ -829,7 +830,7 @@
+         }
+       }
+ 
+-      const checkData = getCheckData(node!.data, datasets, embeddingProviderModelMap)
++      const checkData = hasRuntimeModel(nodes) && node!.data.type === BlockEnum.LLM ? { ...node!.data, model_selector: undefined, model: { ...(node!.data as LLMNodeType).model, provider: RUNTIME_MODEL_PROVIDER, name: 'executor-model' } } : getCheckData(node!.data, datasets, embeddingProviderModelMap)
+       const validator = resolveNodeValidator(node!.data, nodesExtraData)
+       if (validator) {
+         const { errorMessage } = validator(

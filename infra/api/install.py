@@ -148,6 +148,33 @@ changes['app_factory.py'].append((
     '    install_http_guard(app)\n',
     '    install_http_guard(app)\n    from company_projects.personal_model_runtime import install_http_guard as install_personal_models_guard\n    install_personal_models_guard(app)\n'))
 
+# The source graph stays immutable; only each native execution receives a resolved copy.
+for kind, generator_name in (('workflow', 'WorkflowAppGenerator'), ('advanced_chat', 'AdvancedChatAppGenerator')):
+    generator_path = f'core/app/apps/{kind}/app_generator.py'
+    changes.setdefault(generator_path, []).extend([
+        (f'class {generator_name}(',
+         f'from company_projects.runtime_model_boundary import install_generator_boundary\n\n\n@install_generator_boundary\nclass {generator_name}('),
+        ('            **extract_trace_session_id_from_args(args),\n',
+         '            **extract_trace_session_id_from_args(args),\n            **__import__("company_projects.runtime_models", fromlist=["execution_extras"]).execution_extras(args),\n'),
+        ('    if isinstance(args, Mapping):\n        return extract_trace_session_id_from_args(args)\n    return extract_trace_session_id_from_args({"trace_session_id": getattr(args, "trace_session_id", None)})\n',
+         '    from company_projects.runtime_models import execution_extras\n    trace = extract_trace_session_id_from_args(args if isinstance(args, Mapping) else {"trace_session_id": getattr(args, "trace_session_id", None)})\n    return {**trace, **execution_extras(args)}\n'),
+    ])
+    changes.setdefault(f'core/app/apps/{kind}/app_runner.py', []).append((
+        '        app_config = self.application_generate_entity.app_config\n',
+        '        from company_projects.runtime_models import bind_runner\n        bind_runner(self)\n        app_config = self.application_generate_entity.app_config\n'))
+changes['services/workflow_service.py'].extend([
+    ('            try:\n                # Extract and validate credentials based on node type\n',
+     '            from company_projects.runtime_models import policy\n            if node_type == "llm" and policy(graph_dict) is not None:\n                continue  # Personal model is selected and validated by each executor.\n            try:\n                # Extract and validate credentials based on node type\n'),
+    ('        files = files or []\n\n        with Session(bind=db.engine, expire_on_commit=False) as session, session.begin():\n',
+     '        files = files or []\n        from company_projects.runtime_models import prepare\n        if draft_workflow.get_node_config_by_id(node_id).get("data", {}).get("type") == "llm":\n            draft_workflow, user_inputs, _ = prepare(draft_workflow, account, dict(user_inputs))\n\n        with Session(bind=db.engine, expire_on_commit=False) as session, session.begin():\n'),
+])
+changes['models/workflow.py'] = [(
+    '        variables: list[Any] = start_node.get("data", {}).get("variables", [])\n',
+    '        variables: list[Any] = start_node.get("data", {}).get("variables", [])\n        from company_projects.runtime_models import form_variables\n        variables = form_variables(graph_dict, variables)\n')]
+changes['services/app_dsl_service.py'] = [(
+    '                    case BuiltinNodeTypes.LLM:\n                        llm_entity = LLMNodeData.model_validate(node["data"])\n',
+    '                    case BuiltinNodeTypes.LLM:\n                        from company_projects.runtime_models import policy\n                        if policy(graph) is not None:\n                            continue  # Each executor supplies an installed personal provider.\n                        llm_entity = LLMNodeData.model_validate(node["data"])\n')]
+
 for filename, replacements in changes.items():
     target = root / filename
     content = target.read_text()

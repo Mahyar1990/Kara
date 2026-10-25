@@ -317,6 +317,9 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
     if stage['instance_id'] != value['id']:
         raise NotFound('مرحله در این اجرا پیدا نشد.')
     agent = agents.load(session, scope, stage['binding']['agent_id'])
+    from company_projects.runtime_models import policy, llm_nodes
+    source_graph = session.get(Workflow, agent['workflow_id']).graph_dict
+    runtime_model = policy(source_graph) if llm_nodes(source_graph) else None
     permissions = agents.permissions(session, agent, actor)
     if not set(permissions) & {'view', 'run', 'feedback', 'finalize'}:
         raise Forbidden('مجوز مشاهدهٔ محتوای این مرحله را ندارید.')
@@ -325,7 +328,7 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
     attempts = session.execute(sa.select(bridge.c.attempt_id, bridge.c.round, bridge.c.input_digest,
         native.c.status, native.c.actor_id, native.c.created_at).join(native, native.c.id == bridge.c.attempt_id)
         .where(bridge.c.stage_id == stage['id']).order_by(bridge.c.created_at)).mappings()
-    result = requests.serial(stage) | dict(intake_valid=valid_intake(session, value), actions=[], preview_inputs={}, input_error=None,
+    result = requests.serial(stage) | dict(runtime_model=runtime_model, intake_valid=valid_intake(session, value), actions=[], preview_inputs={}, input_error=None,
         editable_inputs={}, attempts=[requests.serial(row) for row in attempts],
         feedback=[requests.serial(row) for row in session.execute(sa.select(feedback).where(feedback.c.stage_id == stage['id']).order_by(feedback.c.round)).mappings()],
         artifacts=[requests.serial(row) for row in session.execute(sa.select(artifacts).where(artifacts.c.stage_id == stage['id']).order_by(artifacts.c.version.desc())).mappings()],
@@ -351,7 +354,8 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         edit_output=('artifact_id', 'content', 'reason'), request_decision=('artifact_id',), finalize=('artifact_id', 'reason'))
     if action not in fields:
         raise BadRequest('اقدام مرحله معتبر نیست.')
-    agents.body(data, ('expected_revision', *fields[action]))
+    optional_model = ('model_connection_id',) if action == 'run' and isinstance(data, dict) and 'model_connection_id' in data else ()
+    agents.body(data, ('expected_revision', *fields[action], *optional_model))
     expected, key = agents.revision(data['expected_revision']), agents.action_key(key)
     scope = scoped(session, project, workspace, actor, write=True)
     value = instance(session, scope, instance_id)
@@ -384,8 +388,10 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         # The outer journal owns replay. A fresh server-only key prevents a
         # client from pre-creating/reusing a standalone attempt for this stage.
         inner_key = str(uuid4())
+        from company_projects.runtime_models import INPUT
+        run_inputs = dict(inputs, **{INPUT: data['model_connection_id']}) if optional_model else inputs
         attempt = agents.start(session, project, workspace, actor, agent['id'],
-            dict(inputs=inputs, expected_revision=stage['binding']['agent_revision']), inner_key)
+            dict(inputs=run_inputs, expected_revision=stage['binding']['agent_revision']), inner_key)
         session.execute(bridge.insert().values(attempt_id=attempt['id'], stage_id=stage['id'], **scope,
             round=stage['round'], input_digest=digest, created_at=agents.now()))
         changes.update(state='running', active_attempt_id=attempt['id'], inputs=inputs, dependencies=dependencies,
@@ -480,7 +486,7 @@ def validate_attempt(session, attempt):
     validate_request_inputs(session, value, stage, inputs)
     if stage['active_attempt_id'] != attempt['id'] or stage['state'] != 'running' or (
             stage['round'] != link['round'] or stage['input_digest'] != link['input_digest']
-            or inputs != attempt['inputs'] or stage['binding']['workflow_id'] != attempt['workflow_id']):
+            or inputs != __import__('company_projects.runtime_models', fromlist=['business_inputs']).business_inputs(attempt['inputs']) or stage['binding']['workflow_id'] != attempt['workflow_id']):
         raise Conflict('نتیجه یا تلاش متعلق به ورودی فعال مرحله نیست.')
     return stage
 

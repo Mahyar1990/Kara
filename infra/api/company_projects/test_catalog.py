@@ -1,12 +1,10 @@
 """Native DSL import and dependency isolation, without model calls."""
 import json
-from types import SimpleNamespace
-from unittest.mock import patch
 from uuid import uuid4
 import sqlalchemy as sa
 from werkzeug.exceptions import Conflict, NotFound
 from company_projects.test_access import ProjectDatabaseFixture
-from company_projects import catalog, store
+from company_projects import catalog, store, runtime_models
 from models.dataset import Dataset, Document, DatasetPermissionEnum
 from models.model import App
 from models.workflow import Workflow
@@ -17,7 +15,6 @@ class CatalogTests(ProjectDatabaseFixture):
         super().setUp()
         self.editor.interface_language = 'fa-IR'
         self.editor.set_tenant_id_with_session(self.workspace_a.id, session=self.session)
-        self.model = SimpleNamespace(model='SyntheticModel', provider=SimpleNamespace(provider='langgenius/openai_api_compatible/openai_api_compatible'))
 
     def test_native_import_creates_independent_unpublished_drafts_with_provenance(self):
         dataset = Dataset(tenant_id=self.workspace_a.id, name='Synthetic docs', created_by=self.editor.id,
@@ -31,8 +28,7 @@ class CatalogTests(ProjectDatabaseFixture):
         before = self.session.scalar(sa.select(sa.func.count()).select_from(App))
         ids = []
         for spec in catalog.templates():
-            with patch.object(catalog.ModelProviderService, 'get_default_model_of_model_type', return_value=self.model):
-                result = catalog.instantiate(self.session, self.a['id'], self.workspace_a.id, self.editor,
+            result = catalog.instantiate(self.session, self.a['id'], self.workspace_a.id, self.editor,
                     spec['id'], 'Synthetic ' + spec['id'], dataset.id)
             app = self.session.get(App, result['id'])
             self.assertEqual(app.tenant_id, self.workspace_a.id)
@@ -42,7 +38,8 @@ class CatalogTests(ProjectDatabaseFixture):
             self.assertIsNotNone(workflow)
             graph = json.loads(workflow.graph)
             llm = next(n['data'] for n in graph['nodes'] if n['data']['type'] == 'llm')
-            self.assertEqual(llm['model']['name'], self.model.model)
+            self.assertEqual(llm['model']['provider'], runtime_models.PROVIDER)
+            self.assertIsNotNone(runtime_models.policy(graph))
             if spec['requires_knowledge']:
                 retrieval = next(n['data'] for n in graph['nodes'] if n['data']['type'] == 'knowledge-retrieval')
                 self.assertEqual(retrieval['dataset_ids'], [dataset.id])
@@ -54,9 +51,7 @@ class CatalogTests(ProjectDatabaseFixture):
         with db_connection(self) as connection:
             self.assertEqual(connection.scalar(sa.select(sa.func.count()).select_from(App)), before)
 
-    def test_missing_model_and_foreign_or_unready_knowledge_create_nothing(self):
-        with patch.object(catalog.ModelProviderService, 'get_default_model_of_model_type', return_value=None), self.assertRaises(Conflict):
-            catalog.instantiate(self.session, self.a['id'], self.workspace_a.id, self.editor, 'request-analysis', 'Synthetic')
+    def test_foreign_or_unready_knowledge_still_blocks_creation(self):
         dataset = Dataset(tenant_id=self.workspace_b.id, name='Other docs', created_by=self.other.id)
         self.session.add(dataset); self.session.flush()
         with self.assertRaises(NotFound):

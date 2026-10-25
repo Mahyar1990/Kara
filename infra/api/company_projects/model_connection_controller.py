@@ -37,6 +37,17 @@ class PersonalModelProvidersApi(Resource):
         return personal_models.catalog(tenant, user.id), 200, {'Cache-Control': 'private, no-store'}
 
 
+@console_ns.route('/company/me/model-connections/runtime-options')
+class RuntimeModelOptionsApi(Resource):
+    @guarded()
+    def get(self):
+        from company_projects.runtime_models import options
+        user, tenant = identity()
+        capabilities = [item for item in request.args.get('capabilities', '').split(',') if item]
+        with Session(db.engine) as session:
+            return options(session, tenant, user.id, capabilities), 200, {'Cache-Control': 'private, no-store'}
+
+
 @console_ns.route('/company/me/model-connections/<uuid:connection_id>')
 class ModelConnectionApi(Resource):
     @guarded()

@@ -4,3 +4,5 @@ infra/web/source.patch -whitespace
 infra/web/projects.patch whitespace=-blank-at-eol
 infra/web/users.patch whitespace=-blank-at-eol
 infra/web/ownership.patch whitespace=-blank-at-eol
+
+infra/web/runtime-model.patch whitespace=-blank-at-eol

@@ -1,5 +1,6 @@
 'use client'
 
+import RuntimeModelPicker from './runtime-model-picker'
 import type { AgentInput } from '@/service/company-agents'
 import type { AvailableRequest, StageArtifact, TeamInstance, TeamStage } from '@/service/company-stages'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -82,6 +83,8 @@ function HumanEdit({ artifact, act, close }: { artifact: StageArtifact; act: Act
 }
 
 function StageContent({ value, act }: { value: TeamStage; act: Act }) {
+  const [modelConnection, setModelConnection] = useState('')
+  const runBody = value.runtime_model ? { model_connection_id: modelConnection } : {}
   const [editing, setEditing] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const action = useAction()
@@ -91,7 +94,8 @@ function StageContent({ value, act }: { value: TeamStage; act: Act }) {
     <section className={panel}><h2 className="text-xl font-semibold">{value.binding.title} · {value.binding.agent_name}</h2><p role="status">{states[value.state]} · دور {num(value.round)}</p><p className="text-sm leading-7">اجراکننده: {value.binding.executor.name} · نهایی‌کننده: {value.binding.finalizer.name}</p>
       {!value.intake_valid && <p role="alert">تصمیم ورود این اجرا دیگر معتبر نیست؛ سابقه حفظ شده و ادامه به تصمیم تازهٔ PO نیاز دارد.</p>}{value.input_error && value.intake_valid && <p role="status">{value.input_error}</p>}
       <details open className="space-y-3"><summary className="cursor-pointer font-medium">ورودی نهایی مرحله</summary>{Object.entries(value.preview_inputs).map(([name, content]) => <div key={name}><h4 className="text-sm">{value.binding.input_contract.find(item => item.variable === name)?.label || name}</h4><pre className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-background-section p-3 font-sans text-sm leading-7">{text(content)}</pre></div>)}</details>
-      <div className="flex flex-wrap gap-3">{value.actions.includes('run') && <button disabled={action.busy} className={primary} onClick={() => action.run({ run: value.id }, key => act('run', {}, key))}>اجرا با این ورودی‌ها</button>}{value.actions.includes('retry') && <button disabled={action.busy} className={button} onClick={() => action.run({ retry: value.id }, key => act('retry', {}, key))}>آماده‌سازی تلاش مجدد</button>}</div>{action.error && <p role="alert">{action.error}</p>}
+      {value.runtime_model && value.actions.includes('run') && <RuntimeModelPicker value={modelConnection} onChange={setModelConnection} capabilities={value.runtime_model.capabilities} />}
+      <div className="flex flex-wrap gap-3">{value.actions.includes('run') && <button disabled={action.busy} className={primary} onClick={() => action.run({ run: value.id, ...runBody }, key => act('run', runBody, key))}>اجرا با این ورودی‌ها</button>}{value.actions.includes('retry') && <button disabled={action.busy} className={button} onClick={() => action.run({ retry: value.id }, key => act('retry', {}, key))}>آماده‌سازی تلاش مجدد</button>}</div>{action.error && <p role="alert">{action.error}</p>}
     </section>
     {!!value.handoffs.length && <section className={panel} aria-label="خروجی تحویلی از مراحل قبل"><h3 className="text-lg font-semibold">خروجی تحویلی از مراحل قبل</h3><p className="text-sm leading-7">فقط بخش مورد نیاز از خروجی منتخب و نهایی‌شده نمایش داده می‌شود.</p>{value.handoffs.map(item => <article className="space-y-2 border-t border-divider-regular pt-3" key={item.input}><p className="font-medium">{item.stage_title} · نسخهٔ {num(item.version)} · {item.consumed ? 'در ورودی این مرحله ثبت شده' : 'آمادهٔ دریافت در این مرحله'}</p><p className="text-sm">خروجی {item.output} ← ورودی {value.binding.input_contract.find(input => input.variable === item.input)?.label || item.input}</p><pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">{text(item.content)}</pre><p className="text-xs leading-6">نهایی‌کننده: {person(item.finalized_by)} · {new Date(item.finalized_at).toLocaleString('fa-IR')}</p><details><summary className="cursor-pointer text-sm">شناسه‌های قابل پیگیری تحویل</summary><p className="break-all text-xs leading-7">خروجی: <bdi>{item.artifact_id}</bdi><br />تصمیم: <bdi>{item.decision_id}</bdi><br />اثر انگشت: <bdi>{item.digest}</bdi></p></details></article>)}</section>}
     {value.actions.includes('revalidate') && <form className={panel} aria-label="بررسی مجدد ورودی مرحله" onSubmit={event => { event.preventDefault(); void action.run({ revalidate: value.id, reason }, key => act('revalidate', { reason }, key)) }}><h3 className="font-semibold">بررسی مجدد ورودی مرحله</h3><p className="text-sm leading-7">ورودی تازه و پیش‌نیازها را بررسی کنید. این اقدام فقط مرحله را آماده می‌کند؛ اجرا با انتخاب بعدی شما است و تأیید قدیمی خروجی برنمی‌گردد.</p><label className="block text-sm">علت بررسی مجدد<textarea required maxLength={2000} className={field} value={reason} onChange={event => setReason(event.target.value)} /></label><button disabled={action.busy} className={primary}>تأیید ورودی تازه و آماده‌سازی مرحله</button></form>}

@@ -2,7 +2,7 @@ import { get, post, put } from '@/service/base'
 
 export type AgentAction = 'view' | 'run' | 'feedback' | 'finalize' | 'edit_definition' | 'publish_definition'
 export type AgentInput = { variable: string; label: string; type: 'text-input' | 'paragraph' | 'select' | 'number' | 'checkbox'; required: boolean; max_length: number | null; options: string[] }
-export type TeamAgent = { id: string; name: string; description: string; app_id: string; workflow_id: string; revision: number; acl_revision: number; archived: boolean; actions: AgentAction[]; input_contract: AgentInput[]; output_contract: string[] }
+export type TeamAgent = { runtime_model?: { version: number; capabilities: string[] } | null; id: string; name: string; description: string; app_id: string; workflow_id: string; revision: number; acl_revision: number; archived: boolean; actions: AgentAction[]; input_contract: AgentInput[]; output_contract: string[] }
 export type AgentSource = { app_id: string; app_name: string; workflow_id: string; version: string; input_contract: AgentInput[]; output_contract: string[] }
 export type AgentGrant = { account_id: string; membership_id: string; actions: AgentAction[] }
 export type AgentGrants = { agent_id: string; revision: number; grants: AgentGrant[]; members: { account_id: string; membership_id: string; name: string; status: string }[] }

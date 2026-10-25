@@ -8,6 +8,7 @@ const base = '/company/me/model-connections'
 export const modelConnectionApi = {
   list: () => get<{ data: PersonalModel[] }>(base),
   providers: () => get<{ data: PersonalProvider[] }>(`${base}/providers`),
+  runtimeOptions: (capabilities: string[]) => get<{ data: PersonalModel[] }>(`${base}/runtime-options?capabilities=${encodeURIComponent(capabilities.join(','))}`),
   detail: (id: string) => get<PersonalModel>(`${base}/${id}`),
   save: (id: string | null, body: PersonalModelDraft) => id ? put<PersonalModel>(`${base}/${id}`, { body }) : post<PersonalModel>(base, { body }),
   copy: (id: string, body: PersonalModelDraft) => post<PersonalModel>(`${base}/${id}/copy`, { body }),

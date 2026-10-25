@@ -21,7 +21,6 @@ from services.app_dsl_service import AppDslService, ImportStatus
 from services.dataset_service import DatasetService
 from services.enterprise.rbac_service import RBACService
 from services.errors.account import NoPermissionError
-from services.model_provider_service import ModelProviderService
 
 ASSETS = Path('/app/api/company_templates')
 
@@ -58,16 +57,13 @@ def instantiate(session, project_id, tenant_id, account, template_id, name, data
         raise NotFound('قالب پیدا نشد.')
     if not isinstance(name, str) or not name.strip() or len(name) > 120:
         raise BadRequest('نام برنامه الزامی و حداکثر ۱۲۰ نویسه است.')
-    model = ModelProviderService().get_default_model_of_model_type(tenant_id, 'llm')
-    if model is None:
-        raise Conflict('ابتدا مدل پیش‌فرض شخصی خودتان را تنظیم کنید.')
     dataset = ready_dataset(session, tenant_id, account, dataset_id) if spec['requires_knowledge'] else None
     dsl = json.loads((ASSETS / spec['file']).read_text())
+    from company_projects.runtime_models import enable_graph
+    dsl['workflow']['graph'] = enable_graph(dsl['workflow']['graph'])
     for node in dsl['workflow']['graph']['nodes']:
         data = node['data']
-        if data['type'] == 'llm':
-            data['model'].update(provider=model.provider.provider, name=model.model)
-        elif data['type'] == 'knowledge-retrieval':
+        if data['type'] == 'knowledge-retrieval':
             data['dataset_ids'] = [dataset.id]
     result = AppDslService(session).import_app(account=account, import_mode='yaml-content',
         yaml_content=json.dumps(dsl, ensure_ascii=False), name=name.strip(), description=spec['description'])
@@ -96,7 +92,6 @@ class ProjectTemplatesApi(Resource):
         account, tenant_id = identity()
         with Session(db.engine) as session:
             access.validate_app_project(session, tenant_id, project_id, account.id)
-            model = ModelProviderService().get_default_model_of_model_type(tenant_id, 'llm')
             datasets = []
             for dataset in session.scalars(sa.select(Dataset).where(Dataset.tenant_id == tenant_id).order_by(Dataset.name)):
                 if not dataset_allowed(session, dataset, account):
@@ -107,7 +102,7 @@ class ProjectTemplatesApi(Resource):
                     continue
                 datasets.append(dict(id=dataset.id, name=dataset.name))
             return dict(data=[{key: value for key, value in item.items() if key != 'file'} for item in templates()],
-                model_name=model.model if model else None, datasets=datasets)
+                model_name=None, model_selection='executor', datasets=datasets)
 
 
 @console_ns.route('/company/projects/<uuid:project_id>/templates/<string:template_id>/copies')
