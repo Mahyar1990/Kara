@@ -24,6 +24,7 @@ _execution = ContextVar('kara_agent_execution', default=None)
 
 
 def managed(session, app_id):
+    """Existence/scope probe only; never use this arbitrary agent for authorization."""
     if not app_id:
         return None
     table = agents.definitions(session)
@@ -40,15 +41,18 @@ def deny_native(app_id, *, session=None):
 
 def assert_execution(tenant_id, app_id, workflow_id, user_id, run_id=None):
     with Session(db.engine) as session:
-        agent = managed(session, app_id)
-        if agent is None:
+        if managed(session, app_id) is None:
             return
         capability = _execution.get()
         if capability is None or capability[1:] != (str(app_id), str(workflow_id), str(user_id)):
             raise Forbidden('اجرای ایجنت تیمی فقط از مسیر کنترل‌شده مجاز است.')
         _, _, attempts = agents.tables(session)
         attempt = session.execute(sa.select(attempts).where(attempts.c.id == capability[0])).mappings().first()
-        if not attempt or attempt['status'] != 'running' or attempt['workspace_id'] != str(tenant_id) or (
+        table = agents.definitions(session)
+        agent = session.execute(sa.select(table).where(table.c.id == attempt['agent_id'],
+            table.c.app_id == str(app_id), table.c.project_id == attempt['project_id'],
+            table.c.workspace_id == attempt['workspace_id'])).mappings().first() if attempt else None
+        if not agent or attempt['status'] != 'running' or attempt['workspace_id'] != str(tenant_id) or (
                 attempt['agent_id'] != agent['id'] or attempt['actor_id'] != str(user_id) or
                 attempt['workflow_id'] != str(workflow_id)) or (
                 run_id is not None and str(run_id) != attempt['id']):
@@ -64,10 +68,21 @@ def assert_execution(tenant_id, app_id, workflow_id, user_id, run_id=None):
 
 
 def native_permission(session, app_id, actor_id, action='edit_definition'):
-    agent = managed(session, app_id)
-    if agent is None:
+    table = agents.definitions(session)
+    linked = list(session.execute(sa.select(table).where(table.c.app_id == str(app_id))).mappings())
+    if not linked:
         return
-    agents.require(session, agent, actor_id, action)
+    active = [agent for agent in linked if not agent['archived']]
+    if not active:
+        raise Forbidden('همهٔ ایجنت‌های این برنامه بایگانی شده‌اند.')
+    # Editing the shared source affects every active binding, so one agent's
+    # grant must not bypass another agent's definition restrictions.
+    for agent in active:
+        try:
+            agents.require(session, agent, actor_id, action)
+        except Forbidden:
+            raise Forbidden('برای تغییر برنامهٔ مشترک، مجوز مربوط در همهٔ ایجنت‌های فعال متصل لازم است.') from None
+    agent = active[0]
     # These grants supplement native permissions; they cannot promote a reader.
     from configs import dify_config
     from core.rbac import RBACPermission

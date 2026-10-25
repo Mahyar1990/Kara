@@ -299,9 +299,13 @@ CREATE TABLE company_team_jira_sources (
         REFERENCES company_team_requests(id, project_id, workspace_id)
 );
 """
+SHARED_AGENT_APP_SCHEMA = """
+ALTER TABLE company_team_agents DROP CONSTRAINT company_team_agents_app_id_key;
+CREATE INDEX company_team_agents_app_idx ON company_team_agents(app_id);
+"""
 MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
               ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA), ('006_team_recovery', RECOVERY_SCHEMA),
-              ('007_jira_intake', JIRA_SCHEMA))
+              ('007_jira_intake', JIRA_SCHEMA), ('008_shared_agent_apps', SHARED_AGENT_APP_SCHEMA))
 
 
 def checksum(sql):

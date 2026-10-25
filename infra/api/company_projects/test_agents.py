@@ -37,9 +37,11 @@ class AgentTests(ProjectDatabaseFixture):
         self.session.flush()
 
     def register(self, actor=None, key=None, **updates):
+        data = dict(app_id=self.app_model.id, workflow_id=self.workflow.id,
+            name='ایجنت نمونه', description='آزمون ساختگی', expected_revision=1)
+        data.update(updates)
         return agents.register(self.session, self.a['id'], self.workspace_a.id,
-            (actor or self.project_owner).id, dict(app_id=self.app_model.id, workflow_id=self.workflow.id,
-                name='ایجنت نمونه', description='آزمون ساختگی', expected_revision=1, **updates), key or str(uuid4()))
+            (actor or self.project_owner).id, data, key or str(uuid4()))
 
     def grant(self, agent, actor=None, target=None, actions=None, expected=1, key=None):
         target = target or self.reader
@@ -81,12 +83,99 @@ class AgentTests(ProjectDatabaseFixture):
         with self.assertRaises(UnprocessableEntity):
             self.register()
 
-    def test_registration_idempotency_and_unique_app(self):
+    def test_registration_idempotency_and_shared_app_remains_selectable(self):
         key = str(uuid4())
         first = self.register(key=key)
         self.assertEqual(self.register(key=key), first)
+        second = self.register(name='ایجنت دوم')
+        self.assertNotEqual(first['id'], second['id'])
+        self.assertEqual(first['app_id'], second['app_id'])
+        self.assertEqual(first['workflow_id'], second['workflow_id'])
+        self.assertIn(self.workflow.id, [source['workflow_id'] for source in agents.sources(
+            self.session, self.a['id'], self.workspace_a.id, self.project_owner.id)['data']])
+        self.grant(first)
+        with self.assertRaises(Forbidden):
+            self.launch(second)
+        self.assertEqual([row['id'] for row in agents.list_agents(self.session,
+            self.a['id'], self.workspace_a.id, self.reader.id)['data']], [first['id']])
+
+    def test_shared_app_engine_uses_attempt_agent_and_independent_grants(self):
+        first, second = self.register(), self.register()
+        self.grant(second)
+        second_attempt = self.launch(second)
+        self.assertEqual(agent_execution.claim(self.session, second_attempt['id'])[1]['id'], second['id'])
+        self.grant(first)
+        first_attempt = self.launch(first)
+        agent_execution.claim(self.session, first_attempt['id'])
+        with patch.object(agent_execution, 'Session', side_effect=lambda *_args, **_kwargs: nullcontext(self.session)):
+            args = (self.workspace_a.id, self.app_model.id, self.workflow.id, self.reader.id)
+            token = agent_execution._execution.set((second_attempt['id'], self.app_model.id, self.workflow.id, self.reader.id))
+            try:
+                agent_execution.assert_execution(*args, run_id=second_attempt['id'])
+                with self.assertRaises(Forbidden):
+                    agent_execution.assert_execution(*args, run_id=first_attempt['id'])
+                agents.set_grants(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id,
+                    second['id'], dict(expected_revision=2, grants=[]), str(uuid4()))
+                with self.assertRaises(Forbidden):
+                    agent_execution.assert_execution(*args, run_id=second_attempt['id'])
+            finally:
+                agent_execution._execution.reset(token)
+            token = agent_execution._execution.set((first_attempt['id'], self.app_model.id, self.workflow.id, self.reader.id))
+            try:
+                agent_execution.assert_execution(*args, run_id=first_attempt['id'])
+            finally:
+                agent_execution._execution.reset(token)
+
+    def test_shared_app_pins_each_version_and_archive_is_independent(self):
+        first = self.register()
+        newer = Workflow.new(tenant_id=self.workspace_a.id, app_id=self.app_model.id, type='workflow',
+            version='published-test-2', graph=json.dumps(graph()), features='{}', created_by=self.editor.id,
+            environment_variables=[], conversation_variables=[], rag_pipeline_variables=[])
+        self.session.add(newer); self.session.flush()
+        second = self.register(workflow_id=newer.id)
+        self.app_model.workflow_id = newer.id; self.session.flush()
+        for agent in (first, second):
+            self.grant(agent)
+            self.assertEqual(self.launch(agent)['workflow_id'], agent['workflow_id'])
+        agents.archive(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id,
+            first['id'], dict(expected_revision=1), str(uuid4()))
+        with self.assertRaises(Forbidden):
+            self.launch(first)
+        attempt = self.launch(second)
+        agent_execution.claim(self.session, attempt['id'])
+        token = agent_execution._execution.set((attempt['id'], self.app_model.id, newer.id, self.reader.id))
+        try:
+            with patch.object(agent_execution, 'Session', side_effect=lambda *_args, **_kwargs: nullcontext(self.session)):
+                agent_execution.assert_execution(self.workspace_a.id, self.app_model.id, newer.id,
+                    self.reader.id, run_id=attempt['id'])
+        finally:
+            agent_execution._execution.reset(token)
+
+    def test_shared_source_edit_and_publish_require_all_active_agent_grants(self):
+        first, second = self.register(), self.register()
+        self.grant(first, target=self.editor, actions=['edit_definition', 'publish_definition'])
+        for action in ('edit_definition', 'publish_definition'):
+            with self.assertRaises(Forbidden):
+                agent_execution.native_permission(self.session, self.app_model.id, self.editor.id, action)
+        self.grant(second, target=self.editor, actions=['edit_definition'])
+        agent_execution.native_permission(self.session, self.app_model.id, self.editor.id)
+        with self.assertRaises(Forbidden):
+            agent_execution.native_permission(self.session, self.app_model.id, self.editor.id, 'publish_definition')
+        self.grant(second, target=self.editor, actions=['edit_definition', 'publish_definition'], expected=2)
+        agent_execution.native_permission(self.session, self.app_model.id, self.editor.id, 'publish_definition')
+        agents.set_grants(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id,
+            first['id'], dict(expected_revision=2, grants=[]), str(uuid4()))
+        agents.archive(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id,
+            first['id'], dict(expected_revision=1), str(uuid4()))
+        agent_execution.native_permission(self.session, self.app_model.id, self.editor.id, 'publish_definition')
+        agents.archive(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id,
+            second['id'], dict(expected_revision=1), str(uuid4()))
+        with self.assertRaises(Forbidden):
+            agent_execution.native_permission(self.session, self.app_model.id, self.editor.id)
+        with self.assertRaises(Forbidden):
+            agent_execution.deny_native(self.app_model.id, session=self.session)
         with self.assertRaises(Conflict):
-            self.register()
+            agent_execution.protect_source(self.session, app_id=self.app_model.id)
 
     def test_grant_authority_stale_version_and_key_conflicts(self):
         agent = self.register()

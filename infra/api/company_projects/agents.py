@@ -137,11 +137,9 @@ def list_agents(session, project_id, workspace_id, actor_id):
 
 def sources(session, project_id, workspace_id, actor_id):
     team.scope(session, project_id, workspace_id, actor_id, write=True)
-    registered = definitions(session)
     rows = session.execute(sa.select(App, Workflow).join(Workflow, sa.and_(Workflow.app_id == App.id,
         Workflow.tenant_id == App.tenant_id)).where(App.tenant_id == str(workspace_id), App.mode == 'workflow',
-        App.status == 'normal', Workflow.version != 'draft',
-        App.id.not_in(sa.select(registered.c.app_id))).order_by(App.name, Workflow.created_at.desc()))
+        App.status == 'normal', Workflow.version != 'draft').order_by(App.name, Workflow.created_at.desc()))
     result = []
     for app, workflow in rows:
         try:
@@ -191,8 +189,6 @@ def register(session, project_id, workspace_id, actor_id, data, key):
     if app.mode != 'workflow' or app.status != 'normal' or workflow is None or workflow.version == 'draft':
         raise UnprocessableEntity('یک نسخهٔ منتشرشده از فرایند همین پروژه لازم است.')
     table = definitions(session)
-    if session.scalar(sa.select(table.c.id).where(table.c.app_id == app.id)):
-        raise Conflict('این برنامه قبلاً به‌عنوان ایجنت تیمی ثبت شده است.')
     if session.scalar(sa.select(WorkflowRun.id).where(WorkflowRun.app_id == app.id,
             WorkflowRun.status.in_(['running', 'paused'])).limit(1)):
         raise Conflict('ابتدا اجراهای در جریان این برنامه را به پایان برسانید.')

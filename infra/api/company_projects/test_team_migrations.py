@@ -52,6 +52,36 @@ class TeamMigrationTests(ProjectDatabaseFixture):
         with self.engine.connect() as c:
             self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), len(migrations.MIGRATIONS))
 
+    def test_shared_app_upgrade_preserves_existing_agent_grants_and_attempts(self):
+        with patch.object(migrations, 'MIGRATIONS', migrations.MIGRATIONS[:7]):
+            migrations.migrate(self.engine)
+        with self.engine.begin() as c:
+            values = dict(id=str(uuid4()), app=str(uuid4()), workflow=str(uuid4()),
+                project=c.scalar(sa.text('SELECT id FROM company_projects')),
+                workspace=self.ids[1], actor=self.ids[2], member=self.ids[0], attempt=str(uuid4()), key=str(uuid4()))
+            c.execute(sa.text('INSERT INTO apps VALUES (:app)'), values)
+            c.execute(sa.text('INSERT INTO workflows VALUES (:workflow)'), values)
+            insert_agent = sa.text('''INSERT INTO company_team_agents
+                (id,project_id,workspace_id,app_id,workflow_id,name,description,workflow_digest,
+                 input_contract,output_contract,created_by,created_at)
+                VALUES (:id,:project,:workspace,:app,:workflow,'Synthetic agent','','digest','[]','[]',:actor,now())''')
+            c.execute(insert_agent, values)
+            c.execute(sa.text('''INSERT INTO company_team_agent_grants VALUES
+                (:id,:project,:workspace,:actor,:member,'run',:actor,now())'''), values)
+            c.execute(sa.text('''INSERT INTO company_team_agent_attempts
+                (id,agent_id,project_id,workspace_id,actor_id,membership_id,workflow_id,inputs,
+                 request_digest,correlation_id,status,created_at)
+                VALUES (:attempt,:id,:project,:workspace,:actor,:member,:workflow,'{}','digest',:key,'pending',now())'''), values)
+            before = {name: list(c.execute(sa.text(f'SELECT * FROM {name}'))) for name in (
+                'company_team_agents', 'company_team_agent_grants', 'company_team_agent_attempts')}
+        migrations.migrate(self.engine)
+        migrations.migrate(self.engine)
+        with self.engine.begin() as c:
+            for name, rows in before.items():
+                self.assertEqual(list(c.execute(sa.text(f'SELECT * FROM {name}'))), rows)
+            c.execute(insert_agent, {**values, 'id': str(uuid4())})
+            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_agents WHERE app_id=:app'), values), 2)
+
     def test_failure_rolls_back_ddl_and_marker(self):
         with patch.object(migrations, 'MIGRATIONS', (('001_team_roles', migrations.ROLE_SCHEMA + 'INVALID SQL;'),)):
             with self.assertRaises(sa.exc.ProgrammingError):
@@ -102,4 +132,4 @@ class TeamMigrationTests(ProjectDatabaseFixture):
             self.assertNotIn('company_team_cancellations', sa.inspect(c).get_table_names())
         migrations.migrate(self.engine)
         with self.engine.connect() as c:
-            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), 6)
+            self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_migrations')), len(migrations.MIGRATIONS))
