@@ -25,3 +25,86 @@
      active: (path: string) => isPathUnderRoute(path, '/agents'),
      icon: 'i-custom-vender-main-nav-agent',
      activeIcon: 'i-custom-vender-main-nav-agent-active',
+
+diff --git a/web/app/components/app/create-app-modal/index.tsx b/web/app/components/app/create-app-modal/index.tsx
+--- a/web/app/components/app/create-app-modal/index.tsx
++++ b/web/app/components/app/create-app-modal/index.tsx
+@@ -17,6 +17,7 @@
+ import { useTranslation } from 'react-i18next'
+ import AppIcon from '@/app/components/base/app-icon'
+ import Divider from '@/app/components/base/divider'
++import { FieldHelp } from '@/app/components/company-projects/form-dialog'
+ import AppsFull from '@/app/components/billing/apps-full-in-dialog'
+ import { workspacePermissionKeysAtom } from '@/context/permission-state'
+ import { userProfileQueryOptions } from '@/features/account-profile/client'
+@@ -178,20 +179,21 @@
+   return (
+     <>
+       <div className="flex h-full justify-center overflow-x-hidden overflow-y-auto">
+-        <div className="flex flex-1 shrink-0 justify-end">
+-          <div className="px-10">
+-            <div className="h-6 w-full 2xl:h-34.75" />
++        <div className="flex min-w-0 flex-1 justify-center">
++          <div className="w-full px-5 sm:px-10">
++            <div className="h-6 w-full" />
+             <div className="pt-1 pb-6">
+               <span className="title-2xl-semi-bold text-text-primary">
+                 {t(($) => $['newApp.startFromBlank'], { ns: 'app' })}
+               </span>
++              <p className="mt-3 text-sm leading-7 text-text-secondary">نوع برنامه را متناسب با کاربرد انتخاب کنید. پس از ساخت، مدل، مراحل و دستورالعمل آن را در ویرایشگر تنظیم می‌کنید.</p>
+             </div>
+             <div className="mb-2 leading-6">
+               <span className="system-sm-semibold text-text-secondary">
+                 {t(($) => $['newApp.chooseAppType'], { ns: 'app' })}
+               </span>
+             </div>
+-            <div className="flex w-165 flex-col gap-4">
++            <div className="flex w-full max-w-165 flex-col gap-4">
+               <div>
+                 <div className="flex flex-row gap-2">
+                   <AppTypeCard
+@@ -307,10 +309,12 @@
+                   </div>
+                   <Input
+                     id={nameInputId}
++                    aria-describedby={`${nameInputId}-help`}
+                     value={name}
+                     onChange={(e) => setName(e.target.value)}
+                     placeholder={t(($) => $['newApp.appNamePlaceholder'], { ns: 'app' }) || ''}
+                   />
++                  <span id={`${nameInputId}-help`}><FieldHelp>نامی کوتاه و مشخص برای کار برنامه بنویسید تا اعضای پروژه آن را پیدا کنند.</FieldHelp></span>
+                 </div>
+                 <AppIcon
+                   iconType={appIcon.type}
+@@ -338,6 +342,7 @@
+                   />
+                 )}
+               </div>
++              <FieldHelp>نماد کنار نام برای تشخیص برنامه است؛ برای تغییر آن روی نماد بزنید.</FieldHelp>
+               <div>
+                 <div className="mb-1 flex h-6 items-center">
+                   <label className="system-sm-semibold text-text-secondary">
+@@ -348,12 +353,14 @@
+                   </span>
+                 </div>
+                 <Textarea
++                  aria-describedby={`${nameInputId}-description-help`}
+                   aria-label={t(($) => $['newApp.captionDescription'], { ns: 'app' })}
+                   className="resize-none"
+                   placeholder={t(($) => $['newApp.appDescriptionPlaceholder'], { ns: 'app' }) || ''}
+                   value={description}
+                   onValueChange={(value) => setDescription(value)}
+                 />
++                <span id={`${nameInputId}-description-help`}><FieldHelp>هدف و نتیجهٔ مورد انتظار برنامه را توضیح دهید؛ این متن اختیاری است و جای دستورالعمل مدل را نمی‌گیرد.</FieldHelp></span>
+               </div>
+             </div>
+             {isAppsFull && <AppsFull className="mt-4" loc="app-create" />}
+@@ -389,7 +396,7 @@
+             </div>
+           </div>
+         </div>
+-        <div className="relative flex h-full flex-1 shrink justify-start overflow-hidden">
++        <div className="relative hidden h-full flex-1 shrink justify-start overflow-hidden xl:flex">
+           <div className="absolute top-0 right-0 left-0 h-6 border-b border-b-divider-subtle 2xl:h-34.75"></div>
+           <div className="max-w-190 border-x border-x-divider-subtle">
+             <div className="h-6 2xl:h-34.75" />

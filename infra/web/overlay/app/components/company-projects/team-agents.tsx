@@ -2,8 +2,6 @@
 
 import type { AgentAction, AgentAttempt, AgentGrants, TeamAgent } from '@/service/company-agents'
 import { Button } from '@langgenius/dify-ui/button'
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@langgenius/dify-ui/dialog'
-import { IconButton } from '@langgenius/dify-ui/icon-button'
 import { useQuery } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
 import { useRef, useState } from 'react'
@@ -11,6 +9,7 @@ import { currentWorkspaceIdAtom } from '@/context/workspace-state'
 import Link from '@/next/link'
 import { agentApi } from '@/service/company-agents'
 import { projectApi } from '@/service/company-projects'
+import FormDialog, { FieldHelp } from './form-dialog'
 
 const button = 'rounded-lg border border-divider-regular bg-components-panel-bg px-4 py-2 text-sm text-text-primary disabled:opacity-50'
 const primary = `${button} bg-components-button-primary-bg text-components-button-primary-text`
@@ -50,18 +49,16 @@ function RegisterAgent({ project, refresh }: { project: string; refresh: () => P
     const body = { app_id: source.app_id, workflow_id: source.workflow_id, name, description, expected_revision: 1 }
     void action.run(body, async key => { await agentApi.register(project, body, key); setName(''); setDescription(''); setWorkflowId(''); setReviewed(false); setOpen(false); await refresh() })
   }
-  return <Dialog open={open} onOpenChange={next => { if (!action.busy) setOpen(next) }}>
-    <DialogTrigger render={<Button variant="primary">ایجاد ایجنت</Button>} />
-    <DialogContent className="max-w-2xl" dir="rtl">
-      <DialogTitle>ثبت ایجنت تیمی</DialogTitle>
-      <DialogDescription>نسخهٔ منتشرشدهٔ برنامه را انتخاب کنید. پس از ثبت، اجرای این برنامه از بخش «ایجنت‌های تیم» انجام می‌شود و نسخهٔ انتخاب‌شده ثابت می‌ماند.</DialogDescription>
-      <form className="mt-5 space-y-4" aria-label="ثبت ایجنت تیمی" onSubmit={event => { event.preventDefault(); if (source && reviewed) save() }}>
+  return <>
+    <Button variant="primary" onClick={() => setOpen(true)}>ایجاد ایجنت</Button>
+    <FormDialog open={open} title="ثبت ایجنت تیمی" description="یک نسخهٔ منتشرشدهٔ برنامه را به ایجنت تیم تبدیل کنید. نسخهٔ انتخاب‌شده ثابت می‌ماند و اجرا از مسیر مجوزهای تیمی انجام می‌شود. پس از ثبت، مجوز اعضا را تعیین کنید." busy={action.busy} close={() => setOpen(false)}>
+      <form className="space-y-4" aria-label="ثبت ایجنت تیمی" onSubmit={event => { event.preventDefault(); if (source && reviewed) save() }}>
         <fieldset disabled={action.busy} className="space-y-4">
           {sources.isError ? <p role="alert">دریافت برنامه‌ها انجام نشد.</p> : sources.isPending ? <p role="status">در حال دریافت برنامه‌ها…</p> : !sources.data.data.length && <p>ابتدا یک فرایند با شروع دستی و خروجی مشخص در همین پروژه بسازید و منتشر کنید.</p>}
-          <label className="block text-sm">نسخهٔ برنامه<select required className={field} value={workflowId} onChange={event => setWorkflowId(event.target.value)}><option value="">انتخاب کنید</option>{sources.data?.data.map(value => <option key={value.workflow_id} value={value.workflow_id}>{value.app_name} · {value.version}</option>)}</select></label>
-          <label className="block text-sm">نام ایجنت<input required maxLength={120} className={field} value={name} onChange={event => setName(event.target.value)} /></label>
-          <label className="block text-sm">توضیح<textarea maxLength={2000} className={field} value={description} onChange={event => setDescription(event.target.value)} /></label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} />برنامه و نسخه را بررسی کرده‌ام و اجرای آن را به مجوزهای تیمی محدود می‌کنم.</label>
+          <label className="block text-sm">نسخهٔ برنامه<select required className={field} value={workflowId} onChange={event => setWorkflowId(event.target.value)}><option value="">انتخاب کنید</option>{sources.data?.data.map(value => <option key={value.workflow_id} value={value.workflow_id}>{value.app_name} · {value.version}</option>)}</select><FieldHelp>برنامهٔ منتشرشدهٔ همین پروژه را انتخاب کنید. انتشار بعدی برنامه، نسخهٔ متصل به این ایجنت را تغییر نمی‌دهد.</FieldHelp></label>
+          <label className="block text-sm">نام ایجنت<input required maxLength={120} className={field} value={name} onChange={event => setName(event.target.value)} /><FieldHelp>نامی متناسب با وظیفهٔ ایجنت بنویسید تا اعضای تیم آن را به‌راحتی پیدا کنند.</FieldHelp></label>
+          <label className="block text-sm">توضیح<textarea maxLength={2000} className={field} value={description} onChange={event => setDescription(event.target.value)} /><FieldHelp>کار ایجنت، ورودی مورد نیاز و مسئول بررسی نتیجه را توضیح دهید؛ این متن دستورالعمل اجرای مدل نیست.</FieldHelp></label>
+          <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /><span>برنامه و نسخه را بررسی کرده‌ام و اجرای آن را به مجوزهای تیمی محدود می‌کنم.<FieldHelp>پس از ثبت، مسیرهای اجرای مستقیم برنامه محدود می‌شوند و برای اجرای تیمی باید به اعضای مشخص مجوز بدهید.</FieldHelp></span></label>
         </fieldset>
         {action.error && <p role="alert">{action.error}</p>}
         <div className="flex justify-end gap-2">
@@ -69,9 +66,8 @@ function RegisterAgent({ project, refresh }: { project: string; refresh: () => P
           <Button type="submit" variant="primary" disabled={action.busy || !source || !name.trim() || !reviewed}>{action.busy ? 'در حال ثبت…' : 'ثبت ایجنت'}</Button>
         </div>
       </form>
-      <DialogClose render={<IconButton aria-label="بستن" size="lg" disabled={action.busy} className="absolute inset-e-6 top-6"><span aria-hidden className="i-ri-close-line size-4" /></IconButton>} />
-    </DialogContent>
-  </Dialog>
+    </FormDialog>
+  </>
 }
 
 function GrantsForm({ project, agent, value, refresh }: { project: string; agent: TeamAgent; value: AgentGrants; refresh: () => Promise<unknown> }) {

@@ -11,6 +11,7 @@ import { flowApi } from '@/service/company-flows'
 import { projectApi } from '@/service/company-projects'
 import { requestApi } from '@/service/company-requests'
 import JiraImport from './jira-import'
+import FormDialog, { FieldHelp } from './form-dialog'
 
 const panel = 'space-y-4 rounded-2xl border border-divider-regular bg-background-default p-5'
 const button = 'rounded-lg border border-divider-regular px-4 py-2 text-sm disabled:opacity-50'
@@ -46,19 +47,19 @@ function RequestEditor({ project, value, saved, cancel }: { project: string; val
     const body = { title, content, attachment_ids: retained.map(file => file.id), expected_revision: value?.revision || 1 }
     void action.run({ id: value?.id, body, selection }, async key => saved(await requestApi.save(project, value?.id || null, body, files, key)))
   }
-  return <form aria-label="فرم درخواست" className={panel} onSubmit={event => { event.preventDefault(); save() }}>
-    <h2 className="text-xl font-semibold">{value ? 'اصلاح درخواست' : 'درخواست تازه'}</h2>
+  return <FormDialog open title={value ? 'اصلاح درخواست' : 'ثبت درخواست تازه'} description="نیاز یا مشکل را با عنوان روشن، شرح و پیوست‌های لازم ثبت کنید. درخواست پس از ثبت برای تصمیم ورود PO آماده می‌شود؛ ثبت درخواست، ایجنتی را اجرا نمی‌کند." busy={action.busy} close={cancel}>
+    <form aria-label="فرم درخواست" className="space-y-4" onSubmit={event => { event.preventDefault(); save() }}>
     {value && <p className="text-sm leading-7">با ذخیرهٔ اصلاح، نسخهٔ تازه ساخته می‌شود و تصمیم قبلی برای آن معتبر نخواهد بود. متن و پیوست‌های نسخه‌های قبل حفظ می‌شوند.</p>}
     <fieldset disabled={action.busy} className="space-y-4">
-      <label className="block text-sm">عنوان درخواست<input className={field} required maxLength={200} value={title} onChange={event => setTitle(event.target.value)} /></label>
-      <label className="block text-sm">متن نیازمندی<textarea className={`${field} min-h-40`} required value={content} onChange={event => setContent(event.target.value)} /></label>
-      <label className="block text-sm">پیوست‌ها<input className={field} type="file" multiple onChange={event => { setFiles(Array.from(event.target.files || [])); setSelection(crypto.randomUUID()) }} /></label>
-      <p className="text-xs leading-6 text-text-tertiary">حداکثر پنج فایل؛ هر فایل تا دو مگابایت و مجموع هر نسخه تا پنج مگابایت. پیوست‌ها فقط برای اعضای همین پروژه قابل دریافت‌اند.</p>
+      <label className="block text-sm">عنوان درخواست<input className={field} required maxLength={200} value={title} onChange={event => setTitle(event.target.value)} /><FieldHelp>یک عنوان کوتاه و مشخص برای نیاز یا مشکل بنویسید؛ حداکثر ۲۰۰ نویسه.</FieldHelp></label>
+      <label className="block text-sm">متن نیازمندی<textarea className={`${field} min-h-40`} required value={content} onChange={event => setContent(event.target.value)} /><FieldHelp>نیاز یا مشکل، رفتار فعلی و نتیجهٔ مورد انتظار را شرح دهید؛ اگر بخشی نامشخص است، همان ابهام را ذکر کنید.</FieldHelp></label>
+      <label className="block text-sm">پیوست‌ها<input className={field} type="file" multiple onChange={event => { setFiles(Array.from(event.target.files || [])); setSelection(crypto.randomUUID()) }} /><FieldHelp>اسناد و تصاویر مرتبط را اضافه کنید. حداکثر پنج فایل، هر فایل دو مگابایت و مجموع هر نسخه پنج مگابایت؛ پیوست‌ها برای اعضای همین پروژه قابل دریافت‌اند.</FieldHelp></label>
       {retained.map(file => <div className="flex items-center gap-3 text-sm" key={file.id}><span>{file.name}</span><button type="button" className={button} onClick={() => setRetained(retained.filter(value => value.id !== file.id))}>حذف از نسخهٔ تازه</button></div>)}
       <button className={primary}>ذخیرهٔ درخواست</button>
     </fieldset>
     {action.error && <p role="alert">{action.error}</p>}<button type="button" className={button} disabled={action.busy} onClick={cancel}>بستن فرم</button>
-  </form>
+    </form>
+  </FormDialog>
 }
 
 function Intake({ project, value, saved }: { project: string; value: TeamRequest; saved: (value: TeamRequest) => Promise<void> }) {

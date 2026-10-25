@@ -1,7 +1,7 @@
 'use client'
 
 import type { AgentInput } from '@/service/company-agents'
-import type { StageArtifact, TeamInstance, TeamStage } from '@/service/company-stages'
+import type { AvailableRequest, StageArtifact, TeamInstance, TeamStage } from '@/service/company-stages'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState } from 'react'
@@ -12,6 +12,7 @@ import { stageStates as states, teamStageHref } from '@/utils/company-team-work'
 import { projectApi } from '@/service/company-projects'
 import { stageApi } from '@/service/company-stages'
 import TeamRecovery from './team-recovery'
+import FormDialog from './form-dialog'
 
 const panel = 'space-y-4 rounded-2xl border border-divider-regular bg-background-default p-5'
 const button = 'rounded-lg border border-divider-regular px-4 py-2 text-sm disabled:opacity-50'
@@ -124,12 +125,20 @@ export default function TeamRuns({ projectId }: { projectId: string }) {
   const [selection, setSelection] = useState<{ instance: string; stage: string } | null>(null)
   useEffect(() => { setSelection(linkedInstance && linkedStage ? { instance: linkedInstance, stage: linkedStage } : null) }, [linkedInstance, linkedStage, projectId, workspace])
   const [controlInstance, setControlInstance] = useState<string | null>(null)
+  const [creating, setCreating] = useState<AvailableRequest | null>(null)
   const action = useAction()
   const refresh = async () => { const result = await list.refetch(); if (result.isError) throw new Error('Refresh failed') }
   const choose = (value: TeamInstance) => { const first = value.stages.find(stage => stage.state !== 'completed') || value.stages[0]; if (first) setSelection({ instance: value.id, stage: first.id }) }
   return <main dir="rtl" className="h-full overflow-y-auto bg-background-body p-5 text-text-primary md:p-8"><div className="mx-auto max-w-5xl space-y-6"><Link className="text-sm text-text-accent" href={`/projects/${projectId}`}>نمای کلی پروژه ←</Link><header><h1 className="text-3xl font-bold">اجرای تیمی</h1><p className="mt-3 text-sm leading-7 text-text-secondary">مرحلهٔ خود را اجرا کنید، بازخورد بدهید و خروجی را برای تصمیم انسانی آماده کنید.</p></header>
     {!entered ? <p role="status">ابتدا وارد فضای همین پروژه شوید.</p> : list.isSuccess ? <>
-      {!!list.data.available_requests.length && <section className={panel}><h2 className="text-lg font-semibold">درخواست‌های آمادهٔ ورود</h2>{list.data.available_requests.map(request => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3"><p>{request.title}</p><button className={button} disabled={action.busy} onClick={() => action.run(request, async key => { const value = await stageApi.create(projectId, request, key); await refresh(); choose(value) })}>ایجاد اجرای تیمی</button></div>)}<p className="text-xs leading-6 text-text-tertiary">ایجاد پرونده، ایجنت را اجرا نمی‌کند؛ شروع هر مرحله با مسئول مجاز آن است.</p></section>}{action.error && <p role="alert">{action.error}</p>}
+      {!!list.data.available_requests.length && <section className={panel}><h2 className="text-lg font-semibold">درخواست‌های آمادهٔ ورود</h2>{list.data.available_requests.map(request => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3"><p>{request.title}</p><button className={button} disabled={action.busy} onClick={() => setCreating(request)}>ایجاد اجرای تیمی</button></div>)}<p className="text-xs leading-6 text-text-tertiary">ایجاد پرونده، ایجنت را اجرا نمی‌کند؛ شروع هر مرحله با مسئول مجاز آن است.</p></section>}{action.error && <p role="alert">{action.error}</p>}
+      {creating && <FormDialog open title="ایجاد اجرای تیمی" description="برای این درخواست، پروندهٔ اجرا بر اساس نسخهٔ فلویی که PO تأیید کرده ساخته می‌شود. ورودی‌ها و مسئولان از همان نسخه گرفته می‌شوند؛ ایجاد پرونده، ایجنت را اجرا نمی‌کند." busy={action.busy} error={action.error} close={() => setCreating(null)}>
+        <form className="space-y-4" onSubmit={event => { event.preventDefault(); void action.run(creating, async key => { const value = await stageApi.create(projectId, creating, key); await refresh(); choose(value); setCreating(null) }) }}>
+          <p className="text-sm leading-7">درخواست منتخب: <strong>{creating.title}</strong></p>
+          <p className="text-xs leading-6 text-text-tertiary">پس از ایجاد، مرحلهٔ خود را باز کنید و ورودی‌ها را پیش از اجرا بررسی کنید.</p>
+          <div className="flex justify-end gap-3"><button type="button" className={button} disabled={action.busy} onClick={() => setCreating(null)}>انصراف</button><button className={primary} disabled={action.busy}>{action.busy ? 'در حال ایجاد…' : 'ایجاد اجرای تیمی'}</button></div>
+        </form>
+      </FormDialog>}
       <section aria-label="اجراهای تیمی" className="space-y-4">{!list.data.data.length && <p className={panel}>هنوز اجرای تیمی ایجاد نشده است؛ درخواست باید تأیید ورود معتبر داشته باشد.</p>}{list.data.data.filter(value => linkedInstance ? value.id === linkedInstance : !linkedRequest || value.request_id === linkedRequest).map(value => <article className={panel} key={value.id}><h2 className="text-xl font-semibold">{value.title}</h2><p className="text-sm">{num(value.completed_stages)} از {num(value.total_stages)} مرحله نهایی شده · مسئول فعلی: {value.responsibility.person?.name || (value.responsibility.kind === 'po' ? 'مالک محصول' : value.responsibility.kind === 'cancelled' ? 'فرایند لغو شده است' : 'فرایند تمام شده است')}</p>{value.responsibility.reason && <p className="text-sm">{value.responsibility.reason}</p>}{!value.intake_valid && !value.cancellation && <p className="text-sm">تصمیم ورود نیاز به بررسی مجدد دارد.</p>}<ol className="flex flex-wrap gap-3">{value.stages.map(stage => <li key={stage.id}><Link className={`${button} inline-block`} aria-current={selection?.stage === stage.id ? 'step' : undefined} href={teamStageHref(projectId, value.id, stage.id)}>{stage.title} · {states[stage.state]}</Link></li>)}</ol><button className={button} onClick={() => setControlInstance(controlInstance === value.id ? null : value.id)}>بازبینی و بازیابی این فرایند</button></article>)}</section>
       {controlInstance && <TeamRecovery key={`${workspace}:${controlInstance}`} projectId={projectId} instanceId={controlInstance} changed={async () => { await refresh(); if (selection) await queryStageRefresh() }} />}
       {selection && <section className="space-y-4"><h2 className="text-xl font-semibold">درخواست: {list.data.data.find(value => value.id === selection.instance)?.title || 'دریافت جزئیات'}</h2><StagePanel key={`${workspace}:${selection.instance}:${selection.stage}`} project={projectId} instance={selection.instance} stage={selection.stage} changed={refresh} /></section>}
