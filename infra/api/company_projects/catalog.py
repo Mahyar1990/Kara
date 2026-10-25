@@ -60,7 +60,7 @@ def instantiate(session, project_id, tenant_id, account, template_id, name, data
         raise BadRequest('نام برنامه الزامی و حداکثر ۱۲۰ نویسه است.')
     model = ModelProviderService().get_default_model_of_model_type(tenant_id, 'llm')
     if model is None:
-        raise Conflict('ابتدا مدل پیش‌فرض همین پروژه را تنظیم کنید.')
+        raise Conflict('ابتدا مدل پیش‌فرض شخصی خودتان را تنظیم کنید.')
     dataset = ready_dataset(session, tenant_id, account, dataset_id) if spec['requires_knowledge'] else None
     dsl = json.loads((ASSETS / spec['file']).read_text())
     for node in dsl['workflow']['graph']['nodes']:

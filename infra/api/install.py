@@ -9,7 +9,7 @@ changes = {
         'workspace=WorkspacePermissionSnapshot(permission_keys=list(permissions.get("workspace", []))),',
         'workspace=WorkspacePermissionSnapshot(permission_keys=__import__("company_projects.access", fromlist=["filter_permissions"]).filter_permissions(session, tenant_id, account_id, permissions.get("workspace", []))),')],
     'controllers/console/__init__.py': [(
-        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.team_controller",\n    "company_projects.agent_controller",\n    "company_projects.flow_controller",\n    "company_projects.request_controller",\n    "company_projects.jira_controller",\n    "company_projects.stage_controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n    "company_projects.inbox",\n    "company_projects.automations",\n')],
+        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.team_controller",\n    "company_projects.agent_controller",\n    "company_projects.flow_controller",\n    "company_projects.request_controller",\n    "company_projects.jira_controller",\n    "company_projects.model_connection_controller",\n    "company_projects.stage_controller",\n    "company_projects.readiness",\n    "company_projects.catalog",\n    "company_projects.inbox",\n    "company_projects.automations",\n')],
     'app_factory.py': [(
         '    initialize_extensions(app)\n',
         '    initialize_extensions(app)\n    from company_projects.store import migrate\n    from company_projects.team_migrations import migrate as migrate_team\n    from company_projects.access import initialize, restrict_central_workspace\n    from extensions.ext_database import db\n    with app.app_context():\n        migrate(db.engine)\n        migrate_team(db.engine)\n        with db.engine.begin() as connection:\n            initialize(connection)\n    restrict_central_workspace(app)\n')],
@@ -114,6 +114,40 @@ changes['controllers/console/workspace/rbac.py'] = [
     ('            result = _legacy_workspace_roles(\n                options,\n',
      '            from company_members.product import available_roles\n            result = _legacy_workspace_roles(\n                options,\n                role_names=available_roles(db.session(), tenant_id),\n'),
 ]
+
+# Personal model isolation is enforced at assembly, admission and final dispatch.
+changes['core/provider_manager.py'] = [
+    ('        cached_configurations = self._configurations_cache.get(tenant_id)\n',
+     '        from company_projects.personal_model_runtime import personal_configurations\n        return personal_configurations(self._model_runtime, tenant_id)\n\n        cached_configurations = self._configurations_cache.get(tenant_id)\n'),
+    ('    def get_default_model(self, tenant_id: str, model_type: ModelType) -> DefaultModelEntity | None:\n        """\n        Get default model.\n\n        :param tenant_id: workspace id\n        :param model_type: model type\n        :return:\n        """\n',
+     '    def get_default_model(self, tenant_id: str, model_type: ModelType) -> DefaultModelEntity | None:\n        """\n        Get default model.\n\n        :param tenant_id: workspace id\n        :param model_type: model type\n        :return:\n        """\n        from company_projects.personal_model_runtime import personal_default\n        return personal_default(self._model_runtime, tenant_id, model_type)\n'),
+]
+changes['core/plugin/impl/model_runtime.py'] = [(
+    '        self.user_id = user_id\n',
+    '        from company_projects.personal_model_runtime import actor\n        self.user_id = actor(tenant_id, user_id)\n')]
+changes['core/plugin/impl/model.py'] = [(
+    'class PluginModelClient(BasePluginClient):\n',
+    'from company_projects.model_client_boundary import install_client_boundary\n\n\n@install_client_boundary\nclass PluginModelClient(BasePluginClient):\n')]
+# Preserve caller-role evidence even in thread-pool/worker graph construction.
+changes['core/app/llm/model_access.py'] = [(
+    '    provider_manager = create_plugin_provider_manager(\n        tenant_id=run_context.tenant_id,\n        user_id=run_context.user_id,\n    )\n',
+    '    from company_projects.personal_model_runtime import require_run_identity\n    require_run_identity(run_context)\n    provider_manager = create_plugin_provider_manager(\n        tenant_id=run_context.tenant_id,\n        user_id=run_context.user_id,\n    )\n')]
+changes['services/app_generate_service.py'].append((
+    '        return cls._run_with_guardrails(\n',
+    '        from company_projects.personal_model_runtime import require_account_execution\n        require_account_execution(app_model.tenant_id, user)\n        return cls._run_with_guardrails(\n'))
+changes['services/async_workflow_service.py'] = [(
+    '        # 1. Validate app exists\n',
+    '        from company_projects.personal_model_runtime import require_account_execution\n        require_account_execution(trigger_data.tenant_id, user)\n        # 1. Validate app exists\n')]
+changes['tasks/async_workflow_tasks.py'] = [(
+    '                invoke_from=InvokeFrom.SERVICE_API,\n',
+    '                invoke_from=InvokeFrom.EXPLORE if isinstance(user, Account) else InvokeFrom.SERVICE_API,\n')]
+changes['tasks/workflow_schedule_tasks.py'] = [(
+    '        tenant_owner = ScheduleService.get_tenant_owner(schedule.tenant_id, session=session)\n',
+    '        from company_projects.personal_model_runtime import schedule_account\n        tenant_owner = schedule_account(session, schedule)\n')]
+changes['app_factory.py'].append((
+    '    install_http_guard(app)\n',
+    '    install_http_guard(app)\n    from company_projects.personal_model_runtime import install_http_guard as install_personal_models_guard\n    install_personal_models_guard(app)\n'))
+
 for filename, replacements in changes.items():
     target = root / filename
     content = target.read_text()

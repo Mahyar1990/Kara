@@ -3,13 +3,12 @@ import sqlalchemy as sa
 from flask_restx import Resource
 from sqlalchemy.orm import Session
 
-from company_projects import access
+from company_projects import access, personal_models
 from company_projects.controller import guarded, identity, visible_filters
 from controllers.console import console_ns
 from extensions.ext_database import db
 from models.account import Account, AccountStatus, TenantAccountJoin
 from models.model import App
-from models.provider import TenantDefaultModel
 from models.workflow import WorkflowRun
 
 
@@ -21,8 +20,7 @@ def snapshot(session, project_id, tenant_id, account):
     members = count(sa.select(sa.func.count()).select_from(TenantAccountJoin).join(
         Account, Account.id == TenantAccountJoin.account_id).where(
             TenantAccountJoin.tenant_id == tenant_id, Account.status == AccountStatus.ACTIVE))
-    model = session.scalar(sa.select(TenantDefaultModel).where(
-        TenantDefaultModel.tenant_id == tenant_id, TenantDefaultModel.model_type == 'llm'))
+    model = next((row for row in personal_models.rows(session, account.id) if row['model_type'] == 'llm'), None)
     app_count = count(sa.select(sa.func.count()).select_from(App).where(App.id.in_(apps)))
     published = count(sa.select(sa.func.count()).select_from(App).where(
         App.id.in_(apps), App.workflow_id.is_not(None)))
@@ -35,8 +33,8 @@ def snapshot(session, project_id, tenant_id, account):
     steps = [
         dict(id='owner', title='مالک پروژه مشخص است', complete=bool(project['owner']), required=True,
              description='مالک پروژه اعضا و دسترسی‌های همین تیم را مدیریت می‌کند.', href=f'/projects/{project_id}'),
-        dict(id='model', title='مدل پیش‌فرض انتخاب شده است', complete=bool(model), required=True,
-             description='تنظیم مدل ثبت شده؛ اتصال واقعی با اجرای آزمایشی بررسی می‌شود.', href='/integrations/model-provider'),
+        dict(id='model', title='مدل شخصی شما ثبت شده است', complete=bool(model), required=True,
+             description='اتصال متعلق به حساب شماست؛ اتصال واقعی با آزمون و اجرای آزمایشی بررسی می‌شود.', href=f'/projects/{project_id}/model-connections'),
         dict(id='team', title='همکاران به پروژه دعوت شده‌اند', complete=members > 1, required=False,
              description='برای کار تیمی، همکاران را دعوت کنید. استفادهٔ فردی هم امکان‌پذیر است.', href='/users'),
         dict(id='app', title='اولین برنامه ساخته شده است', complete=app_count > 0, required=True,
@@ -48,7 +46,7 @@ def snapshot(session, project_id, tenant_id, account):
     ]
     return dict(project=project, steps=steps, members=members, apps=app_count,
         completed=sum(item['complete'] for item in steps if item['required']),
-        required=sum(item['required'] for item in steps), model_name=model.model_name if model else None)
+        required=sum(item['required'] for item in steps), model_name=model['model_name'] if model else None)
 
 
 @console_ns.route('/company/projects/<uuid:project_id>/setup')

@@ -13,7 +13,7 @@ function Guide({ project }: { project: CompanyProject }) {
     { id: 'agents', title: 'ایجنت‌ها', description: 'برای کارهای تیم ایجنت بسازید و نقش، دستورالعمل و ابزارهای مورد نیاز آن را تنظیم کنید.', href: '/agents', action: 'مشاهدهٔ ایجنت‌ها' },
     { id: 'runs', title: 'اجراها و تأییدها', description: 'وضعیت اجرای فرایندها، نتیجه‌ها و خطاها را ببینید. اگر تصمیمی به شما ارجاع شده باشد، از کارتابل آن را بررسی و ثبت کنید.', href: `/projects/${project.id}/inbox`, action: 'باز کردن کارتابل' },
     { id: 'members', title: 'اعضای پروژه', description: 'مالک پروژه اعضای تیم را دعوت می‌کند و سطح دسترسی آن‌ها را مشخص می‌کند. دسترسی هر فرد به برنامه‌ها و امکانات پروژه براساس نقش اوست.', href: '/users', action: project.can_manage_members ? 'مدیریت اعضا' : 'مشاهدهٔ اعضا' },
-    ...(project.role === 'owner' || project.role === 'admin' ? [{ id: 'model', title: 'مدل هوش مصنوعی', description: 'مدل‌های مورد استفادهٔ تیم و مدل پیش‌فرض پروژه را در بخش یکپارچه‌سازی‌ها تنظیم کنید.', href: '/integrations/model-provider', action: 'تنظیم مدل' }] : []),
+    { id: 'model', title: 'مدل هوش مصنوعی', description: 'مدل و اعتبارنامهٔ شخصی خودتان را برای اجراهای این حساب تنظیم کنید.', href: `/projects/${project.id}/model-connections`, action: 'تنظیم مدل شخصی' },
   ]
   return <>
     <p className="text-sm leading-7 text-text-secondary">در هر پروژه، برنامه‌ها، دانش، مهارت‌ها و اعضای یک تیم را مدیریت می‌کنید. از بخش‌های زیر برای انجام کارهای تیم استفاده کنید.</p>

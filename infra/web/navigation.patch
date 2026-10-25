@@ -79,7 +79,7 @@
            className="isolate flex flex-col gap-px p-2"
          >
 -          {navItems.map((item) => (
-+          {navItems.filter(item => !['/integrations/model-provider', '/marketplace'].includes(item.href) && !item.href.endsWith('/jira-connections')).map((item) => (
++          {navItems.filter(item => !['/integrations/model-provider', '/marketplace'].includes(item.href) && !item.href.endsWith('/jira-connections') && !item.href.endsWith('/model-connections')).map((item) => (
              <MainNavLink key={item.href} item={item} pathname={pathname}>
                {item.href === '/agents' && (
                  <Badge
@@ -96,7 +96,7 @@
 +        {project && <details className="mx-2 mt-2 rounded-xl border border-divider-subtle">
 +          <summary className="cursor-pointer px-3 py-2 text-sm text-text-secondary">تنظیمات و اتصال‌ها</summary>
 +          <nav aria-label="تنظیمات پروژه" className="p-1">
-+            {navItems.filter(item => ['/integrations/model-provider', '/marketplace'].includes(item.href) || item.href.endsWith('/jira-connections')).map(item => <MainNavLink key={item.href} item={item} pathname={pathname} />)}
++            {navItems.filter(item => ['/integrations/model-provider', '/marketplace'].includes(item.href) || item.href.endsWith('/jira-connections') || item.href.endsWith('/model-connections')).map(item => <MainNavLink key={item.href} item={item} pathname={pathname} />)}
 +          </nav>
 +        </details>}
 +        {project && !isCurrentWorkspaceDatasetOperator && <Suspense fallback={null}><WebAppsSection /></Suspense>}

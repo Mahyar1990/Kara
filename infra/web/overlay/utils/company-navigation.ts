@@ -56,6 +56,7 @@ export function projectNavigation(projectId: string, nativeItems: MainNavItem[])
       item(`${base}/setup`, 'راهنمای پروژه', 'i-ri-question-line', path => path === `${base}/setup`),
     ]),
     item(`${base}/jira-connections`, 'اتصال به جیرا', 'i-ri-links-line', path => path === `${base}/jira-connections`),
-    ...nativeItems.filter(entry => !['/', '/projects', '/users', '/apps', '/datasets', '/skills'].includes(entry.href)),
+    item(`${base}/model-connections`, 'اتصال به مدل هوش مصنوعی', 'i-ri-brain-line', path => path === `${base}/model-connections`),
+    ...nativeItems.filter(entry => !['/', '/projects', '/users', '/apps', '/datasets', '/skills', '/integrations/model-provider'].includes(entry.href)),
   ]
 }

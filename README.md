@@ -73,6 +73,7 @@ make down
 - [محیط محلی](docs/local-development.md)
 - [رابط فارسی و راست‌به‌چپ](docs/persian-interface.md)
 - [اتصال خصوصی مدل](docs/company-model-connection.md)
+- [اتصال شخصی مدل برای هر کاربر](docs/personal-model-connections.md)
 - [پروژه‌ها و برنامه‌های اختصاصی](docs/projects.md)
 - [مدیریت کاربران و نقش‌ها](docs/users.md)
 - [نقش‌های کاری تیم و قرارداد API](docs/kara-team-roles.md)

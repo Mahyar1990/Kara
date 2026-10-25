@@ -312,10 +312,22 @@ CREATE TABLE company_user_jira_connections (
     UNIQUE (account_id, name)
 );
 """
+PERSONAL_MODEL_SCHEMA = """
+CREATE TABLE company_user_model_connections (
+    id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    name varchar(120) NOT NULL, provider varchar(255) NOT NULL, model_name varchar(255) NOT NULL,
+    model_type varchar(32) NOT NULL, encrypted_credentials text NOT NULL,
+    is_default boolean NOT NULL DEFAULT false, revision integer NOT NULL CHECK (revision > 0),
+    created_at timestamptz NOT NULL, updated_at timestamptz NOT NULL,
+    UNIQUE (account_id, name), UNIQUE (account_id, provider, model_name, model_type)
+);
+CREATE UNIQUE INDEX company_user_model_default_idx
+    ON company_user_model_connections(account_id, model_type) WHERE is_default;
+"""
 MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
               ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA), ('006_team_recovery', RECOVERY_SCHEMA),
               ('007_jira_intake', JIRA_SCHEMA), ('008_shared_agent_apps', SHARED_AGENT_APP_SCHEMA),
-              ('009_personal_jira_connections', PERSONAL_JIRA_SCHEMA))
+              ('009_personal_jira_connections', PERSONAL_JIRA_SCHEMA), ('010_personal_models', PERSONAL_MODEL_SCHEMA))
 
 
 def checksum(sql):
