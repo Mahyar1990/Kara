@@ -55,9 +55,18 @@ class JiraImportRunsApi(Resource):
 class JiraImportApi(Resource):
     @guarded()
     def post(self, project_id):
-        from company_projects.jira_intake import import_response
+        from company_projects.jira_connections import import_selected
         request.max_content_length = 2200000
-        return invoke(import_response, project_id, payload(), request.headers.get('Idempotency-Key'))
+        return invoke(import_selected, project_id, payload(), request.headers.get('Idempotency-Key'))
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/requests/jira/fetch')
+class JiraFetchApi(Resource):
+    @guarded()
+    def post(self, project_id):
+        from company_projects.jira_connections import fetch
+        request.max_content_length = 16384
+        return invoke(fetch, project_id, payload(), request.headers.get('Idempotency-Key'))
 
 
 @console_ns.route('/company/projects/<uuid:project_id>/team/requests/<uuid:request_id>')

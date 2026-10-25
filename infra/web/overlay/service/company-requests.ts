@@ -15,7 +15,8 @@ const headers = (key: string) => ({ 'Idempotency-Key': key })
 export const requestApi = {
   list: (project: string) => get<{ can_decide: boolean; can_import_jira: boolean; data: TeamRequest[] }>(base(project)),
   jiraRuns: (project: string) => get<{ data: JiraRun[] }>(`${base(project)}/jira/runs`),
-  importJira: (project: string, body: { base_url: string; run_id: string } | { base_url: string; response: unknown }, key: string) => post<JiraImportResult>(`${base(project)}/jira/import`, { body, headers: headers(key) }),
+  importJira: (project: string, body: { connection_id: string; run_id: string } | { connection_id: string; response: unknown }, key: string) => post<JiraImportResult>(`${base(project)}/jira/import`, { body, headers: headers(key) }),
+  fetchJira: (project: string, body: { connection_id: string; jql: string; start_at: number; max_results: number }, key: string) => post<JiraImportResult>(`${base(project)}/jira/fetch`, { body, headers: headers(key) }),
   detail: (project: string, id: string) => get<TeamRequest>(`${base(project)}/${id}`),
   save: (project: string, id: string | null, body: RequestDraft, files: File[], key: string) => {
     const url = id ? `${base(project)}/${id}/revisions` : base(project)

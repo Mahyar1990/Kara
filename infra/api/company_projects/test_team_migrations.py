@@ -24,6 +24,7 @@ class TeamMigrationTests(ProjectDatabaseFixture):
         self.addCleanup(cleanup)
         store.migrate(self.engine)
         with self.engine.begin() as c:
+            c.execute(sa.text('CREATE TABLE accounts (id uuid PRIMARY KEY)'))
             c.execute(sa.text('CREATE TABLE apps (id uuid PRIMARY KEY)'))
             c.execute(sa.text('CREATE TABLE workflows (id uuid PRIMARY KEY)'))
             c.execute(sa.text('CREATE TABLE tenant_account_joins (id uuid PRIMARY KEY, tenant_id uuid NOT NULL, account_id uuid NOT NULL, role varchar(16), UNIQUE(tenant_id, account_id))'))

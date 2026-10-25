@@ -29,7 +29,7 @@ KP-04 — ۲۲ اکتبر ۲۰۲۶. این گام پروندهٔ درخواست 
 | `/<request_id>/intake-decisions/<decision_id>/revocations` | POST ابطال تأیید جاری با علت |
 | `/<request_id>/attachments/<attachment_id>` | GET دریافت فایل با کنترل اختیار |
 
-ثبت/اصلاح JSON با فیلدهای دقیق `title, content, attachment_ids, expected_revision` است. برای فایل جدید، همان داده در فیلد JSON متنی `data` فرم multipart و فایل‌ها در `files` ارسال می‌شوند. `attachment_ids` تنها ارجاع فایل‌های تاریخی همین درخواست است. منشأ این مسیر در سرور `manual` است. [ورود پاسخ ذخیره‌شدهٔ جیرا](jira-request-intake.md) مسیر جداگانهٔ دارای مجوز، جلوگیری از تکرار و منشأ `jira` دارد؛ اتصال زنده و زمان‌بندی جیرا هنوز جدا هستند.
+ثبت/اصلاح JSON با فیلدهای دقیق `title, content, attachment_ids, expected_revision` است. برای فایل جدید، همان داده در فیلد JSON متنی `data` فرم multipart و فایل‌ها در `files` ارسال می‌شوند. `attachment_ids` تنها ارجاع فایل‌های تاریخی همین درخواست است. منشأ این مسیر در سرور `manual` است. [ورود درخواست‌های جیرا](jira-request-intake.md) با اتصال شخصی کاربر، دریافت مستقیم یا پاسخ ذخیره‌شده، جلوگیری از تکرار و منشأ `jira` انجام می‌شود؛ زمان‌بندی خودکار هنوز جداست.
 
 تصمیم فیلدهای `expected_revision, request_revision_id, flow_id, flow_version_id, outcome, reason, expires_at` دارد؛ `outcome` یکی از `approved/rejected/deferred` است. برای تأیید، فلو و نسخه لازم‌اند؛ رد و تعویق می‌توانند هر دو را null بفرستند. ابطال فقط `expected_revision, reason` دارد. مقدار `mode=real` و شناسهٔ حساب از سرور می‌آیند.
 

@@ -55,6 +55,7 @@ export function projectNavigation(projectId: string, nativeItems: MainNavItem[])
       item('/users', 'اعضای پروژه', 'i-ri-team-line', path => path === '/users'),
       item(`${base}/setup`, 'راهنمای پروژه', 'i-ri-question-line', path => path === `${base}/setup`),
     ]),
+    item(`${base}/jira-connections`, 'اتصال به جیرا', 'i-ri-links-line', path => path === `${base}/jira-connections`),
     ...nativeItems.filter(entry => !['/', '/projects', '/users', '/apps', '/datasets', '/skills'].includes(entry.href)),
   ]
 }
