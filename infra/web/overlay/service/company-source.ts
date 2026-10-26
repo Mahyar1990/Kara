@@ -4,7 +4,7 @@ export type Repository = { id: string; name: string; url: string; branch: string
 export type Component = { key: string; path: string; repository_id: string; connection_id: string; repository_revision?: number; connection_revision?: number; url?: string; branch?: string }
 export type Document = { path: string; content: string }
 export type Workspace = { id: string; name: string; revision: number; components: Component[]; documents: Document[] }
-export type Device = { id: string; name: string; revoked_at: string | null; last_seen_at: string | null }
+export type Device = { protocol?: number; capabilities?: string[]; id: string; name: string; revoked_at: string | null; last_seen_at: string | null }
 export type Job = { id: string; source_workspace_id: string; device_id: string; state: string; created_at: string; snapshot_revision: number; result: null | { error?: string; local_directory?: string; components?: { key: string; commit: string }[] } }
 const base = (id: string) => `/company/projects/${id}/source-code`
 const devices = '/company/me/source-runners'
