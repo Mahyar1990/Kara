@@ -14,6 +14,7 @@ def validate_graph(graph):
             language=data.get('code_language')
             if language not in ('python3','javascript'): raise ValueError('unsupported_code_language')
             needs.add(language)
+        if kind=='template-transform':needs.add('python3')
         if kind=='http-request': needs.add('http')
         if kind=='llm' and (data.get('vision',{}).get('enabled') or data.get('model',{}).get('mode','chat')!='chat'): raise ValueError('unsupported_llm_mode')
         if kind=='knowledge-retrieval' and data.get('metadata_filtering_mode','disabled')!='disabled': raise ValueError('unsupported_metadata_filter')

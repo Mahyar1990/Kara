@@ -55,7 +55,7 @@ def validate_job(job):
         return job
     except (ValueError,KeyError,TypeError): raise RunnerFailure('invalid_job') from None
 
-def materialize(job, credentials, root, heartbeat, *, run=command):
+def materialize(job, credentials, root, heartbeat, *, run=command, owner=None):
     validate_job(job)
     if not isinstance(credentials,dict) or set(credentials)!={p['key'] for p in job['components']}: raise RunnerFailure('invalid_job')
     root=Path(root).expanduser().resolve()
@@ -89,7 +89,7 @@ def materialize(job, credentials, root, heartbeat, *, run=command):
         for doc in job['documents']:
             path=target/doc['path']; path.parent.mkdir(parents=True,exist_ok=True)
             with path.open('x',encoding='utf-8') as file: file.write(doc['content'])
-        manifest=dict(schema_version=1,job_id=job['id'],revision=job['revision'],components=[dict(key=p['key'],path=p['path'],url=p['url'],branch=p['branch'],commit=r['commit']) for p,r in zip(job['components'],results)],documents=[d['path'] for d in job['documents']])
+        manifest=dict(schema_version=2,owner=owner,job_id=job['id'],revision=job['revision'],components=[dict(key=p['key'],path=p['path'],url=p['url'],branch=p['branch'],commit=r['commit']) for p,r in zip(job['components'],results)],documents=[d['path'] for d in job['documents']])
         (private/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
         heartbeat()
         return results

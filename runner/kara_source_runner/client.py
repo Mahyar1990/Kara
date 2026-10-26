@@ -23,8 +23,10 @@ class Client:
         try:
             # No environment proxy or redirect may receive the device secret.
             with build_opener(ProxyHandler({}),NoRedirect()).open(request,timeout=25) as response:
-                body=response.read(2097153)
-                if len(body)>2097152: raise ApiError('Response limit exceeded')
+                body=response.read(16777217)
+                if len(body)>16777216: raise ApiError('Response limit exceeded')
                 return json.loads(body)
-        except HTTPError as exc: raise ApiError('Kara rejected request (HTTP '+str(exc.code)+')') from None
+        except HTTPError as exc:
+            error=ApiError('Kara rejected request (HTTP '+str(exc.code)+')');error.status=exc.code
+            raise error from None
         except (URLError,TimeoutError,ValueError,OSError): raise ApiError('Kara connection failed') from None

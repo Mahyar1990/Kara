@@ -100,6 +100,7 @@ make down
 - [کارتابل اجراها و تأییدها](docs/project-inbox.md)
 - [اتوماسیون‌های پروژه](docs/project-automations.md)
 - [سورس کد، worktree چندمخزنی و Runner محلی](docs/source-code-runner.md)
+- [اجرای محلی برنامه‌ها و ایجنت‌ها با Runner نسخهٔ ۲](docs/local-execution.md)
 
 برای اجرای بررسی‌های توسعه، محیط Python محلی را آماده کنید:
 
