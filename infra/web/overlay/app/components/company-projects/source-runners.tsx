@@ -2,7 +2,7 @@
 import type { Device } from '@/service/company-source'
 import { Button } from '@langgenius/dify-ui/button'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { userProfileQueryOptions } from '@/features/account-profile/client'
 import Link from '@/next/link'
 import { sourceApi, sourceError } from '@/service/company-source'
@@ -13,7 +13,8 @@ function Runners({ projectId, accountId }: { projectId: string; accountId: strin
   const [name, setName] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('')
   const [code, setCode] = useState<{ code: string; expires_at: string } | null>(null)
   const [remove, setRemove] = useState<Device | null>(null)
-  const [origin] = useState(() => typeof window === 'undefined' ? 'https://kara.example.com' : window.location.origin)
+  const [origin, setOrigin] = useState('https://kara.example.com')
+  useEffect(() => { setOrigin(window.location.origin) }, [])
   const create = async () => {
     if (busy) return
     setBusy(true); setError(''); setCode(null)
