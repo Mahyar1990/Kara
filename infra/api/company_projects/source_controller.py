@@ -117,3 +117,46 @@ class RunnerCredentials(Resource):
 @console_ns.route('/company/source-runner/jobs/<uuid:job_id>/complete')
 class RunnerComplete(Resource):
     def post(self,job_id): return device_call(source.complete,job_id,source_payload())
+
+# Execution jobs share device identity, never console session authority.
+from company_projects import local_execution
+
+@console_ns.route('/company/projects/<uuid:project_id>/local-execution')
+class LocalExecutionSettings(Resource):
+    @guarded()
+    def get(self,project_id): return console(local_execution.settings,project=project_id)
+    @guarded()
+    def put(self,project_id): return console(local_execution.set_binding,source_payload(),project=project_id)
+
+@console_ns.route('/company/projects/<uuid:project_id>/local-execution/<uuid:execution_id>/cancel')
+class LocalExecutionCancel(Resource):
+    @guarded()
+    def post(self,project_id,execution_id): return console(local_execution.cancel,execution_id,project=project_id)
+
+@console_ns.route('/company/source-runner/execution/register')
+class LocalExecutionRegister(Resource):
+    def post(self): return device_call(local_execution.register,source_payload())
+
+@console_ns.route('/company/source-runner/execution/claim')
+class LocalExecutionClaim(Resource):
+    def post(self): return device_call(local_execution.claim)
+
+@console_ns.route('/company/source-runner/execution/<uuid:execution_id>/heartbeat')
+class LocalExecutionHeartbeat(Resource):
+    def post(self,execution_id): return device_call(local_execution.heartbeat,execution_id)
+
+@console_ns.route('/company/source-runner/execution/<uuid:execution_id>/credentials')
+class LocalExecutionCredentials(Resource):
+    def post(self,execution_id): return device_call(local_execution.credentials,execution_id)
+
+@console_ns.route('/company/source-runner/execution/<uuid:execution_id>/events')
+class LocalExecutionEvents(Resource):
+    def post(self,execution_id): return device_call(local_execution.events,execution_id,source_payload())
+
+@console_ns.route('/company/source-runner/execution/<uuid:execution_id>/complete')
+class LocalExecutionComplete(Resource):
+    def post(self,execution_id): return device_call(local_execution.complete,execution_id,source_payload())
+
+@console_ns.route('/company/source-runner/execution/<uuid:execution_id>/knowledge')
+class LocalExecutionKnowledge(Resource):
+    def post(self,execution_id): return device_call(local_execution.knowledge_page,execution_id,source_payload())

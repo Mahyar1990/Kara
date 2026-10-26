@@ -134,7 +134,7 @@ def install_http_guard(app):
             native_permission(session, app_id, actor.id, action)
 
 
-def claim(session, attempt_id):
+def claim(session, attempt_id, *, start=True):
     _, _, attempts = agents.tables(session)
     candidate = session.execute(sa.select(attempts).where(attempts.c.id == str(attempt_id))).mappings().first()
     if not candidate:
@@ -159,7 +159,8 @@ def claim(session, attempt_id):
         from company_projects.stages import complete_attempt
         complete_attempt(session, row['id'])
         return None
-    session.execute(attempts.update().where(attempts.c.id == row['id']).values(status='running', started_at=agents.now()))
+    if start:
+        session.execute(attempts.update().where(attempts.c.id == row['id']).values(status='running', started_at=agents.now()))
     return dict(row), dict(agent)
 
 
@@ -187,40 +188,10 @@ def finish(session, attempt_id, status, result):
 
 
 def execute(attempt_id):
+    """Dispatch only. No graph, model or tool execution is permitted centrally."""
+    from company_projects.local_execution import dispatch_team
     with Session(db.engine) as session, session.begin():
-        claimed = claim(session, attempt_id)
-    if claimed is None:
-        return
-    attempt, agent = claimed
-    token = _execution.set((attempt['id'], agent['app_id'], attempt['workflow_id'], attempt['actor_id']))
-    try:
-        from core.app.apps.workflow.app_generator import WorkflowAppGenerator
-        from core.app.entities.app_invoke_entities import InvokeFrom
-        from services.app_generate_service import AppGenerateService
-        with Session(db.engine, expire_on_commit=False) as session:
-            app, workflow, actor = session.get(App, agent['app_id']), session.get(Workflow, attempt['workflow_id']), session.get(Account, attempt['actor_id'])
-            # Reuse native rate/quota limits, engine, repositories, tracing and fixed run ID.
-            AppGenerateService._run_with_guardrails(app_model=app, streaming=False,
-                action=lambda rate, request_id: rate.generate(WorkflowAppGenerator.convert_to_event_stream(
-                    WorkflowAppGenerator().generate(app_model=app, workflow=workflow, user=actor,
-                        args={'inputs': attempt['inputs'], 'files': []}, invoke_from=InvokeFrom.EXPLORE,
-                        streaming=False, workflow_run_id=attempt['id'])), request_id=request_id))
-        with Session(db.engine) as session, session.begin():
-            _, _, attempts = agents.tables(session)
-            run = session.get(WorkflowRun, attempt['id'])
-            if run and run.status == 'succeeded':
-                output = {k: v for k, v in (run.outputs_dict or {}).items() if k in agent['output_contract']}
-                status, result = 'succeeded', {'outputs': output}
-            else:
-                status, result = 'failed', {'error': 'اجرای فرایند موفق نشد. ورودی‌ها و تنظیمات را با مسئول ایجنت بررسی کنید.'}
-            finish(session, attempt['id'], status, result)
-    except Exception:
-        logger.exception('Team agent attempt failed: %s', attempt['id'])
-        with Session(db.engine) as session, session.begin():
-            _, _, attempts = agents.tables(session)
-            finish(session, attempt['id'], 'failed', {'error': 'اجرای ایجنت انجام نشد. تنظیمات و دسترسی‌ها را بررسی کنید.'})
-    finally:
-        _execution.reset(token)
+        dispatch_team(session, attempt_id)
 
 
 @shared_task(queue='workflow_based_app_execution', name='kara.team_agent.execute')
@@ -252,6 +223,9 @@ def dispatch_stops():
 
 
 def dispatch_pending():
+    from company_projects.local_execution import expire
+    with Session(db.engine) as session, session.begin():
+        expire(session)
     dispatch_stops()
     with Session(db.engine) as session:
         _, _, attempts = agents.tables(session)
