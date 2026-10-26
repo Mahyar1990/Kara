@@ -74,6 +74,13 @@ class Devices(Resource):
     @guarded()
     def get(self): return console(source.devices)
 
+@console_ns.route('/company/me/source-runners/overview')
+class RunnerOverview(Resource):
+    @guarded()
+    def get(self):
+        from company_projects.runner_overview import overview
+        return console(overview)
+
 @console_ns.route('/company/me/source-runners/pairing')
 class Pairing(Resource):
     @guarded()

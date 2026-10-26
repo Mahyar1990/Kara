@@ -8,6 +8,41 @@ from company_projects import source_code as source, gitlab_connections as gitlab
 from company_projects.test_access import ProjectDatabaseFixture
 
 class SourceCodeTests(ProjectDatabaseFixture):
+    def test_runner_overview_names_tasks_and_isolates_accounts_and_project_access(self):
+        import json
+        from company_projects import runner_overview, local_execution as local, local_rpc
+        from models.account import TenantAccountJoin, TenantAccountRole
+        self.setup_source()
+        local.register(self.session, self.runner, dict(protocol=2, capabilities=['workflow-v2', 'source-v1']))
+        local.set_binding(*self.args(), dict(device_id=self.runner['id'], source_job_id=None, expected_revision=1))
+        job = self.enqueue()
+        source.claim(self.session, self.runner)
+        source.complete(self.session, self.runner, job['id'], dict(state='succeeded', components=[dict(key='backend', commit='a'*40)], error=None))
+        local.set_binding(*self.args(), dict(device_id=self.runner['id'], source_job_id=job['id'], expected_revision=1))
+        pending = self.enqueue()
+        local_rpc.enqueue(self.session, self.workspace_a.id, self.project_owner.id, 'invoke_llm', {'private': 'synthetic-hidden-payload'})
+        second = source.pair(self.session, dict(code=source.pairing(self.session, self.project_owner.id, dict(name='Home VDI'))['code']))
+        second_runner = source.authenticate(self.session, second['secret'])
+        member = TenantAccountJoin(tenant_id=self.workspace_b.id, account_id=self.project_owner.id, role=TenantAccountRole.NORMAL)
+        self.session.add(member); self.session.flush()
+        local.set_binding(self.session, self.b['id'], self.workspace_b.id, self.project_owner.id,
+                          dict(device_id=second_runner['id'], source_job_id=None, expected_revision=1))
+        report = runner_overview.overview(self.session, self.project_owner.id)
+        self.assertEqual({p['id'] for p in report['projects']}, {self.a['id'], self.b['id']})
+        self.assertEqual(next(p for p in report['projects'] if p['id'] == self.b['id'])['binding']['device_id'], second['device_id'])
+        self.assertEqual(next(j for j in report['active'] if j['id'] == pending['id'])['title'], self.tree['name'])
+        self.assertEqual(next(p for p in report['projects'] if p['id'] == self.a['id'])['binding']['source_name'], self.tree['name'])
+        self.assertIn('درخواست مدل', [j['title'] for j in report['active']])
+        for private in ('secret_hash', 'snapshot', 'payload', 'synthetic-hidden-payload', self.device['secret']):
+            self.assertNotIn(private, json.dumps(report, default=str))
+        self.session.delete(member); self.session.flush()
+        self.assertEqual([p['id'] for p in runner_overview.overview(self.session, self.project_owner.id)['projects']], [self.a['id']])
+        other = runner_overview.overview(self.session, self.editor.id)
+        self.assertEqual(other['devices'], []); self.assertEqual(other['active'], [])
+        self.assertTrue(all(p['binding'] is None for p in other['projects']))
+        # Reading the dashboard does not claim or alter a pending preparation.
+        self.assertEqual(source.row(self.session, 'jobs', pending['id'], {})['state'], 'pending')
+
     def args(self,actor=None): return (self.session,self.a['id'],self.workspace_a.id,(actor or self.project_owner).id)
     def setup_source(self):
         self.connection_value=gitlab.save(self.session,self.project_owner.id,dict(name='Synthetic',base_url='https://git.example.test',token='synthetic-source-token',expected_revision=1))
