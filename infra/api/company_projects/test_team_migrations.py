@@ -79,7 +79,12 @@ class TeamMigrationTests(ProjectDatabaseFixture):
         migrations.migrate(self.engine)
         with self.engine.begin() as c:
             for name, rows in before.items():
-                self.assertEqual(list(c.execute(sa.text(f'SELECT * FROM {name}'))), rows)
+                # Later additive migrations may append nullable columns. Compare
+                # every original column, then verify the new deletion marker.
+                actual = c.execute(sa.text(f'SELECT * FROM {name}')).mappings().all()
+                columns = list(rows[0]._mapping)
+                self.assertEqual([tuple(row[key] for key in columns) for row in actual], [tuple(row) for row in rows])
+                self.assertTrue(all(row.get('deleted_at') is None for row in actual))
             c.execute(insert_agent, {**values, 'id': str(uuid4())})
             self.assertEqual(c.scalar(sa.text('SELECT count(*) FROM company_team_agents WHERE app_id=:app'), values), 2)
 
