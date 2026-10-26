@@ -331,10 +331,19 @@ ALTER TABLE company_team_flows DROP CONSTRAINT company_team_flows_project_id_wor
 CREATE UNIQUE INDEX company_team_flow_live_name_idx
     ON company_team_flows(project_id, workspace_id, name_key) WHERE deleted_at IS NULL;
 """
+PERSONAL_GITLAB_SCHEMA = """
+CREATE TABLE company_user_gitlab_connections (
+    id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    name varchar(120) NOT NULL, base_url varchar(512) NOT NULL, encrypted_token text NOT NULL,
+    revision integer NOT NULL DEFAULT 1 CHECK (revision > 0),
+    created_at timestamptz NOT NULL, updated_at timestamptz NOT NULL,
+    UNIQUE (account_id, name)
+);
+"""
 MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
               ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA), ('006_team_recovery', RECOVERY_SCHEMA),
               ('007_jira_intake', JIRA_SCHEMA), ('008_shared_agent_apps', SHARED_AGENT_APP_SCHEMA),
-              ('009_personal_jira_connections', PERSONAL_JIRA_SCHEMA), ('010_personal_models', PERSONAL_MODEL_SCHEMA), ('011_team_deletion', TEAM_DELETE_SCHEMA))
+              ('009_personal_jira_connections', PERSONAL_JIRA_SCHEMA), ('010_personal_models', PERSONAL_MODEL_SCHEMA), ('011_team_deletion', TEAM_DELETE_SCHEMA), ('012_personal_gitlab', PERSONAL_GITLAB_SCHEMA))
 
 
 def checksum(sql):

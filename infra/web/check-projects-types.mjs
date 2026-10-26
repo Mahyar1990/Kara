@@ -7,6 +7,9 @@ const config = ts.readConfigFile(configPath, ts.sys.readFile)
 if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'))
 const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root)
 const files = [
+  'app/components/company-projects/gitlab-connections.tsx',
+  'app/(commonLayout)/projects/[projectId]/gitlab-connections/page.tsx',
+  'service/company-gitlab.ts',
   'app/components/company-projects/team-recovery.tsx',
   'app/components/company-projects/team-inbox.tsx',
   'utils/company-team-work.ts',
