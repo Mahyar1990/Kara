@@ -140,29 +140,8 @@ def validated_url(value):
 
 def test_connection(session, actor_id, connection_id):
     row = load(session, actor_id, connection_id)
-    response = None
-    try:
-        response = ssrf_proxy.get(row['base_url'] + '/api/v4/user', headers={
-            'PRIVATE-TOKEN': decrypt(row), 'Accept': 'application/json', 'Accept-Encoding': 'identity'},
-            timeout=httpx.Timeout(15, connect=5), follow_redirects=False, ssl_verify=True,
-            max_retries=0, stream_response=True)
-        if response.status_code != 200:
-            raise BadGateway('احراز هویت گیت‌لب موفق نبود. توکن، آدرس و مجوز read_user را بررسی کنید.')
-        chunks, size = [], 0
-        deadline = time.monotonic() + 20
-        for chunk in response.iter_bytes(chunk_size=16384):
-            size += len(chunk)
-            if size > 262144 or time.monotonic() > deadline:
-                raise BadGateway('پاسخ آزمون اتصال از حد مجاز بیشتر است.')
-            chunks.append(chunk)
-        value = json.loads(b''.join(chunks))
-        if not isinstance(value, dict) or not isinstance(value.get('id'), int) or not value.get('username'):
-            raise ValueError()
-        return dict(connected=True, message='احراز هویت موفق است؛ مجوز هر مخزن هنگام دریافت توسط Runner بررسی می‌شود.')
-    except (ToolSSRFError, httpx.HTTPError, ssrf_proxy.MaxRetriesExceededError):
-        raise BadGateway('سرور کارا به گیت‌لب دسترسی ندارد؛ شبکه، آدرس و گواهی HTTPS را بررسی کنید.') from None
-    except (ValueError, UnicodeError):
-        raise BadGateway('پاسخ احراز هویت گیت‌لب معتبر نیست.') from None
-    finally:
-        if response is not None:
-            response.close()
+    from company_projects.local_rpc import connection_request
+    value=connection_request('gitlab',row,'/api/v4/user')
+    if not isinstance(value.get('id'),int) or not value.get('username'):
+        raise BadGateway('پاسخ احراز هویت گیت‌لب معتبر نیست.')
+    return dict(connected=True,message='اتصال از Runner انتخاب‌شده موفق بود.')

@@ -95,6 +95,8 @@ class Download(Resource):
         buffer=io.BytesIO(); root=Path(kara_source_runner.__file__).parent
         with zipfile.ZipFile(buffer,'w',zipfile.ZIP_DEFLATED) as archive:
             for file in sorted(root.glob('*.py')): archive.writestr('kara_source_runner/'+file.name,file.read_bytes())
+            from kara_source_runner.package import extras
+            for name,content in extras().items():archive.writestr(name,content)
         import base64
         return dict(filename='kara-source-runner.zip', content=base64.b64encode(buffer.getvalue()).decode()),200,NO_STORE
 
@@ -155,8 +157,30 @@ class LocalExecutionEvents(Resource):
 
 @console_ns.route('/company/source-runner/execution/<uuid:execution_id>/complete')
 class LocalExecutionComplete(Resource):
-    def post(self,execution_id): return device_call(local_execution.complete,execution_id,source_payload())
+    def post(self,execution_id): return device_call(local_execution.complete,execution_id,execution_payload())
 
 @console_ns.route('/company/source-runner/execution/<uuid:execution_id>/knowledge')
 class LocalExecutionKnowledge(Resource):
     def post(self,execution_id): return device_call(local_execution.knowledge_page,execution_id,source_payload())
+
+from company_projects import local_rpc
+
+def execution_payload():
+    request.max_content_length=18000000
+    return payload()
+
+@console_ns.route('/company/source-runner/rpc/claim')
+class LocalRpcClaim(Resource):
+    def post(self): return device_call(local_rpc.claim)
+
+@console_ns.route('/company/source-runner/rpc/<uuid:execution_id>/credentials')
+class LocalRpcCredentials(Resource):
+    def post(self,execution_id): return device_call(local_rpc.credentials,execution_id)
+
+@console_ns.route('/company/source-runner/rpc/<uuid:execution_id>/heartbeat')
+class LocalRpcHeartbeat(Resource):
+    def post(self,execution_id): return device_call(local_rpc.heartbeat,execution_id)
+
+@console_ns.route('/company/source-runner/rpc/<uuid:execution_id>/complete')
+class LocalRpcComplete(Resource):
+    def post(self,execution_id): return device_call(local_rpc.complete,execution_id,execution_payload())

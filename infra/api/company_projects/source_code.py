@@ -107,7 +107,9 @@ def device(s,actor,device_id,lock=False):
 
 def devices(s,actor):
     gitlab.account(s,actor); t=table(s,'devices')
-    return dict(data=[public(r) for r in s.execute(sa.select(t).where(t.c.account_id==str(actor)).order_by(t.c.created_at.desc())).mappings()])
+    caps=agents.reflected(s,'company_runner_capabilities')
+    capabilities={str(r['device_id']):dict(protocol=r['protocol'],capabilities=r['capabilities']) for r in s.execute(sa.select(caps).join(t,t.c.id==caps.c.device_id).where(t.c.account_id==str(actor))).mappings()}
+    return dict(data=[public(r)|capabilities.get(str(r['id']),dict(protocol=1,capabilities=['source-v1'])) for r in s.execute(sa.select(t).where(t.c.account_id==str(actor)).order_by(t.c.created_at.desc())).mappings()])
 
 def digest(secret): return hashlib.sha256(secret.encode()).hexdigest()
 
@@ -148,6 +150,8 @@ def revoke(s,actor,device_id):
     gitlab.account(s,actor,lock=True); value=device(s,actor,device_id,True); now=agents.now(); t=table(s,'devices')
     s.execute(t.update().where(t.c.id==value['id']).values(revoked_at=now))
     jobs=table(s,'jobs'); s.execute(jobs.update().where(jobs.c.device_id==value['id'],jobs.c.state.in_(ACTIVE)).values(state='cancelled',finished_at=now))
+    from company_projects.local_execution import revoke_device
+    revoke_device(s,value['id'])
     return dict(revoked=True)
 
 def validate_snapshot(s,job):

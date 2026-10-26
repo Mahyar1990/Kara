@@ -30,3 +30,16 @@ CREATE TABLE company_local_execution_events (
  PRIMARY KEY(execution_id,sequence)
 );
 """
+
+RPC_SQL = """
+CREATE TABLE company_local_rpc (
+ id uuid PRIMARY KEY, project_id uuid NOT NULL, workspace_id uuid NOT NULL,
+ account_id uuid NOT NULL REFERENCES accounts(id), membership_id uuid NOT NULL,
+ device_id uuid REFERENCES company_source_devices(id), method varchar(64) NOT NULL,
+ connection_kind varchar(16), connection_id uuid, connection_revision integer,
+ payload jsonb NOT NULL, state varchar(16) NOT NULL CHECK(state IN ('pending','running','succeeded','failed','cancelled','interrupted')),
+ created_at timestamptz NOT NULL, started_at timestamptz, finished_at timestamptz,
+ lease_until timestamptz, result jsonb
+);
+CREATE INDEX company_local_rpc_device_idx ON company_local_rpc(device_id,state,created_at);
+"""

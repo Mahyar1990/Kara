@@ -273,5 +273,5 @@ def test_connection(session, tenant_id, actor_id, identity):
     except (Forbidden, NotFound, ServiceUnavailable):
         raise
     except Exception:
-        raise BadGateway('اعتبارسنجی اتصال مدل ناموفق بود؛ توکن، مجوز مدل، نشانی و دسترسی شبکهٔ سرور را بررسی کنید.') from None
+        raise BadGateway('اعتبارسنجی اتصال مدل ناموفق بود؛ توکن، مجوز مدل، نشانی و دسترسی شبکهٔ Runner را بررسی کنید.') from None
     return dict(connected=True, message='اعتبارسنجی اتصال شخصی موفق بود؛ اجرای برنامه و سازگاری قابلیت‌های مدل جداگانه بررسی می‌شود.')

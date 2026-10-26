@@ -130,44 +130,8 @@ def delete(session, actor_id, connection_id, data):
 
 
 def read_jira(row, path, *, body=None):
-    """Fixed relative endpoint, verified TLS, no redirect/retry or remote error text."""
-    response = None
-    deadline = time.monotonic() + 30
-    try:
-        call = ssrf_proxy.get if body is None else ssrf_proxy.post
-        options = dict(headers={'Accept': 'application/json', 'Authorization': 'Bearer ' + decrypt(row),
-            'Accept-Encoding': 'identity'}, timeout=httpx.Timeout(20, connect=5),
-            follow_redirects=False, ssl_verify=True, max_retries=0, stream_response=True)
-        if body is not None:
-            options['json'] = body
-        response = call(row['base_url'] + path, **options)
-        status = response.status_code
-        if status != 200:
-            messages = {400: 'درخواست جست‌وجو یا JQL معتبر نیست.', 401: 'توکن نامعتبر یا منقضی شده است.',
-                403: 'این کاربر در جیرا مجوز فراخوانی این سرویس را ندارد.',
-                404: 'نشانی جیرا یا مسیر سرویس پیدا نشد.', 429: 'محدودیت تعداد فراخوانی جیرا؛ بعداً تلاش کنید.'}
-            raise BadGateway(f'جیرا پاسخ HTTP {status} داد. ' + messages.get(status, 'نشانی و وضعیت سرویس جیرا را بررسی کنید.'))
-        chunks, size = [], 0
-        for chunk in response.iter_bytes(chunk_size=65536):
-            if time.monotonic() > deadline:
-                raise BadGateway('دریافت پاسخ جیرا بیش از زمان مجاز طول کشید؛ دوباره تلاش کنید.')
-            size += len(chunk)
-            if size > MAX_BYTES:
-                raise BadGateway('پاسخ جیرا بیش از دو مگابایت است؛ تعداد درخواست‌های هر صفحه را کاهش دهید.')
-            chunks.append(chunk)
-        value = json.loads(b''.join(chunks))
-        if not isinstance(value, dict):
-            raise ValueError()
-        return value
-    except ToolSSRFError:
-        raise BadGateway('دسترسی شبکهٔ سرور کارا به این نشانی مجاز نیست؛ تنظیمات پراکسی سرور باید بررسی شود.') from None
-    except (httpx.HTTPError, ssrf_proxy.MaxRetriesExceededError):
-        raise BadGateway('اتصال به جیرا برقرار نشد؛ شبکه، گواهی HTTPS و دسترسی سرور کارا به جیرا را بررسی کنید.') from None
-    except (ValueError, UnicodeError):
-        raise BadGateway('پاسخ جیرا JSON معتبر نیست؛ نشانی پایه و سرویس را بررسی کنید.') from None
-    finally:
-        if response is not None:
-            response.close()
+    from company_projects.local_rpc import connection_request
+    return connection_request('jira',row,path,body)
 
 
 def test_connection(session, actor_id, connection_id):

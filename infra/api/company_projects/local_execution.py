@@ -35,7 +35,13 @@ def settings(s,project,workspace,actor):
     selected=binding(s,project,workspace,actor); expire(s)
     t=table(s,'local_executions')
     jobs=s.execute(sa.select(t).where(t.c.project_id==str(project),t.c.workspace_id==str(workspace),t.c.account_id==str(actor)).order_by(t.c.created_at.desc()).limit(50)).mappings()
-    return dict(binding=source.public(selected) if selected else None,executions=[public(r) for r in jobs])
+    result=[dict(public(r),kind='workflow') for r in jobs]
+    from company_projects.local_rpc import table as rpc_table
+    rpc=rpc_table(s)
+    for r in s.execute(sa.select(rpc).where(rpc.c.project_id==str(project),rpc.c.account_id==str(actor)).order_by(rpc.c.created_at.desc()).limit(50)).mappings():
+        result.append(dict(id=str(r['id']),kind='rpc',device_id=str(r['device_id']) if r['device_id'] else None,state=r['state'],created_at=r['created_at'].isoformat(),result={'error':(r['result'] or {}).get('error')}))
+    result.sort(key=lambda r:r['created_at'],reverse=True)
+    return dict(binding=source.public(selected) if selected else None,executions=result[:50])
 
 def set_binding(s,project,workspace,actor,data):
     agents.body(data,('device_id','source_job_id','expected_revision')); key=team.scope(s,project,workspace,actor)
@@ -51,6 +57,8 @@ def set_binding(s,project,workspace,actor,data):
     t=table(s,'execution_bindings')
     if previous: s.execute(t.update().where(t.c.project_id==str(project),t.c.account_id==str(actor)).values(**values))
     else: s.execute(t.insert().values(**values))
+    from company_projects.local_rpc import table as rpc_table
+    rpc=rpc_table(s);s.execute(rpc.update().where(rpc.c.project_id==str(project),rpc.c.account_id==str(actor),rpc.c.state=='pending',rpc.c.device_id.is_(None)).values(device_id=values['device_id']))
     # Only unassigned jobs can be assigned here. Jobs already targeted never move silently.
     jobs=table(s,'local_executions'); s.execute(jobs.update().where(jobs.c.project_id==str(project),jobs.c.account_id==str(actor),jobs.c.state=='pending',jobs.c.device_id.is_(None)).values(device_id=values['device_id'],source_job_id=values['source_job_id']))
     return source.public(values)
@@ -85,13 +93,15 @@ def build_snapshot(s,workflow,actor,inputs):
             row=personal_models.load(s,actor,selection['connection_id']) if selection else personal_models.resolve(s,actor,m['provider'],m['name'],'llm')
             models[node['id']]=dict(id=str(row['id']),revision=row['revision'],provider=row['provider'],model_name=row['model_name'],model_type='llm')
             d['model']=dict(m,provider=row['provider'],name=row['model_name'])
-        if d.get('type')=='start': d['variables']=[v for v in d.get('variables',[]) if v.get('variable')!=runtime_models.INPUT]
+        if d.get('type')=='start':
+            d['variables']=[v for v in d.get('variables',[]) if v.get('variable')!=runtime_models.INPUT]
+            if selection:d['kara_runtime_model_used']=deepcopy(selection)
     try: requirements=validate_graph(graph)
     except ValueError as exc: raise BadRequest('این نسخهٔ Runner تعریف برنامه را پشتیبانی نمی‌کند: '+str(exc)) from None
     knowledge=knowledge_spec(s,workflow,actor,graph,models)
     return dict(protocol=PROTOCOL,graph=graph,models=models,knowledge=knowledge,requirements=requirements,workflow_digest=agents.fingerprint(workflow))
 
-def enqueue(s,app,workflow,actor,inputs,*,identity=None,attempt=None,root_node_id=None,trigger_log_id=None):
+def enqueue(s,app,workflow,actor,inputs,*,identity=None,attempt=None,root_node_id=None,trigger_log_id=None,preview=None,triggered_from='app-run'):
     key=project_key(s,app.tenant_id,actor.id); join=team.member(s,app.tenant_id,actor.id)
     identity=identity or str(uuid4()); t=table(s,'local_executions')
     old=s.execute(sa.select(t).where(t.c.id==str(identity))).mappings().first()
@@ -99,7 +109,10 @@ def enqueue(s,app,workflow,actor,inputs,*,identity=None,attempt=None,root_node_i
         if str(old['account_id'])!=str(actor.id) or str(old['workflow_id'])!=str(workflow.id): raise Conflict('شناسهٔ اجرا قبلاً استفاده شده است.')
         return dict(old)
     snapshot=build_snapshot(s,workflow,actor.id,inputs)
+    if len(json.dumps(snapshot,ensure_ascii=False).encode())>8388608:raise BadRequest('تعریف و دانش این اجرا بیش از بودجهٔ واگذاری است.')
     snapshot['root_node_id']=root_node_id
+    snapshot['triggered_from']=triggered_from
+    if preview:snapshot['preview']=preview
     selected=binding(s,key['project_id'],key['workspace_id'],actor.id)
     now=agents.now(); values=dict(id=str(identity),**key,account_id=str(actor.id),membership_id=join.id,device_id=selected['device_id'] if selected else None,source_job_id=selected['source_job_id'] if selected else None,app_id=app.id,workflow_id=workflow.id,team_attempt_id=attempt['id'] if attempt else None,trigger_log_id=trigger_log_id,snapshot=snapshot,snapshot_digest=agents.digest(snapshot),inputs={k:v for k,v in inputs.items() if k!='__kara_model_connection'},state='pending',created_at=now,event_sequence=0)
     s.execute(t.insert().values(**values))
@@ -139,6 +152,12 @@ def validate_access(s,job):
     for selected in job['snapshot']['models'].values():
         row=personal_models.load(s,job['account_id'],selected['id'])
         if row['revision']!=selected['revision']: raise Conflict('اتصال مدل تغییر کرده است؛ اجرای تازه بسازید.')
+    from models.dataset import Dataset
+    for spec in job['snapshot'].get('knowledge',{}).values():
+        for item in spec['datasets']:
+            dataset=s.get(Dataset,item['id'])
+            if not dataset:raise Conflict('دانش حذف شده است.')
+            check_dataset(s,dataset,job['account_id'],job['workspace_id'])
     return workflow
 
 def finish(s,job,state,result):
@@ -150,6 +169,14 @@ def finish(s,job,state,result):
         run.outputs=json.dumps(result.get('outputs',{}),ensure_ascii=False); run.error=result.get('error'); run.finished_at=utc_naive(now)
         run.elapsed_time=max(0,(now-job['started_at']).total_seconds()) if job.get('started_at') else 0
         run.total_steps=result.get('total_steps',0); run.total_tokens=result.get('total_tokens',0)
+    from models.workflow import WorkflowNodeExecutionModel
+    if state!='succeeded':
+        for node in s.scalars(sa.select(WorkflowNodeExecutionModel).where(WorkflowNodeExecutionModel.workflow_run_id==job['id'],WorkflowNodeExecutionModel.status=='running')):
+            node.status='failed';node.error=result.get('error','اجرای محلی متوقف شد.');node.finished_at=utc_naive(now)
+    if job['snapshot'].get('preview'):
+        from models.workflow import WorkflowNodeExecutionModel
+        node_id=job['snapshot']['preview'];data=next(n['data'] for n in job['snapshot']['graph']['nodes'] if n['id']==node_id)
+        s.add(WorkflowNodeExecutionModel(id=job['id'],tenant_id=job['workspace_id'],app_id=job['app_id'],workflow_id=job['workflow_id'],workflow_run_id=job['id'],triggered_from='single-step',index=1,node_execution_id=job['id'],node_id=node_id,node_type=data['type'],title=data.get('title',node_id),inputs=json.dumps(job['inputs'],ensure_ascii=False),process_data='{}',outputs=json.dumps(result.get('outputs',{}),ensure_ascii=False),status='succeeded' if state=='succeeded' else 'failed',error=result.get('error'),created_at=utc_naive(job['created_at']),created_by_role='account',created_by=job['account_id'],finished_at=utc_naive(now)))
     if job['team_attempt_id']:
         from company_projects.agent_execution import finish as finish_attempt
         mapped='succeeded' if state=='succeeded' else 'interrupted' if state in ('cancelled','interrupted') else 'failed'
@@ -177,6 +204,8 @@ def claim(s,runner):
     expire(s); cap=table(s,'runner_capabilities'); capabilities=s.execute(sa.select(cap).where(cap.c.device_id==str(runner['id']))).mappings().first()
     if not capabilities or capabilities['protocol']!=PROTOCOL: return dict(job=None)
     t=table(s,'local_executions')
+    rpc=table(s,'local_rpc')
+    if s.scalar(sa.select(rpc.c.id).where(rpc.c.device_id==str(runner['id']),rpc.c.state=='running').limit(1)):return dict(job=None)
     if s.scalar(sa.select(t.c.id).where(t.c.device_id==str(runner['id']),t.c.state=='running').limit(1)): return dict(job=None)
     rows=s.execute(sa.select(t).where(t.c.device_id==str(runner['id']),t.c.account_id==str(runner['account_id']),t.c.state=='pending').order_by(t.c.created_at).with_for_update(skip_locked=True).limit(20)).mappings().all()
     for original in rows:
@@ -189,8 +218,8 @@ def claim(s,runner):
         if job['team_attempt_id']:
             attempts=agents.tables(s)[2]; s.execute(attempts.update().where(attempts.c.id==job['team_attempt_id'],attempts.c.status=='pending').values(status='running',started_at=now))
         workflow=s.get(Workflow,job['workflow_id'])
-        s.add(WorkflowRun(id=job['id'],tenant_id=job['workspace_id'],app_id=job['app_id'],workflow_id=workflow.id,type=workflow.type,triggered_from='app-run',version=workflow.version,graph=json.dumps(job['snapshot']['graph'],ensure_ascii=False),inputs=json.dumps(job['inputs'],ensure_ascii=False),status='running',created_by_role='account',created_by=job['account_id'],created_at=utc_naive(now)))
-        return dict(job=dict(id=job['id'],project_id=job['project_id'],source_job_id=job['source_job_id'],snapshot_digest=job['snapshot_digest'],inputs=job['inputs'],**job['snapshot']))
+        s.add(WorkflowRun(id=job['id'],tenant_id=job['workspace_id'],app_id=job['app_id'],workflow_id=workflow.id,type=workflow.type,triggered_from=job['snapshot'].get('triggered_from','app-run'),version=workflow.version,graph=json.dumps(job['snapshot']['graph'],ensure_ascii=False),inputs=json.dumps(job['inputs'],ensure_ascii=False),status='running',created_by_role='account',created_by=job['account_id'],created_at=utc_naive(now)))
+        return dict(job=dict(id=job['id'],actor_id=job['account_id'],app_id=job['app_id'],workflow_id=job['workflow_id'],project_id=job['project_id'],source_job_id=job['source_job_id'],snapshot_digest=job['snapshot_digest'],inputs=job['inputs'],**job['snapshot']))
     return dict(job=None)
 
 def running(s,runner,identity):
@@ -214,6 +243,10 @@ def events(s,runner,identity,data):
     # Only bounded node status/output metadata, never arbitrary provider exceptions/credentials.
     if set(event)-{'event','node_id','title','node_type','status','outputs','elapsed_time','total_tokens'} or event.get('event') not in ('node_started','node_finished','text_chunk'): raise BadRequest('نوع رویداد مجاز نیست.')
     if str(event.get('node_id')) not in {str(n['id']) for n in job['snapshot']['graph']['nodes']}: raise BadRequest('گره در این اجرا وجود ندارد.')
+    data=next(n['data'] for n in job['snapshot']['graph']['nodes'] if n['id']==event['node_id'])
+    if event.get('node_type')!=data['type'] or event.get('status')!=('running' if event['event']=='node_started' else 'succeeded'):
+        raise BadRequest('وضعیت یا نوع گره معتبر نیست.')
+    if event['event']=='node_finished' and not isinstance(event.get('outputs'),dict):raise BadRequest('خروجی گره معتبر نیست.')
     digest=agents.digest(event); t=table(s,'local_execution_events')
     previous=s.execute(sa.select(t).where(t.c.execution_id==job['id'],t.c.sequence==seq)).mappings().first()
     if previous:
@@ -221,6 +254,19 @@ def events(s,runner,identity,data):
         return dict(recorded=True,sequence=seq)
     if seq!=job['event_sequence']+1: raise Conflict('ترتیب رویداد معتبر نیست.')
     s.execute(t.insert().values(execution_id=job['id'],sequence=seq,event=event,digest=digest,created_at=agents.now()))
+    # Native history records are metadata mirrors of the device events.
+    if not job['snapshot'].get('preview'):
+        from models.workflow import WorkflowNodeExecutionModel
+        from uuid import UUID,uuid5
+        node_identity=str(uuid5(UUID(str(job['id'])),event['node_id']))
+        native=s.get(WorkflowNodeExecutionModel,node_identity)
+        if event['event']=='node_started' and native is None:
+            native=WorkflowNodeExecutionModel(id=node_identity,tenant_id=job['workspace_id'],app_id=job['app_id'],workflow_id=job['workflow_id'],workflow_run_id=job['id'],triggered_from='workflow-run',index=seq,node_execution_id=node_identity,node_id=event['node_id'],node_type=data['type'],title=data.get('title',event['node_id']),inputs='{}',process_data='{}',status='running',created_at=utc_naive(agents.now()),created_by_role='account',created_by=job['account_id'])
+            s.add(native)
+        elif event['event']=='node_finished':
+            if native is None:raise Conflict('شروع گره ثبت نشده است.')
+            native.status='succeeded';native.outputs=json.dumps(event['outputs'],ensure_ascii=False);native.elapsed_time=event.get('elapsed_time',0);native.finished_at=utc_naive(agents.now())
+
     jobs=table(s,'local_executions'); s.execute(jobs.update().where(jobs.c.id==job['id']).values(event_sequence=seq))
     return dict(recorded=True,sequence=seq)
 
@@ -239,6 +285,10 @@ def complete(s,runner,identity,data):
         if job['state']==data['state'] and job['result']==result: return dict(recorded=True)
         raise Conflict('وضعیت نهایی اجرا قبلاً ثبت شده است.')
     running(s,runner,identity)
+    if data['state']=='succeeded':
+        from models.workflow import WorkflowNodeExecutionModel
+        open_nodes=s.scalar(sa.select(sa.func.count()).select_from(WorkflowNodeExecutionModel).where(WorkflowNodeExecutionModel.workflow_run_id==job['id'],WorkflowNodeExecutionModel.status=='running'))
+        if open_nodes:raise Conflict('پایان بعضی گره‌ها هنوز ثبت نشده است.')
     if job['team_attempt_id']:
         attempts=agents.tables(s)[2]
         attempt=s.execute(sa.select(attempts).where(attempts.c.id==job['team_attempt_id'])).mappings().one()
@@ -247,7 +297,15 @@ def complete(s,runner,identity,data):
     return finish(s,job,data['state'],result)
 
 def cancel(s,project,workspace,actor,identity):
-    team.scope(s,project,workspace,actor); job=execution(s,identity,actor=actor,lock=True)
+    team.scope(s,project,workspace,actor)
+    try:job=execution(s,identity,actor=actor,lock=True)
+    except NotFound:
+        from company_projects import local_rpc
+        job=local_rpc.load(s,identity,actor=actor,lock=True)
+        if (job['project_id'],job['workspace_id'])!=(str(project),str(workspace)):raise NotFound('اجرا پیدا نشد.')
+        if job['state'] not in TERMINAL:
+            rpc=local_rpc.table(s);s.execute(rpc.update().where(rpc.c.id==job['id']).values(state='cancelled',finished_at=agents.now(),result={'error':'cancelled'}))
+        return dict(cancelled=True)
     if (job['project_id'],job['workspace_id'])!=(str(project),str(workspace)): raise NotFound('اجرا پیدا نشد.')
     if job['state'] not in TERMINAL: finish(s,job,'cancelled',{'error':'اجرا به درخواست کاربر متوقف شد.'})
     return dict(cancelled=True)
@@ -258,7 +316,8 @@ def knowledge_signature(s,workspace,dataset_ids):
     from models.dataset import Dataset, Document, DocumentSegment
     values=s.execute(sa.select(DocumentSegment.id,DocumentSegment.content,DocumentSegment.answer,DocumentSegment.dataset_id,DocumentSegment.document_id,Document.name).join(Document,Document.id==DocumentSegment.document_id).where(DocumentSegment.tenant_id==str(workspace),DocumentSegment.dataset_id.in_(dataset_ids),DocumentSegment.enabled.is_(True),DocumentSegment.status=='completed',Document.enabled.is_(True),Document.archived.is_(False),Document.indexing_status=='completed').order_by(DocumentSegment.id)).all()
     if len(values)>20000 or sum(len(r.content.encode()) for r in values)>33554432: raise BadRequest('دانش این اجرا بیش از بودجهٔ انتقال محلی است؛ مجموعهٔ دانش برنامه را محدود کنید.')
-    return agents.digest([list(r) for r in values])
+    segments=[dict(id=str(r.id),digest=agents.digest(list(r))) for r in values]
+    return dict(digest=agents.digest(segments),segments=segments)
 
 
 def knowledge_spec(s,workflow,actor,graph,models):
@@ -285,7 +344,7 @@ def knowledge_spec(s,workflow,actor,graph,models):
             row=personal_models.resolve(s,actor,model.get('reranking_provider_name'),model.get('reranking_model_name'),'rerank')
             models[node['id']+':rerank']=dict(id=str(row['id']),revision=row['revision'],provider=row['provider'],model_name=row['model_name'],model_type='rerank')
         ids=[r['id'] for r in selected]
-        datasets[node['id']]=dict(datasets=selected,digest=knowledge_signature(s,workflow.tenant_id,ids))
+        datasets[node['id']]=dict(datasets=selected,**knowledge_signature(s,workflow.tenant_id,ids))
     return datasets
 
 
@@ -308,15 +367,24 @@ def knowledge_page(s,runner,identity,data):
         dataset=s.get(Dataset,identity)
         if not dataset: raise Conflict('دانش تغییر کرده است.')
         check_dataset(s,dataset,job['account_id'],job['workspace_id'])
-    if knowledge_signature(s,job['workspace_id'],ids)!=spec['digest']: raise Conflict('دانش پس از شروع اجرا تغییر کرده است؛ اجرای تازه بسازید.')
-    rows=s.execute(sa.select(DocumentSegment,Document.name).join(Document,Document.id==DocumentSegment.document_id).where(DocumentSegment.tenant_id==job['workspace_id'],DocumentSegment.dataset_id.in_(ids),DocumentSegment.enabled.is_(True),DocumentSegment.status=='completed',Document.enabled.is_(True),Document.archived.is_(False),Document.indexing_status=='completed').order_by(DocumentSegment.id).offset(cursor).limit(50)).all()
+    frozen=spec['segments'][cursor:cursor+50]; frozen_ids=[v['id'] for v in frozen]; hashes={v['id']:v['digest'] for v in frozen}
+    rows=s.execute(sa.select(DocumentSegment,Document.name).join(Document,Document.id==DocumentSegment.document_id).where(DocumentSegment.tenant_id==job['workspace_id'],DocumentSegment.dataset_id.in_(ids),DocumentSegment.id.in_(frozen_ids),DocumentSegment.enabled.is_(True),DocumentSegment.status=='completed',Document.enabled.is_(True),Document.archived.is_(False),Document.indexing_status=='completed').order_by(DocumentSegment.id)).all()
+    if len(rows)!=len(frozen):raise Conflict('دسترسی یا نسخهٔ دانش تغییر کرده است.')
     names={v['id']:v['name'] for v in spec['datasets']}
     result=[]; size=0
     for segment,title in rows:
+        if agents.digest([segment.id,segment.content,segment.answer,segment.dataset_id,segment.document_id,title])!=hashes[segment.id]:raise Conflict('محتوای دانش تغییر کرده است؛ اجرای تازه بسازید.')
         value=dict(id=segment.id,content=segment.content,answer=segment.answer,title=title,dataset_id=segment.dataset_id,dataset_name=names[segment.dataset_id],document_id=segment.document_id,position=segment.position)
         size+=len(json.dumps(value,ensure_ascii=False).encode())
         if size>1048576:
             if not result: raise BadRequest('قطعهٔ دانش برای انتقال محلی بیش از حد بزرگ است.')
             break
         result.append(value)
-    return dict(data=result,next_cursor=cursor+len(result) if result else None,datasets=spec['datasets'],digest=spec['digest'])
+    return dict(data=result,next_cursor=cursor+len(result) if result and cursor+len(result)<len(spec['segments']) else None,datasets=spec['datasets'],digest=spec['digest'])
+
+
+def revoke_device(s,device_id):
+    t=table(s,'local_executions'); rows=s.execute(sa.select(t).where(t.c.device_id==str(device_id),t.c.state.in_(('pending','running'))).with_for_update()).mappings().all()
+    for row in rows: finish(s,dict(row),'cancelled',{'error':'دسترسی Runner لغو شد.'})
+    from company_projects.local_rpc import table as rpc_table
+    rpc=rpc_table(s);s.execute(rpc.update().where(rpc.c.device_id==str(device_id),rpc.c.state.in_(('pending','running'))).values(state='cancelled',finished_at=agents.now(),result={'error':'device_revoked'}))

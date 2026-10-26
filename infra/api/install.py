@@ -175,6 +175,52 @@ changes['services/app_dsl_service.py'] = [(
     '                    case BuiltinNodeTypes.LLM:\n                        llm_entity = LLMNodeData.model_validate(node["data"])\n',
     '                    case BuiltinNodeTypes.LLM:\n                        from company_projects.runtime_models import policy\n                        if policy(graph) is not None:\n                            continue  # Each executor supplies an installed personal provider.\n                        llm_entity = LLMNodeData.model_validate(node["data"])\n')]
 
+# All compute paths are replaced or blocked; there is no central fallback.
+changes['services/app_generate_service.py'].append((
+    '        return cls._run_with_guardrails(\n',
+    '        from company_projects.local_dispatch import generate as generate_locally\n        return generate_locally(app_model, user, args, invoke_from, session, streaming, root_node_id)\n        return cls._run_with_guardrails(\n'))
+changes.setdefault('services/async_workflow_service.py', []).append((
+    '        # 7. Reserve quota (commit after successful dispatch)\n',
+    '        from company_projects.local_dispatch import enqueue_trigger\n        return enqueue_trigger(session, user, app_model, workflow, trigger_data, trigger_log)\n        # 7. Reserve quota (commit after successful dispatch)\n'))
+changes['core/app/apps/workflow/app_generator.py'].append((
+    '@install_generator_boundary\nclass WorkflowAppGenerator(',
+    'from company_projects.local_dispatch import generator_boundary\n\n\n@generator_boundary\n@install_generator_boundary\nclass WorkflowAppGenerator('))
+changes['core/workflow/workflow_entry.py'].append((
+    '        # check call depth\n',
+    '        from company_projects.local_dispatch import blocked\n        blocked()\n        # check call depth\n'))
+# Single-node previews must also go through the device protocol rather than sandbox/model workers.
+changes['services/workflow_service.py'].append((
+    '        files = files or []\n',
+    '        from company_projects.local_node_dispatch import run_node\n        return run_node(app_model, draft_workflow, node_id, user_inputs, account)\n        files = files or []\n'))
+
+# Model/plugin and raw code boundaries cannot execute centrally even if a new route bypasses dispatch.
+changes['core/helper/code_executor/code_executor.py'] = [(
+    '        running_language = cls.code_language_to_running_language.get(language)\n',
+    '        from company_projects.local_rpc import raw_code\n        return raw_code(language, preload, code)\n        running_language = cls.code_language_to_running_language.get(language)\n')]
+changes['core/plugin/impl/tool.py'] = [(
+    '        tool_provider_id = GenericProviderID(tool_provider)\n',
+    '        from company_projects.local_dispatch import blocked\n        blocked()\n        tool_provider_id = GenericProviderID(tool_provider)\n')]
+
+for kind, class_name in (('chat','ChatAppGenerator'),('completion','CompletionAppGenerator'),('agent_chat','AgentChatAppGenerator'),('agent_app','AgentAppGenerator'),('advanced_chat','AdvancedChatAppGenerator')):
+    path=f'core/app/apps/{kind}/app_generator.py'
+    anchor=(f'@install_generator_boundary\nclass {class_name}(' if kind=='advanced_chat' else f'class {class_name}(')
+    replacement=(f'from company_projects.local_dispatch import block_generator\n\n\n@block_generator\n@install_generator_boundary\nclass {class_name}(' if kind=='advanced_chat' else f'from company_projects.local_dispatch import block_generator\n\n\n@block_generator\nclass {class_name}(')
+    changes.setdefault(path,[]).append((anchor,replacement))
+changes['core/app/apps/base_app_queue_manager.py'] = [(
+    '        result: Any | None = redis_client.get(cls._generate_task_belong_cache_key(task_id))\n',
+    '        from company_projects.local_dispatch import stop as stop_local\n        if stop_local(task_id, user_id):\n            return\n        result: Any | None = redis_client.get(cls._generate_task_belong_cache_key(task_id))\n')]
+
+changes['core/workflow/workflow_entry.py'].extend([
+    ('        node_config = workflow.get_node_config_by_id(node_id)\n',
+     '        from company_projects.local_dispatch import blocked\n        blocked()\n        node_config = workflow.get_node_config_by_id(node_id)\n'),
+    ('        # Create a minimal graph for single node execution\n',
+     '        from company_projects.local_dispatch import blocked\n        blocked()\n        # Create a minimal graph for single node execution\n'),
+])
+
+changes['services/app_generate_service.py'].append((
+    '        if workflow_run.status.is_ended():\n',
+    '        from company_projects.local_dispatch import resume as resume_local\n        stream = resume_local(app_model, workflow_run)\n        if stream is not None:\n            return stream\n        if workflow_run.status.is_ended():\n'))
+
 for filename, replacements in changes.items():
     target = root / filename
     content = target.read_text()

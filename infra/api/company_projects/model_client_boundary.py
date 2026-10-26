@@ -30,6 +30,10 @@ def install_client_boundary(client_type):
                 @wraps(original)
                 def stream(*args, **kwargs):
                     bound = prepare(args, kwargs)
+                    if name != 'get_model_schema':
+                        from company_projects.local_rpc import model_call
+                        yield from model_call(name, bound.arguments)
+                        return
                     try:
                         yield from original(*bound.args, **bound.kwargs)
                     except Exception:
@@ -40,6 +44,9 @@ def install_client_boundary(client_type):
             @wraps(original)
             def call(*args, **kwargs):
                 bound = prepare(args, kwargs)
+                if name != 'get_model_schema':
+                    from company_projects.local_rpc import model_call
+                    return model_call(name, bound.arguments)
                 try:
                     return original(*bound.args, **bound.kwargs)
                 except Exception:

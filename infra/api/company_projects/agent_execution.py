@@ -226,6 +226,8 @@ def dispatch_pending():
     from company_projects.local_execution import expire
     with Session(db.engine) as session, session.begin():
         expire(session)
+        from company_projects.local_rpc import expire as expire_rpc
+        expire_rpc(session)
     dispatch_stops()
     with Session(db.engine) as session:
         _, _, attempts = agents.tables(session)
