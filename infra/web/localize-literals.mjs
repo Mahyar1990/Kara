@@ -3,7 +3,9 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const translations = JSON.parse(readFileSync(new URL('./literal-translations.json', import.meta.url)))
-const technical = new Set(['CSV', 'JSON', 'JSONL', 'SVG', 'OAuth', 'PKCS1_OAEP', 'Kara', 'Dify', 'GitHub',
+const technical = new Set(['sandbox', 'backend', 'services/backend', 'docs/architecture.md',
+  'python3 -m kara_source_runner run', '~/KaraSourceWorkspaces', '--root /your/private/path',
+  '.kara/manifest.json', '~/.config/kara-source-runner/device.json', 'CSV', 'JSON', 'JSONL', 'SVG', 'OAuth', 'PKCS1_OAEP', 'Kara', 'Dify', 'GitHub',
   'Jina Reader', 'WaterCrawl', '🔥 Firecrawl', 'ESC', 'Enter', '.csv', 'ABCD-1234', 'default', 'dify_app',
   'NEXT_PUBLIC_APP_ID=', 'NEXT_PUBLIC_APP_KEY=', 'NEXT_PUBLIC_API_URL=', 'error_message', 'last_run',
   'conversation_var', 'structured_output', 'sys.', 'articles/*', 'blog/*, /about/*'])
