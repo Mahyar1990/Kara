@@ -47,6 +47,7 @@ export function projectNavigation(projectId: string, nativeItems: MainNavItem[])
     ]),
     ...group([
       ...native('/datasets'),
+      item(`${base}/source-code`, 'سورس کد', 'i-ri-code-box-line', path => path === `${base}/source-code`),
       ...native('/skills'),
       item(`${base}/templates`, 'قالب‌های آماده', 'i-ri-file-copy-line', path => path === `${base}/templates`),
       item(`${base}/automations`, 'اتوماسیون‌ها', 'i-ri-timer-line', path => path === `${base}/automations`),
@@ -56,6 +57,7 @@ export function projectNavigation(projectId: string, nativeItems: MainNavItem[])
       item(`${base}/setup`, 'راهنمای پروژه', 'i-ri-question-line', path => path === `${base}/setup`),
     ]),
     item(`${base}/jira-connections`, 'اتصال به جیرا', 'i-ri-links-line', path => path === `${base}/jira-connections`),
+    item(`${base}/source-runners`, 'Runnerهای شخصی', 'i-ri-computer-line', path => path === `${base}/source-runners`),
     item(`${base}/gitlab-connections`, 'اتصال به گیت‌لب', 'i-ri-git-repository-line', path => path === `${base}/gitlab-connections`),
     item(`${base}/model-connections`, 'اتصال به مدل هوش مصنوعی', 'i-ri-brain-line', path => path === `${base}/model-connections`),
     ...nativeItems.filter(entry => !['/', '/projects', '/users', '/apps', '/datasets', '/skills', '/integrations/model-provider'].includes(entry.href)),

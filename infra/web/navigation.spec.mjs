@@ -52,3 +52,14 @@ test('project links stay in the selected team and preserve native feature filter
   assert.equal(navigation[0].active('/projects/team-b/inbox'), false)
   assert.equal(native[3].label, '/apps')
 })
+
+test('source code sits between knowledge and skills; settings stay project scoped', () => {
+  const native = ['/datasets', '/skills'].map(href => ({ href, active: () => false }))
+  const items = projectNavigation('a', native).map(i => i.href)
+  assert.equal(items[items.indexOf('/datasets') + 1], '/projects/a/source-code')
+  assert.equal(items[items.indexOf('/projects/a/source-code') + 1], '/skills')
+  for (const route of ['source-code', 'source-runners', 'gitlab-connections']) {
+    assert.ok(items.includes(`/projects/a/${route}`))
+    assert.equal(companyNavigationScope(`/projects/b/${route}`, { id: 'a' }), 'product')
+  }
+})
