@@ -99,6 +99,7 @@ make down
 - [کتابخانهٔ قالب‌ها](docs/template-library.md)
 - [کارتابل اجراها و تأییدها](docs/project-inbox.md)
 - [اتوماسیون‌های پروژه](docs/project-automations.md)
+- [سورس کد، worktree چندمخزنی و Runner محلی](docs/source-code-runner.md)
 
 برای اجرای بررسی‌های توسعه، محیط Python محلی را آماده کنید:
 
