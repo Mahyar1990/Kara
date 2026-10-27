@@ -53,7 +53,7 @@ function Templates({ project, copiedOnly = false }: { project: string; copiedOnl
         </article></li>
       })}</ul>
       <DirectoryPagination value={result} change={setPage} />
-      <footer className="space-y-2 border-t border-divider-regular pt-5 text-xs leading-6 text-text-tertiary"><p>منبع: Agency Agents · مجوز MIT. متن اصلی، انتساب و مجوز در پنجرهٔ بررسی هر قالب در دسترس است. دسته‌بندی اصلی همراه نسخهٔ پروژه و مهارت آن حفظ می‌شود.</p><p>قالب، ابزار نصب نمی‌کند و دسترسی تازه‌ای نمی‌دهد. تغییر واقعی کد به هارنس مجاز روی Runner و سورس همان پروژه نیاز دارد. تأیید نهایی با انسان مسئول است.</p></footer>
+      <footer className="space-y-2 border-t border-divider-regular pt-5 text-xs leading-6 text-text-tertiary"><p>منبع: Agency Agents · مجوز MIT. متن اصلی و پیوند منبع در پنجرهٔ بررسی هر قالب در دسترس است. دسته‌بندی اصلی همراه نسخهٔ پروژه و مهارت آن حفظ می‌شود.</p><p>قالب، ابزار نصب نمی‌کند و دسترسی تازه‌ای نمی‌دهد. تغییر واقعی کد به هارنس مجاز روی Runner و سورس همان پروژه نیاز دارد. تأیید نهایی با انسان مسئول است.</p></footer>
       {selected && <AdoptDialog key={`${selected.id}:${value.commit}`} project={project} item={selected} catalog={value} close={() => setSelected(null)} saved={async value => { setCreated(value); setSelected(null); await cache.invalidateQueries({ queryKey: key }); await cache.invalidateQueries({ predicate: q => JSON.stringify(q.queryKey).includes('"agent"') }) }} />}
     </>}
   </div></section>
@@ -92,7 +92,6 @@ function AdoptDialog({ project, item, catalog, close, saved }: { project: string
       <div className="flex flex-wrap gap-2" aria-label="متن مورد بررسی"><button type="button" className={`${directoryButton} ${!source ? 'bg-background-section font-semibold text-text-accent' : ''}`} aria-pressed={!source} onClick={() => setSource(false)}>نسخهٔ کارا و قواعد اجرا</button><button type="button" className={`${directoryButton} ${source ? 'bg-background-section font-semibold text-text-accent' : ''}`} aria-pressed={source} onClick={() => setSource(true)}>متن اصلی</button></div>
       <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-xl bg-background-section p-4 font-sans text-xs leading-7 [overflow-wrap:anywhere]" dir="auto">{source ? preview.data.original : preview.data.adapted}</pre>
       <a href={preview.data.source_url} target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-text-accent">فایل منبع در نسخهٔ ثابت مخزن ↗</a>
-      <details className="text-xs"><summary className="cursor-pointer">مجوز و انتساب منبع</summary><pre className="mt-2 whitespace-pre-wrap leading-6" dir="ltr">{preview.data.license}</pre></details>
       {current ? <p className="text-sm leading-7">این نسخه قبلاً به پروژه اضافه شده است. <Link href={`/agents/${item.copy!.agent_id}/configure`} className="text-text-accent">نسخهٔ پروژه را باز کنید ←</Link></p> : <fieldset disabled={busy || !catalog.can_adopt} className="space-y-4">
         {!catalog.can_adopt && <p className="text-sm">افزودن قالب با مدیر مجاز پروژه است؛ مشاهدهٔ متن، دسترسی اجرایی ایجاد نمی‌کند.</p>}
         <label className="block text-sm">نام ایجنت پروژه<input required maxLength={120} value={name} onChange={e => setName(e.target.value)} className={directoryField} /></label>
