@@ -238,6 +238,8 @@ def compile_stages(session, scoped, actor_id, stages):
             raise UnprocessableEntity('نسخهٔ منتشرشدهٔ ایجنت معتبر نیست.')
         from company_projects.personal_agent_sources import validate
         validate(session, workflow, stage['executor_id'])
+        from company_projects.program_agents import validate as validate_program_roles
+        validate_program_roles(session, workflow, actor_id, publishing=True)
         from configs import dify_config
         if dify_config.RBAC_ENABLED:
             from core.rbac import RBACPermission

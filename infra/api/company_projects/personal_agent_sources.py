@@ -95,27 +95,33 @@ def skill_permission(workspace, actor, skill):
 
 def validate(s, workflow, actor=None):
     """Fresh lifecycle/ACL fencing; newer published versions never replace the pin."""
+    from company_projects.program_agents import validate as validate_program
+    validate_program(s, workflow, actor)
     meta = metadata(workflow)
     if meta is None:
         return
-    if not isinstance(meta, dict) or meta.get('version') != VERSION:
+    validate_reference(s, workflow.tenant_id, meta, actor)
+
+
+def validate_reference(s, workspace, meta, actor=None):
+    if not isinstance(meta, dict) or meta.get('version') != VERSION or not {'agent_id', 'snapshot_id', 'snapshot_digest', 'skills'} <= meta.keys() or not isinstance(meta['skills'], list):
         raise Conflict('اتصال ایجنت کتابخانه معتبر نیست.')
-    source, snapshot = load(s, workflow.tenant_id, meta['agent_id'], meta['snapshot_id'])
+    source, snapshot = load(s, workspace, meta['agent_id'], meta['snapshot_id'])
     if snapshot_digest(snapshot) != meta['snapshot_digest']:
         raise Conflict('نسخهٔ ثابت ایجنت کتابخانه تغییر کرده است؛ اتصال تازه بسازید.')
     if actor:
-        permission(s, workflow.tenant_id, actor, source.id)
+        permission(s, workspace, actor, source.id)
     from models.skill import Skill, SkillVersion
     for pin in meta['skills']:
         if 'skill_id' not in pin:
             continue  # Uploaded packages are embedded in this immutable workflow.
         skill = s.get(Skill, pin['skill_id'])
         version = s.get(SkillVersion, pin['version_id'])
-        if not skill or skill.tenant_id != workflow.tenant_id or not version or (
+        if not skill or skill.tenant_id != workspace or not version or (
                 version.skill_id != skill.id or skill_version_digest(version) != pin['digest']):
             raise Conflict('نسخهٔ مهارت متصل به ایجنت کتابخانه در دسترس نیست.')
         if actor:
-            skill_permission(workflow.tenant_id, actor, skill)
+            skill_permission(workspace, actor, skill)
 
 
 def public(workflow):
@@ -207,7 +213,7 @@ def skills(s, source, snapshot, actor):
     return '\n'.join(texts), pins
 
 
-def configuration(snapshot):
+def configuration(snapshot, *, executor_model=False):
     c = snapshot.config_snapshot_dict
     unsupported = []
     if snapshot.home_snapshot_id: unsupported.append('فایل‌ها و محیط Home')
@@ -225,9 +231,9 @@ def configuration(snapshot):
             unsupported.append('بررسی محتوای گفت‌وگو')
     if unsupported:
         raise UnprocessableEntity('این نسخه به پشتیبانی محلی بیشتری نیاز دارد: ' + '، '.join(dict.fromkeys(unsupported)) + '. از برنامهٔ تیمی سازگار یا هارنس شخصی استفاده کنید.')
-    if not c.get('model'):
+    if not executor_model and not c.get('model'):
         raise UnprocessableEntity('مدل ایجنت کتابخانه را پیش از اتصال تنظیم و منتشر کنید.')
-    if 'openai' not in c['model']['model_provider']:
+    if not executor_model and 'openai' not in c['model']['model_provider']:
         raise UnprocessableEntity('این اتصال به مدل سازگار با OpenAI روی Runner نیاز دارد؛ برای مدل‌های دیگر از هارنس شخصی یا برنامهٔ سازگار استفاده کنید.')
     return c
 
@@ -259,8 +265,8 @@ def query_template(value, names):
     return ''.join(chunks), variables
 
 
-def compile_graph(s, source, snapshot, actor):
-    c = configuration(snapshot)
+def compile_graph(s, source, snapshot, actor, *, executor_model=False):
+    c = configuration(snapshot, executor_model=executor_model)
     text_skills, skill_pins = skills(s, source, snapshot, actor)
     variables = [dict(variable='task', label='شرح تسک و نیازمندی', type='paragraph', required=True, max_length=120000),
         dict(variable='feedback_context', label='بازخورد مرحلهٔ قبل', type='paragraph', required=False, default='', max_length=120000)]
@@ -276,11 +282,13 @@ def compile_graph(s, source, snapshot, actor):
             raise UnprocessableEntity('مقدار پیش‌فرض متغیر ایجنت معتبر نیست.')
         variables.append(dict(variable=name, label=name, type=kind, required=item['required'], default=default, max_length=120000))
         names.add(name)
-    params = {k: v for k, v in c['model']['model_settings'].items() if v is not None}
+    params = {} if executor_model else {k: v for k, v in c['model']['model_settings'].items() if v is not None}
     # Local model transport must not silently discard provider-specific parameters.
     if set(params) - {'temperature', 'top_p', 'presence_penalty', 'frequency_penalty', 'max_tokens', 'stop', 'response_format'}:
         raise UnprocessableEntity('پارامتر اختصاصی مدل این ایجنت به پشتیبانی Runner نیاز دارد.')
-    model = dict(provider=c['model']['model_provider'], name=c['model']['model'], mode='chat', completion_params=params)
+    from company_projects import runtime_models
+    model = dict(provider=runtime_models.PROVIDER if executor_model else c['model']['model_provider'],
+        name='executor-model' if executor_model else c['model']['model'], mode='chat', completion_params=params)
     nodes = [dict(id='start', data=dict(type='start', title='ورودی تسک', variables=variables))]
     def add(identity, **data): nodes.append(dict(id=identity, data=data))
     knowledge_prompts = []
@@ -337,6 +345,10 @@ def compile_graph(s, source, snapshot, actor):
     add('end', type='end', title='خروجی قابل بررسی', outputs=[dict(variable='result', value_selector=['task_agent', 'text'])])
     graph = dict(nodes=nodes, edges=[dict(id=f'edge_{i}', source=a['id'], target=b['id'], sourceHandle='source', targetHandle='target')
         for i, (a, b) in enumerate(zip(nodes, nodes[1:]))])
+    if executor_model:
+        graph = runtime_models.enable_graph(graph)
+        for node in runtime_models.llm_nodes(graph):
+            node['data'].update(context=dict(enabled=False, variable_selector=[]), vision=dict(enabled=False))
     from kara_source_runner.workflow_contract import validate_graph
     validate_graph(graph)
     meta = dict(version=VERSION, agent_id=source.id, name=source.name, snapshot_id=snapshot.id,

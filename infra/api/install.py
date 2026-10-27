@@ -9,7 +9,7 @@ changes = {
         'workspace=WorkspacePermissionSnapshot(permission_keys=list(permissions.get("workspace", []))),',
         'workspace=WorkspacePermissionSnapshot(permission_keys=__import__("company_projects.access", fromlist=["filter_permissions"]).filter_permissions(session, tenant_id, account_id, permissions.get("workspace", []))),')],
     'controllers/console/__init__.py': [(
-        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.team_controller",\n    "company_projects.agent_controller",\n    "company_projects.flow_controller",\n    "company_projects.request_controller",\n    "company_projects.jira_controller",\n    "company_projects.gitlab_controller",\n    "company_projects.source_controller",\n    "company_projects.model_connection_controller",\n    "company_projects.stage_controller",\n    "company_projects.readiness",\n    "company_projects.agency_controller",\n    "company_projects.catalog",\n    "company_projects.inbox",\n    "company_projects.automations",\n')],
+        'RESOURCE_MODULES = (\n', 'RESOURCE_MODULES = (\n    "company_projects.controller",\n    "company_projects.team_controller",\n    "company_projects.agent_controller",\n    "company_projects.flow_controller",\n    "company_projects.request_controller",\n    "company_projects.jira_controller",\n    "company_projects.gitlab_controller",\n    "company_projects.source_controller",\n    "company_projects.model_connection_controller",\n    "company_projects.stage_controller",\n    "company_projects.readiness",\n    "company_projects.agency_controller",\n    "company_projects.program_agent_controller",\n    "company_projects.catalog",\n    "company_projects.inbox",\n    "company_projects.automations",\n')],
     'app_factory.py': [(
         '    initialize_extensions(app)\n',
         '    initialize_extensions(app)\n    from company_projects.store import migrate\n    from company_projects.team_migrations import migrate as migrate_team\n    from company_projects.access import initialize, restrict_central_workspace\n    from extensions.ext_database import db\n    with app.app_context():\n        migrate(db.engine)\n        migrate_team(db.engine)\n        with db.engine.begin() as connection:\n            initialize(connection)\n    restrict_central_workspace(app)\n')],
@@ -223,6 +223,10 @@ changes['core/workflow/workflow_entry.py'].extend([
 changes['services/app_generate_service.py'].append((
     '        if workflow_run.status.is_ended():\n',
     '        from company_projects.local_dispatch import resume as resume_local\n        stream = resume_local(app_model, workflow_run)\n        if stream is not None:\n            return stream\n        if workflow_run.status.is_ended():\n'))
+
+changes['services/workflow_service.py'].append((
+    '        self.validate_graph_structure(graph=draft_workflow.graph_dict)\n',
+    '        from company_projects.program_agents import validate as validate_library_roles\n        validate_library_roles(session, draft_workflow, account.id, publishing=True)\n        self.validate_graph_structure(graph=draft_workflow.graph_dict)\n'))
 
 for filename, replacements in changes.items():
     target = root / filename

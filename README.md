@@ -98,6 +98,7 @@ make down
 - [راهنمای استفاده از پروژه](docs/project-setup.md)
 - [کتابخانهٔ قالب‌ها](docs/template-library.md)
 - [کتابخانهٔ Agency Agents و دسته‌بندی تخصص‌ها](docs/agency-agent-library.md)
+- [استفاده از ایجنت‌های کتابخانه در برنامه‌ها](docs/program-agent-composition.md)
 - [کارتابل اجراها و تأییدها](docs/project-inbox.md)
 - [اتوماسیون‌های پروژه](docs/project-automations.md)
 - [سورس کد، worktree چندمخزنی و Runner محلی](docs/source-code-runner.md)
