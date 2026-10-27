@@ -172,3 +172,20 @@ class HarnessTests(StageFixture):
         candidate=dict(agent,workflow_digest=agents.fingerprint(workflow))
         self.assertIsNotNone(harness.compatible(self.session,candidate))
         with self.assertRaises(BadRequest):harness.knowledge(self.session,workflow,self.editor.id)
+
+    def test_expiry_during_validation_cannot_renew_or_complete_the_attempt(self):
+        profile=dict(key='synthetic',name='Synthetic',kind='custom',version='test',digest='e'*64)
+        harness.register(self.session,self.runner,dict(profiles=[profile]));row=self.launch_harness('managed')
+        claimed=harness.claim(self.session,self.runner)['job'];t=harness.table(self.session);original=harness.authorize
+        def expires_during_check(session,current):
+            result=original(session,current)
+            session.execute(t.update().where(t.c.attempt_id==claimed['id']).values(lease_until=agents.now()-timedelta(seconds=1)))
+            return result
+        with patch.object(harness,'authorize',side_effect=expires_during_check):
+            with self.assertRaises(Conflict):harness.heartbeat(self.session,self.runner,claimed['id'])
+        self.session.execute(t.update().where(t.c.attempt_id==claimed['id']).values(lease_until=agents.now()+timedelta(seconds=90)))
+        current=harness.load(self.session,claimed['id'])
+        with patch.object(harness,'authorize',side_effect=expires_during_check):
+            with self.assertRaises(Conflict):harness.finish(self.session,current,'succeeded',dict(outputs={'answer':'too late'},origin='managed_harness'))
+        self.assertEqual(harness.load(self.session,claimed['id'])['state'],'running')
+        self.assertEqual(self.get()['artifacts'],[]);self.assertEqual(self.get(self.second)['state'],'blocked')

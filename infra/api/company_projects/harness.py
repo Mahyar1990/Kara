@@ -203,7 +203,10 @@ def finish(s,row,state,result,completion_digest=None,guard=None):
     if guard and not guard(s,row):return dict(recorded=False)
     if state=='succeeded':authorize(s,row)
     native=agents.tables(s)[2]; status='succeeded' if state=='succeeded' else 'interrupted' if state in ('interrupted','cancelled') else 'blocked' if state=='blocked' else 'failed'
-    s.execute(table(s).update().where(table(s).c.attempt_id==row['attempt_id']).values(state=state,result=result,completion_digest=completion_digest,lease_until=None,updated_at=agents.now()))
+    jobs=table(s);update=jobs.update().where(jobs.c.attempt_id==row['attempt_id'],jobs.c.state.in_(ACTIVE))
+    if state=='succeeded' and row['mode']=='managed':update=update.where(jobs.c.lease_until>agents.now())
+    changed=s.execute(update.values(state=state,result=result,completion_digest=completion_digest,lease_until=None,updated_at=agents.now()))
+    if changed.rowcount!=1:raise Conflict('مهلت یا وضعیت تلاش تغییر کرده است؛ نتیجهٔ دیررس پذیرفته نیست.')
     updated=s.execute(native.update().where(native.c.id==row['attempt_id'],native.c.status.in_(('pending','running'))).values(status=status,result=result,finished_at=agents.now()))
     if state=='succeeded' and updated.rowcount!=1:raise Conflict('تلاش قبلاً متوقف شده است؛ نتیجهٔ دیررس پذیرفته نیست.')
     from company_projects.stages import complete_attempt
@@ -299,7 +302,9 @@ def busy(s,device_id):
 def heartbeat(s,runner,identity):
     expire(s);row=load(s,identity,runner=runner,lock=True)
     if row['state']!='running' or row['lease_until'] is None or row['lease_until']<=agents.now():raise Conflict('هارنس باید متوقف شود؛ مهلت اجرا پایان یافته است.')
-    authorize(s,row);s.execute(table(s).update().where(table(s).c.attempt_id==row['attempt_id']).values(lease_until=agents.now()+timedelta(seconds=90)))
+    authorize(s,row);now=agents.now();t=table(s)
+    changed=s.execute(t.update().where(t.c.attempt_id==row['attempt_id'],t.c.state=='running',t.c.lease_until>now).values(lease_until=now+timedelta(seconds=90)))
+    if changed.rowcount!=1:raise Conflict('مهلت اجرا هنگام بررسی پایان یافته است؛ هارنس باید متوقف شود.')
     return dict(active=True)
 
 def complete(s,runner,identity,data):
