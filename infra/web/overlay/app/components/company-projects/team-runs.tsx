@@ -51,11 +51,12 @@ type Act = (action: string, body: Record<string, unknown>, key: string) => Promi
 
 function Feedback({ value, act }: { value: TeamStage; act: Act }) {
   const current = value.artifacts.filter(item => item.round === value.round && item.input_digest === value.input_digest)
-  const textual = value.binding.input_contract.filter(item => ['text-input', 'paragraph'].includes(item.type))
+  const requestFields = new Set(Object.entries(value.binding.inputs).filter(([, source]) => source.source === 'request').map(([name]) => name))
+  const textual = value.binding.input_contract.filter(item => ['text-input', 'paragraph'].includes(item.type) && !requestFields.has(item.variable))
   const [inputs, setInputs] = useState(value.editable_inputs)
   const [parent, setParent] = useState('')
   const [message, setMessage] = useState('')
-  const [variable, setVariable] = useState(current.length ? textual[0]?.variable || '' : '')
+  const [variable, setVariable] = useState(current.length ? (textual.find(item => item.variable === 'feedback_context') || textual[0])?.variable || '' : '')
   const action = useAction()
   const body = { artifact_id: parent || null, message, inputs, feedback_variable: variable || null }
   return <form className={panel} aria-label="بازخورد و اصلاح ورودی" onSubmit={event => { event.preventDefault(); void action.run(body, key => act('feedback', body, key)) }}>
@@ -63,9 +64,9 @@ function Feedback({ value, act }: { value: TeamStage; act: Act }) {
     <fieldset className="space-y-4" disabled={action.busy}>
       <label className="block text-sm">خروجی مبنای بازخورد<select className={field} required={['awaiting_feedback', 'awaiting_decision'].includes(value.state)} value={parent} onChange={event => setParent(event.target.value)}><option value="">بدون خروجی مبنا</option>{current.map(item => <option key={item.id} value={item.id}>نسخهٔ {num(item.version)} · {item.kind === 'human' ? 'ویرایش انسانی' : item.kind === 'harness' ? 'خروجی هارنس' : 'خروجی اجرا'}</option>)}</select></label>
       <label className="block text-sm">متن بازخورد<textarea className={field} required maxLength={8000} value={message} onChange={event => setMessage(event.target.value)} /></label>
-      {value.binding.input_contract.map(item => <Input key={item.variable} item={item} value={inputs[item.variable]} change={next => setInputs({ ...inputs, [item.variable]: next })} />)}
+      {value.binding.input_contract.map(item => <fieldset key={item.variable} disabled={requestFields.has(item.variable)}><Input item={item} value={inputs[item.variable]} change={next => setInputs({ ...inputs, [item.variable]: next })} />{requestFields.has(item.variable) && <p className="mt-1 text-xs leading-6 text-text-tertiary">متن اصلی درخواست ثابت است؛ تغییر نیازمندی به نسخهٔ تازه و تصمیم مالک محصول نیاز دارد.</p>}</fieldset>)}
       <label className="block text-sm">ورودی متنی دریافت‌کنندهٔ بازخورد<select className={field} required={!!parent && !!textual.length} value={variable} onChange={event => setVariable(event.target.value)}><option value="">فقط ثبت علت اصلاح مقادیر</option>{textual.map(item => <option key={item.variable} value={item.variable}>{item.label}</option>)}</select></label>
-      {!textual.length && <p className="text-sm">این ایجنت ورودی متنی ندارد؛ اصلاح را در مقادیر ورودی اعمال کنید.</p>}<button className={primary}>ثبت بازخورد و دور تازه</button>
+      {!textual.length && <p className="text-sm">برای رساندن بازخورد و خروجی مبنا به اجرای بعد، منبع ایجنت باید ورودی متنی جدا از متن اصلی درخواست داشته باشد.</p>}<button disabled={!!parent && !textual.length} className={primary}>ثبت بازخورد و دور تازه</button>
     </fieldset>{action.error && <p role="alert">{action.error}</p>}
   </form>
 }

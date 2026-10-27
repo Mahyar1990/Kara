@@ -218,7 +218,7 @@ def resolve(session, value, stage):
         if stage['dependencies'] != dependencies:
             raise Conflict('خروجی‌های مصرف‌شده تغییر کرده‌اند.')
         return stage['inputs'], dependencies
-    inputs = {}
+    inputs = agents.input_defaults(stage['binding']['input_contract'], {})
     for name, source in stage['binding']['inputs'].items():
         if source['source'] == 'request':
             inputs[name] = request['content']

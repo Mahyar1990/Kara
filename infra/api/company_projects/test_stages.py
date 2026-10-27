@@ -67,6 +67,17 @@ class StageFixture(RequestFixture):
 
 
 class StageTests(StageFixture):
+    def test_defaults_apply_to_new_inputs_and_never_rewrite_recorded_inputs(self):
+        scope = dict(project_id=self.a['id'], workspace_id=self.workspace_a.id)
+        value = stages.instance(self.session, scope, self.inst['id'])
+        stage = stages.stage_rows(self.session, value)[0]
+        stage['binding'] = dict(stage['binding'], input_contract=[*stage['binding']['input_contract'],
+            dict(variable='flag', type='checkbox', default=False), dict(variable='count', type='number', default=0)])
+        inputs, dependencies = stages.resolve(self.session, value, stage)
+        self.assertEqual((inputs['flag'], inputs['count']), (False, 0))
+        stage.update(inputs={'request': 'already recorded'}, dependencies=dependencies)
+        self.assertEqual(stages.resolve(self.session, value, stage)[0], {'request': 'already recorded'})
+
     def test_feedback_cannot_replace_or_append_to_original_request(self):
         row = self.get()
         for request in ('متن تازه', row['preview_inputs']['request'].strip()):

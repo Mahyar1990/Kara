@@ -2,6 +2,7 @@
 import hashlib
 import json
 import math
+from copy import deepcopy
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -306,6 +307,13 @@ def archive(session, project_id, workspace_id, actor_id, agent_id, data, key):
     return result
 
 
+def input_defaults(contract, inputs):
+    if not isinstance(inputs, dict):
+        raise BadRequest('ورودی‌ها باید یک شیء JSON باشند.')
+    return {item['variable']: deepcopy(item['default']) for item in contract
+        if 'default' in item and item['default'] is not None} | inputs
+
+
 def validate_inputs(contract, inputs):
     if not isinstance(inputs, dict) or set(inputs) - {item['variable'] for item in contract}:
         raise BadRequest('ورودی‌های ناشناخته ارسال شده‌اند.')
@@ -353,9 +361,9 @@ def start(session, project_id, workspace_id, actor_id, agent_id, data, key):
     if selection['method']=='harness':
         from company_projects.runtime_models import INPUT
         if not isinstance(data['inputs'],dict) or INPUT in data['inputs']: raise BadRequest('ورودی مدل کارا در مسیر هارنس پذیرفته نیست.')
-        inputs=data['inputs']
+        inputs=input_defaults(row['input_contract'], data['inputs'])
     else:
-        inputs = attempt_inputs(session, session.get(Workflow, row['workflow_id']), actor_id, data['inputs'])
+        inputs = attempt_inputs(session, session.get(Workflow, row['workflow_id']), actor_id, input_defaults(row['input_contract'], data['inputs']))
     validate_inputs(row['input_contract'], business_inputs(inputs))
     attempt = dict(id=str(uuid4()), agent_id=row['id'], **scope, actor_id=str(actor_id), membership_id=join.id,
         workflow_id=row['workflow_id'], inputs=inputs, request_digest=request_digest,

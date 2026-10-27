@@ -80,6 +80,12 @@ class PersonalAgentSourceTests(FlowFixture):
         with self.assertRaises(Forbidden):
             agent_execution.deny_native(connected['app_id'], session=self.session)
         self.grants(connected)
+        attempt = agents.start(self.session, self.a['id'], self.workspace_a.id, self.editor.id, connected['id'],
+            dict(inputs={'task': 'synthetic task'}, expected_revision=1), str(uuid4()))
+        attempts = agents.tables(self.session)[2]
+        stored = self.session.execute(sa.select(attempts).where(attempts.c.id == attempt['id'])).mappings().one()
+        self.assertEqual(stored['inputs']['request_context'], 'default context')
+        self.assertEqual(stored['inputs']['feedback_context'], '')
         with patch('company_projects.personal_models.resolve', return_value=dict(id=str(uuid4()), revision=1,
                 provider=self.config.model.model_provider, model_name='synthetic-model')) as resolve:
             snapshot = local_execution.build_snapshot(self.session, workflow, self.editor.id, {'task': 'synthetic task'})
