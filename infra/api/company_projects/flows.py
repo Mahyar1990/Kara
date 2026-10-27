@@ -242,9 +242,12 @@ def compile_stages(session, scoped, actor_id, stages):
         if dify_config.RBAC_ENABLED:
             from core.rbac import RBACPermission
             from services.enterprise.rbac_service import RBACService
-            if not RBACService.CheckAccess.check(scoped['workspace_id'], str(actor_id), scene=RBACPermission.APP_RELEASE_AND_VERSION,
-                    resource_type='app', resource_id=app.id):
-                raise Forbidden('مجوز بومی انتشار برنامهٔ مرحله لازم است.')
+            from company_projects.personal_agent_sources import metadata
+            origin = metadata(workflow)
+            scene = RBACPermission.AGENT_RELEASE_AND_VERSION if origin else RBACPermission.APP_RELEASE_AND_VERSION
+            if not RBACService.CheckAccess.check(scoped['workspace_id'], str(actor_id), scene=scene,
+                    resource_type='agent' if origin else 'app', resource_id=origin['agent_id'] if origin else app.id):
+                raise Forbidden('مجوز بومی انتشار منبع ایجنتِ مرحله لازم است.')
         people = {}
         for prefix, action in (('executor', 'run'), ('finalizer', 'finalize')):
             join = team.member(session, scoped['workspace_id'], stage[prefix + '_id'], lock=True)

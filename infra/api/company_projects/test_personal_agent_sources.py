@@ -44,6 +44,24 @@ class PersonalAgentSourceTests(FlowFixture):
         self.assertIn(connected['id'], [row['id'] for row in agents.list_agents(self.session,
             self.a['id'], self.workspace_a.id, self.project_owner.id)['data']])
 
+    def test_flow_publication_checks_the_original_resource_type(self):
+        from configs import dify_config
+        from core.rbac import RBACPermission
+        connected = self.connect(); self.grants(connected)
+        scope = dict(project_id=self.a['id'], workspace_id=self.workspace_a.id)
+        stage = dict(self.stage(), agent_id=connected['id'], inputs={'task': {'source': 'request'}})
+        with patch.object(dify_config, 'RBAC_ENABLED', True), patch.object(personal, 'permission'), patch(
+                'services.enterprise.rbac_service.RBACService.CheckAccess.check', return_value=True) as check:
+            flows.compile_stages(self.session, scope, self.editor.id, [stage])
+            check.assert_any_call(self.workspace_a.id, self.editor.id, scene=RBACPermission.AGENT_RELEASE_AND_VERSION,
+                resource_type='agent', resource_id=self.source.id)
+            check.side_effect = lambda *a, **kw: kw.get('scene') != RBACPermission.AGENT_RELEASE_AND_VERSION
+            with self.assertRaises(Forbidden): flows.compile_stages(self.session, scope, self.editor.id, [stage])
+            check.side_effect = None; check.reset_mock()
+            flows.compile_stages(self.session, scope, self.editor.id, [self.stage()])
+            self.assertEqual(check.call_args.kwargs['scene'], RBACPermission.APP_RELEASE_AND_VERSION)
+            self.assertEqual(check.call_args.kwargs['resource_type'], 'app')
+
     def setUp(self):
         super().setUp()
         self.source = Agent(tenant_id=self.workspace_a.id, name='Synthetic personal agent', scope='roster',
