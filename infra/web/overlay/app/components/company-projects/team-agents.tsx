@@ -63,7 +63,7 @@ function RegisterAgent({ project, refresh }: { project: string; refresh: (create
   const save = () => {
     if (!ready) return
     const common = { name, description, expected_revision: 1 }
-    const body = kind === 'program' ? { ...common, app_id: source!.app_id, workflow_id: source!.workflow_id }
+    const body: Parameters<typeof agentApi.register>[1] | Parameters<typeof agentApi.registerPersonal>[1] = kind === 'program' ? { ...common, app_id: source!.app_id, workflow_id: source!.workflow_id }
       : { ...common, personal_agent_id: chosen!.id, snapshot_id: chosen!.snapshot_id!, source_digest: preview.data!.source_digest! }
     void action.run(body, async key => {
       const created = 'personal_agent_id' in body ? await agentApi.registerPersonal(project, body, key) : await agentApi.register(project, body, key)
