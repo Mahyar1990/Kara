@@ -30,7 +30,7 @@
     "skillManagement.title": "مهارت‌ها",
     "agentDetail.configure.tools.richTip": "ابزارهای Kara را از workspace خود اضافه کنید. <docLink>بیشتر بدانید</docLink>\n\nابزارهایی که عامل در sandbox خود نصب می‌کند اینجا نمایش داده نمی‌شوند، اما برای او در دسترس می‌مانند.",
     "agentDetail.configure.tools.tip": "ابزارهای Kara را از workspace خود اضافه کنید. بیشتر بدانید\n\nابزارهایی که عامل در sandbox خود نصب می‌کند اینجا نمایش داده نمی‌شوند، اما برای او در دسترس می‌مانند.",
-    "roster.title": "ایجنت‌های شخصی"
+    "roster.title": "کتابخانهٔ ایجنت‌ها"
   },
   "app-debug": {
     "feature.annotation.scoreThreshold.description": "آستانهٔ شباهت برای پاسخ‌های حاشیه‌نویسی‌شده را تعیین می‌کند.",

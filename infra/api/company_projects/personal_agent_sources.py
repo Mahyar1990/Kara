@@ -36,29 +36,29 @@ def permission(s, workspace, actor, source_id, *, export=False):
     scene = RBACPermission.AGENT_IMPORT_EXPORT_DSL if export else RBACPermission.AGENT_TEST_AND_RUN
     if (allowed is not None and str(source_id) not in allowed) or not RBACService.CheckAccess.check(
             str(workspace), str(actor), scene=scene, resource_type='agent', resource_id=str(source_id)):
-        raise Forbidden('مجوز استفاده از این ایجنت شخصی را ندارید.')
+        raise Forbidden('مجوز استفاده از این ایجنت کتابخانه را ندارید.')
 
 
 def load(s, workspace, identity, snapshot_id=None):
     source = s.scalar(sa.select(Agent).where(Agent.id == store.uid(identity), Agent.tenant_id == str(workspace)).execution_options(populate_existing=True))
     if not source or str(source.scope) != 'roster' or str(source.status) != 'active':
-        raise NotFound('ایجنت شخصی فعال در این پروژه پیدا نشد.')
+        raise NotFound('ایجنت کتابخانه فعال در این پروژه پیدا نشد.')
     snapshot = s.scalar(sa.select(AgentConfigSnapshot).where(
         AgentConfigSnapshot.id == store.uid(snapshot_id or source.active_config_snapshot_id),
         AgentConfigSnapshot.agent_id == source.id, AgentConfigSnapshot.tenant_id == str(workspace)).execution_options(populate_existing=True)) if (
             snapshot_id or source.active_config_snapshot_id) else None
     if not snapshot:
-        raise Conflict('ایجنت شخصی نسخهٔ منتشرشده ندارد؛ ابتدا آن را منتشر کنید.')
+        raise Conflict('ایجنت کتابخانه نسخهٔ منتشرشده ندارد؛ ابتدا آن را منتشر کنید.')
     from core.agent.publish_visibility import PUBLISH_VISIBLE_APP_BACKED_REVISION_OPERATIONS
     if (str(source.source) == 'agent_app' or (str(source.source) == 'imported' and source.app_id)) and not s.scalar(
             sa.select(AgentConfigRevision.id).where(AgentConfigRevision.tenant_id == str(workspace),
                 AgentConfigRevision.agent_id == source.id, AgentConfigRevision.current_snapshot_id == snapshot.id,
                 AgentConfigRevision.operation.in_(PUBLISH_VISIBLE_APP_BACKED_REVISION_OPERATIONS)).limit(1)):
-        raise Conflict('نسخهٔ ایجنت شخصی برای استفاده در فرایند منتشر نشده است.')
+        raise Conflict('نسخهٔ ایجنت کتابخانه برای استفاده در فرایند منتشر نشده است.')
     if source.app_id:
         app = s.get(App, source.app_id)
         if not app or app.tenant_id != str(workspace) or str(app.status) != 'normal':
-            raise Conflict('برنامهٔ منبع ایجنت شخصی در دسترس نیست.')
+            raise Conflict('برنامهٔ منبع ایجنت کتابخانه در دسترس نیست.')
     return source, snapshot
 
 
@@ -90,7 +90,7 @@ def skill_permission(workspace, actor, skill):
         from services.enterprise.rbac_service import RBACService
         if not RBACService.CheckAccess.check(str(workspace), str(actor), scene=RBACPermission.SKILL_VIEW,
                 resource_type='skill', resource_id=str(skill.id)):
-            raise Forbidden('مجوز خواندن مهارت ایجنت شخصی را ندارید.')
+            raise Forbidden('مجوز خواندن مهارت ایجنت کتابخانه را ندارید.')
 
 
 def validate(s, workflow, actor=None):
@@ -99,10 +99,10 @@ def validate(s, workflow, actor=None):
     if meta is None:
         return
     if not isinstance(meta, dict) or meta.get('version') != VERSION:
-        raise Conflict('اتصال ایجنت شخصی معتبر نیست.')
+        raise Conflict('اتصال ایجنت کتابخانه معتبر نیست.')
     source, snapshot = load(s, workflow.tenant_id, meta['agent_id'], meta['snapshot_id'])
     if snapshot_digest(snapshot) != meta['snapshot_digest']:
-        raise Conflict('نسخهٔ ثابت ایجنت شخصی تغییر کرده است؛ اتصال تازه بسازید.')
+        raise Conflict('نسخهٔ ثابت ایجنت کتابخانه تغییر کرده است؛ اتصال تازه بسازید.')
     if actor:
         permission(s, workflow.tenant_id, actor, source.id)
     from models.skill import Skill, SkillVersion
@@ -113,7 +113,7 @@ def validate(s, workflow, actor=None):
         version = s.get(SkillVersion, pin['version_id'])
         if not skill or skill.tenant_id != workflow.tenant_id or not version or (
                 version.skill_id != skill.id or skill_version_digest(version) != pin['digest']):
-            raise Conflict('نسخهٔ مهارت متصل به ایجنت شخصی در دسترس نیست.')
+            raise Conflict('نسخهٔ مهارت متصل به ایجنت کتابخانه در دسترس نیست.')
         if actor:
             skill_permission(workflow.tenant_id, actor, skill)
 
@@ -226,7 +226,7 @@ def configuration(snapshot):
     if unsupported:
         raise UnprocessableEntity('این نسخه به پشتیبانی محلی بیشتری نیاز دارد: ' + '، '.join(dict.fromkeys(unsupported)) + '. از برنامهٔ تیمی سازگار یا هارنس شخصی استفاده کنید.')
     if not c.get('model'):
-        raise UnprocessableEntity('مدل ایجنت شخصی را پیش از اتصال تنظیم و منتشر کنید.')
+        raise UnprocessableEntity('مدل ایجنت کتابخانه را پیش از اتصال تنظیم و منتشر کنید.')
     if 'openai' not in c['model']['model_provider']:
         raise UnprocessableEntity('این اتصال به مدل سازگار با OpenAI روی Runner نیاز دارد؛ برای مدل‌های دیگر از هارنس شخصی یا برنامهٔ سازگار استفاده کنید.')
     return c
@@ -329,7 +329,7 @@ def compile_graph(s, source, snapshot, actor):
     # Do not reinterpret workflow selectors inside a literal skill document.
     if '{{#' in text_skills:
         raise UnprocessableEntity('مهارت متنی دارای انتخابگر فرایند است؛ پیش از اتصال، متن آن را برای این تسک مستقل کنید.')
-    add('task_agent', type='llm', title='ایجنت شخصی', model=model,
+    add('task_agent', type='llm', title='ایجنت کتابخانه', model=model,
         prompt_template=[dict(role='system', text=prompt + '\n' + text_skills),
             dict(role='user', text='Task:\n{{#start.task#}}\nFeedback:\n{{#start.feedback_context#}}' + ''.join(
                 '\n' + name + ': {{#start.' + name + '#}}' for name in sorted(names - {'task', 'feedback_context'})) +
@@ -414,12 +414,12 @@ def register(s, project, workspace, actor, data, key):
         raise Conflict('تنظیمات منبع یا نسخهٔ مهارت‌ها پس از بررسی تغییر کرده‌اند؛ پیش‌نمایش را تازه کنید.')
     # One transaction with the team definition: no AppService commits/signals/orphan programs.
     app = App(tenant_id=str(workspace), name=('برنامهٔ اتصال ' + data['name'].strip())[:255], mode='workflow',
-        description='اتصال ثابت ایجنت شخصی به اجرای تیمی؛ مدیریت از صفحهٔ ایجنت‌های تیم.', status='normal',
+        description='اتصال ثابت ایجنت کتابخانه به اجرای تیمی؛ مدیریت از صفحهٔ ایجنت‌های تیم.', status='normal',
         created_by=str(actor), maintainer=str(actor), enable_site=False, enable_api=False, max_active_requests=0)
     s.add(app); s.flush()
     workflow = Workflow.new(tenant_id=str(workspace), app_id=app.id, type='workflow', version='personal-agent-' + snapshot.id,
         graph=json.dumps(graph, ensure_ascii=False), features=json.dumps({FEATURE: meta}, ensure_ascii=False), created_by=str(actor),
-        environment_variables=[], conversation_variables=[], rag_pipeline_variables=[], marked_name=f'ایجنت شخصی · نسخهٔ {snapshot.version}')
+        environment_variables=[], conversation_variables=[], rag_pipeline_variables=[], marked_name=f'ایجنت کتابخانه · نسخهٔ {snapshot.version}')
     s.add(workflow); s.flush(); app.workflow_id = workflow.id
     # The normal registration function keeps the same contracts, grants, execution and provenance.
     result = agents.register(s, project, workspace, actor, dict(app_id=app.id, workflow_id=workflow.id,

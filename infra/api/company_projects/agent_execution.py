@@ -40,7 +40,7 @@ def deny_native(app_id, *, session=None):
     from company_projects.personal_agent_sources import metadata
     app = session.get(App, str(app_id)) if app_id else None
     if app and metadata(session.get(Workflow, app.workflow_id)) is not None:
-        raise Forbidden('این برنامه اتصال ثابت ایجنت شخصی است؛ یک ایجنت تیمی تازه ثبت کنید.')
+        raise Forbidden('این برنامه اتصال ثابت ایجنت کتابخانه است؛ یک ایجنت تیمی تازه ثبت کنید.')
 
 
 def assert_execution(tenant_id, app_id, workflow_id, user_id, run_id=None):
@@ -80,7 +80,7 @@ def native_permission(session, app_id, actor_id, action='edit_definition'):
     from company_projects.personal_agent_sources import metadata
     app = session.get(App, str(app_id))
     if app and metadata(session.get(Workflow, app.workflow_id)) is not None:
-        raise Forbidden('اتصال ایجنت شخصی ثابت است؛ منبع شخصی را ویرایش و اتصال تازه‌ای ثبت کنید.')
+        raise Forbidden('اتصال ایجنت کتابخانه ثابت است؛ منبع کتابخانه را ویرایش و اتصال تازه‌ای ثبت کنید.')
     table = agents.definitions(session)
     linked = list(session.execute(sa.select(table).where(table.c.app_id == str(app_id), table.c.deleted_at.is_(None))).mappings())
     if not linked:
@@ -129,7 +129,7 @@ def install_http_guard(app):
             from company_projects.personal_agent_sources import metadata
             source_app = session.get(App, str(app_id))
             if source_app and metadata(session.get(Workflow, source_app.workflow_id)) is not None:
-                raise Forbidden('اتصال ایجنت شخصی نسخهٔ ثابت است؛ آن را از صفحهٔ ایجنت‌های تیم مدیریت کنید.')
+                raise Forbidden('اتصال ایجنت کتابخانه نسخهٔ ثابت است؛ آن را از صفحهٔ ایجنت‌های تیم مدیریت کنید.')
             agent = managed(session, app_id)
             if agent is None:
                 return
