@@ -6,6 +6,11 @@ from models.model import App
 
 def overview(s, actor):
     devices = source.devices(s, actor)['data']
+    from company_projects.harness import table as harness_table
+    hp=harness_table(s,'profiles')
+    profiles={}
+    for r in s.execute(sa.select(hp).where(hp.c.device_id.in_([d['id'] for d in devices]))).mappings():profiles.setdefault(str(r['device_id']),[]).append(dict(key=r['profile_key'],**r['metadata']))
+    devices=[dict(d,harnesses=profiles.get(str(d['id']),[])) for d in devices]
     projects = {str(p['id']): dict(id=str(p['id']), name=p['name'], workspace_id=str(p['workspace_id']), binding=None)
                 for p in access.list_for_account(s, actor) if p['workspace_id']}
     if not projects:
@@ -28,7 +33,7 @@ def overview(s, actor):
         # Select only display metadata. Secrets, inputs, model messages, code and outputs stay out.
         for pending, target, limit in ((True, active, 100), (False, recent, 20)):
             rows = s.execute(query.where(table.c.account_id == str(actor), table.c.project_id.in_(projects),
-                                         table.c.state.in_(source.ACTIVE) if pending else table.c.state.not_in(source.ACTIVE))
+                                         table.c.state.in_((*source.ACTIVE,'awaiting_user') if kind=='harness' else source.ACTIVE) if pending else table.c.state.not_in((*source.ACTIVE,'awaiting_user') if kind=='harness' else source.ACTIVE))
                              .order_by(table.c.created_at.desc()).limit(limit)).mappings()
             for row in rows:
                 state = row['state']
@@ -47,6 +52,9 @@ def overview(s, actor):
                 item = dict(id=str(row['id']), kind=kind, title=title, project_id=str(row['project_id']),
                             device_id=str(row['device_id']) if row['device_id'] else None,
                             state=state, created_at=row['created_at'].isoformat())
+                if kind=='harness':
+                    context=row['stage_context'] or {}
+                    item.update(agent_id=row['agent_id'],instance_id=context.get('instance_id'),stage_id=context.get('stage_id'))
                 (recent if pending and state == 'interrupted' else target).append(item)
 
     columns = lambda t: (t.c.id, t.c.project_id, t.c.device_id, t.c.state, t.c.created_at, t.c.lease_until)
@@ -54,6 +62,8 @@ def overview(s, actor):
     collect(executions, 'workflow', sa.select(*columns(executions), App.name.label('title'))
             .outerjoin(App, sa.and_(App.id == executions.c.app_id, App.tenant_id == executions.c.workspace_id)))
     collect(jobs, 'source', sa.select(*columns(jobs), jobs.c.snapshot['name'].astext.label('title')))
+    h=harness_table(s);a=agents.reflected(s,'company_team_agents')
+    collect(h,'harness',sa.select(h.c.attempt_id.label('id'),h.c.project_id,h.c.device_id,h.c.state,h.c.created_at,h.c.lease_until,h.c.snapshot['agent_id'].astext.label('agent_id'),h.c.snapshot['stage_context'].label('stage_context'),a.c.name.label('title')).join(a,a.c.id==h.c.snapshot['agent_id'].astext.cast(sa.Uuid())))
     rpc = local.table(s, 'local_rpc')
     collect(rpc, 'rpc', sa.select(*columns(rpc), rpc.c.method.label('title'), rpc.c.connection_kind))
     return dict(devices=devices, projects=list(projects.values()),

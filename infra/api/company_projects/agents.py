@@ -313,7 +313,10 @@ def validate_inputs(contract, inputs):
 
 
 def start(session, project_id, workspace_id, actor_id, agent_id, data, key):
-    body(data, ('inputs', 'expected_revision'))
+    body(data, ('inputs', 'expected_revision', *(('execution',) if 'execution' in data else ())))
+    selection=data.get('execution', {'method':'program'})
+    if not isinstance(selection,dict) or selection.get('method') not in ('program','harness'): raise BadRequest('روش اجرا معتبر نیست.')
+    if selection['method']=='program': body(selection,('method',))
     expected, key = revision(data['expected_revision']), action_key(key)
     scope = team.scope(session, project_id, workspace_id, actor_id)
     # Serialize with ACL updates and membership/owner changes, without requiring manager authority.
@@ -333,12 +336,20 @@ def start(session, project_id, workspace_id, actor_id, agent_id, data, key):
     if row['revision'] != expected:
         raise Conflict('تعریف ایجنت تغییر کرده است.')
     from company_projects.runtime_models import attempt_inputs, business_inputs
-    inputs = attempt_inputs(session, session.get(Workflow, row['workflow_id']), actor_id, data['inputs'])
+    if selection['method']=='harness':
+        from company_projects.runtime_models import INPUT
+        if not isinstance(data['inputs'],dict) or INPUT in data['inputs']: raise BadRequest('ورودی مدل کارا در مسیر هارنس پذیرفته نیست.')
+        inputs=data['inputs']
+    else:
+        inputs = attempt_inputs(session, session.get(Workflow, row['workflow_id']), actor_id, data['inputs'])
     validate_inputs(row['input_contract'], business_inputs(inputs))
     attempt = dict(id=str(uuid4()), agent_id=row['id'], **scope, actor_id=str(actor_id), membership_id=join.id,
         workflow_id=row['workflow_id'], inputs=inputs, request_digest=request_digest,
         correlation_id=key, status='pending', result=None, created_at=now())
     session.execute(attempts.insert().values(**attempt))
+    if selection['method']=='harness':
+        from company_projects import harness
+        harness.create(session,attempt,row,selection)
     event(session, scope, actor_id, key, request_digest, 'agent.run.requested', attempt_public(attempt))
     return attempt_public(attempt)
 

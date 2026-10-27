@@ -191,6 +191,8 @@ def execute(attempt_id):
     """Dispatch only. No graph, model or tool execution is permitted centrally."""
     from company_projects.local_execution import dispatch_team
     with Session(db.engine) as session, session.begin():
+        from company_projects import harness
+        if harness.is_attempt(session,attempt_id):return
         dispatch_team(session, attempt_id)
 
 
@@ -228,10 +230,15 @@ def dispatch_pending():
         expire(session)
         from company_projects.local_rpc import expire as expire_rpc
         expire_rpc(session)
+        from company_projects.harness import expire as expire_harness
+        expire_harness(session)
     dispatch_stops()
     with Session(db.engine) as session:
         _, _, attempts = agents.tables(session)
+        from company_projects.harness import table as harness_table
+        harness_jobs=harness_table(session)
         ids = list(session.scalars(sa.select(attempts.c.id).where(attempts.c.status == 'pending')
+            .where(~sa.exists(sa.select(1).select_from(harness_jobs).where(harness_jobs.c.attempt_id==attempts.c.id)))
             .order_by(attempts.c.created_at).limit(100)))
     for attempt_id in ids:
         execute_task.delay(attempt_id)

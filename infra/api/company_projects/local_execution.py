@@ -201,6 +201,8 @@ def expire(s):
     for row in rows: finish(s,dict(row),'interrupted',{'error':'ارتباط Runner قطع شد؛ برای جلوگیری از اجرای تکراری، ادامهٔ خودکار انجام نمی‌شود.'})
 
 def claim(s,runner):
+    from company_projects.harness import busy
+    if busy(s,runner['id']):return dict(job=None)
     expire(s); cap=table(s,'runner_capabilities'); capabilities=s.execute(sa.select(cap).where(cap.c.device_id==str(runner['id']))).mappings().first()
     if not capabilities or capabilities['protocol']!=PROTOCOL: return dict(job=None)
     t=table(s,'local_executions')

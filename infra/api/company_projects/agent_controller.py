@@ -83,3 +83,36 @@ class AgentDeleteApi(Resource):
         from company_projects.entity_deletion import remove
         return invoke(remove, project_id, agent_id, payload(), request.headers.get('Idempotency-Key'), \
             'agent')
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/agents/<uuid:agent_id>/harness-policy')
+class HarnessPolicyApi(Resource):
+    @guarded()
+    def get(self,project_id,agent_id):
+        from company_projects import harness
+        return invoke(harness.settings,project_id,agent_id)
+    @guarded()
+    def put(self,project_id,agent_id):
+        from company_projects import harness
+        return invoke(harness.save_policy,project_id,agent_id,payload())
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/agents/<uuid:agent_id>/attempts/<uuid:attempt_id>/harness')
+class HarnessAttemptApi(Resource):
+    @guarded()
+    def get(self,project_id,agent_id,attempt_id):
+        from company_projects import harness
+        return invoke(harness.console_detail,project_id,agent_id,attempt_id)
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/agents/<uuid:agent_id>/attempts/<uuid:attempt_id>/harness/<string:action>')
+class HarnessAttemptActionApi(Resource):
+    @guarded()
+    def post(self,project_id,agent_id,attempt_id,action):
+        from company_projects import harness
+        def operation(s,project,workspace,actor,agent,identity,body):
+            harness.console_detail(s,project,workspace,actor,agent,identity)
+            row=harness.load(s,identity,actor=actor,lock=True)
+            if action=='bundle':return harness.bundle(s,row)
+            if action=='cancel':return harness.cancel_console(s,project,workspace,actor,agent,identity)
+            if action=='submit':return harness.submit(s,row,body)
+            from werkzeug.exceptions import BadRequest
+            raise BadRequest('اقدام هارنس معتبر نیست.')
+        return invoke(operation,project_id,agent_id,attempt_id,payload())

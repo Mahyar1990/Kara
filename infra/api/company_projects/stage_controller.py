@@ -84,3 +84,10 @@ class StageControlApi(Resource):
         result = invoke(recovery.mutate, project_id, instance_id, stage_id, action, payload(), request.headers.get('Idempotency-Key'))
         signal_stops()
         return result
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/instances/<uuid:instance_id>/stages/<uuid:stage_id>/harness-submit')
+class HarnessStageSubmitApi(Resource):
+    @guarded()
+    def post(self,project_id,instance_id,stage_id):
+        from company_projects import harness
+        return invoke(harness.stage_submit,project_id,instance_id,stage_id,payload(),request.headers.get('Idempotency-Key'))

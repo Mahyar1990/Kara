@@ -273,7 +273,8 @@ def validate_output(binding, content):
 def new_artifact(session, stage, content, actor, membership, attempt_id, *, parent=None, reason=''):
     artifacts = tables(session)[4]
     validate_output(stage['binding'], content)
-    kind = 'human' if parent else 'workflow'
+    from company_projects.harness import is_attempt
+    kind = 'human' if parent else 'harness' if is_attempt(session,attempt_id) else 'workflow'
     version = (session.scalar(sa.select(sa.func.max(artifacts.c.version)).where(artifacts.c.stage_id == stage['id'])) or 0) + 1
     row = dict(id=str(uuid4()), stage_id=stage['id'], project_id=stage['project_id'], workspace_id=stage['workspace_id'],
         version=version, round=stage['round'], input_digest=stage['input_digest'], content=content, kind=kind,
@@ -346,6 +347,8 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
     result['controls'] = stage_controls(session, scope, value, stage, actor)
     from company_projects.team_inbox import handoffs
     result['handoffs'] = handoffs(session, value, stage) if not result['input_error'] else []
+    from company_projects import harness
+    result['harness'] = harness.stage_info(session,stage,actor)
     return result
 
 
@@ -354,8 +357,9 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         edit_output=('artifact_id', 'content', 'reason'), request_decision=('artifact_id',), finalize=('artifact_id', 'reason'))
     if action not in fields:
         raise BadRequest('اقدام مرحله معتبر نیست.')
+    optional_execution = ('execution',) if action=='run' and isinstance(data,dict) and 'execution' in data else ()
     optional_model = ('model_connection_id',) if action == 'run' and isinstance(data, dict) and 'model_connection_id' in data else ()
-    agents.body(data, ('expected_revision', *fields[action], *optional_model))
+    agents.body(data, ('expected_revision', *fields[action], *optional_model, *optional_execution))
     expected, key = agents.revision(data['expected_revision']), agents.action_key(key)
     scope = scoped(session, project, workspace, actor, write=True)
     value = instance(session, scope, instance_id)
@@ -391,9 +395,11 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         from company_projects.runtime_models import INPUT
         run_inputs = dict(inputs, **{INPUT: data['model_connection_id']}) if optional_model else inputs
         attempt = agents.start(session, project, workspace, actor, agent['id'],
-            dict(inputs=run_inputs, expected_revision=stage['binding']['agent_revision']), inner_key)
+            dict(inputs=run_inputs, expected_revision=stage['binding']['agent_revision'], **({'execution':data['execution']} if optional_execution else {})), inner_key)
         session.execute(bridge.insert().values(attempt_id=attempt['id'], stage_id=stage['id'], **scope,
             round=stage['round'], input_digest=digest, created_at=agents.now()))
+        from company_projects.harness import bind_stage
+        bind_stage(session,attempt['id'],stage,value,digest,dependencies)
         changes.update(state='running', active_attempt_id=attempt['id'], inputs=inputs, dependencies=dependencies,
             input_digest=digest, selected_artifact_id=None)
     elif action == 'retry':

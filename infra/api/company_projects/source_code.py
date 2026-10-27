@@ -152,6 +152,8 @@ def revoke(s,actor,device_id):
     jobs=table(s,'jobs'); s.execute(jobs.update().where(jobs.c.device_id==value['id'],jobs.c.state.in_(ACTIVE)).values(state='cancelled',finished_at=now))
     from company_projects.local_execution import revoke_device
     revoke_device(s,value['id'])
+    from company_projects.harness import revoke_device as revoke_harness
+    revoke_harness(s,value['id'])
     return dict(revoked=True)
 
 def validate_snapshot(s,job):
@@ -183,6 +185,8 @@ def cancel(s,project,workspace,actor,job_id):
     return dict(cancelled=True)
 
 def claim(s,runner):
+    from company_projects.harness import busy
+    if busy(s,runner['id']):return dict(job=None)
     expire(s); t=table(s,'jobs')
     candidates=s.execute(sa.select(t).where(t.c.device_id==runner['id'],t.c.account_id==runner['account_id'],t.c.state=='pending').order_by(t.c.created_at).with_for_update(skip_locked=True).limit(1)).mappings().first()
     if not candidates: return dict(job=None)

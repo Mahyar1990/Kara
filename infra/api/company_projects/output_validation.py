@@ -86,6 +86,8 @@ def execute(code, inputs):
 def validate(session, stage, selected, content):
     from company_projects.stages import validate_output
     validate_output(stage['binding'], content)
+    from company_projects import harness
+    if harness.is_attempt(session,selected['attempt_id']):return harness.validate_artifact(session,stage,selected,content)
     workflow = session.get(Workflow, stage['binding']['workflow_id'])
     if not workflow or agents.fingerprint(workflow) != stage['binding']['workflow_digest']:
         raise Conflict('نسخهٔ اعتبارسنج با نسخهٔ ثابت مرحله یکسان نیست.')

@@ -191,3 +191,37 @@ class LocalRpcHeartbeat(Resource):
 @console_ns.route('/company/source-runner/rpc/<uuid:execution_id>/complete')
 class LocalRpcComplete(Resource):
     def post(self,execution_id): return device_call(local_rpc.complete,execution_id,execution_payload())
+
+# Harness registration contains display metadata/digests only; commands stay local.
+@console_ns.route('/company/me/source-runners/harnesses')
+class HarnessProfiles(Resource):
+    @guarded()
+    def get(self):
+        from company_projects import harness
+        return console(harness.profiles)
+
+@console_ns.route('/company/source-runner/harness/register')
+class HarnessRegister(Resource):
+    def post(self):
+        from company_projects import harness
+        return device_call(harness.register,source_payload())
+
+@console_ns.route('/company/source-runner/harness/claim')
+class HarnessClaim(Resource):
+    def post(self):
+        from company_projects import harness
+        return device_call(harness.claim)
+
+@console_ns.route('/company/source-runner/harness/<uuid:identity>/<string:action>')
+class HarnessRunnerAction(Resource):
+    def post(self,identity,action):
+        from company_projects import harness
+        if action=='heartbeat':return device_call(harness.heartbeat,identity)
+        if action=='prepared':return device_call(harness.prepared,identity,source_payload())
+        if action=='complete':return device_call(harness.complete,identity,execution_payload())
+        if action=='fail':return device_call(harness.fail,identity,source_payload())
+        if action=='bundle':
+            def bundle(s,runner,identity):return harness.bundle(s,harness.load(s,identity,runner=runner))
+            return device_call(bundle,identity)
+        from werkzeug.exceptions import BadRequest
+        raise BadRequest('اقدام هارنس معتبر نیست.')

@@ -4,6 +4,7 @@ import hashlib
 import sqlalchemy as sa
 from company_projects.source_schema import SQL as SOURCE_SCHEMA
 from company_projects.local_execution_schema import SQL as LOCAL_EXECUTION_SCHEMA, RPC_SQL
+from company_projects.harness_schema import SQL as HARNESS_SCHEMA
 
 
 ROLE_SCHEMA = """
@@ -345,7 +346,7 @@ CREATE TABLE company_user_gitlab_connections (
 MIGRATIONS = (('001_team_roles', ROLE_SCHEMA), ('002_team_agents', AGENT_SCHEMA), ('003_team_flows', FLOW_SCHEMA),
               ('004_team_requests', REQUEST_SCHEMA), ('005_team_stages', STAGE_SCHEMA), ('006_team_recovery', RECOVERY_SCHEMA),
               ('007_jira_intake', JIRA_SCHEMA), ('008_shared_agent_apps', SHARED_AGENT_APP_SCHEMA),
-              ('009_personal_jira_connections', PERSONAL_JIRA_SCHEMA), ('010_personal_models', PERSONAL_MODEL_SCHEMA), ('011_team_deletion', TEAM_DELETE_SCHEMA), ('012_personal_gitlab', PERSONAL_GITLAB_SCHEMA), ('013_source_workspaces', SOURCE_SCHEMA), ('014_local_execution', LOCAL_EXECUTION_SCHEMA), ('015_local_rpc', RPC_SQL))
+              ('009_personal_jira_connections', PERSONAL_JIRA_SCHEMA), ('010_personal_models', PERSONAL_MODEL_SCHEMA), ('011_team_deletion', TEAM_DELETE_SCHEMA), ('012_personal_gitlab', PERSONAL_GITLAB_SCHEMA), ('013_source_workspaces', SOURCE_SCHEMA), ('014_local_execution', LOCAL_EXECUTION_SCHEMA), ('015_local_rpc', RPC_SQL), ('016_harness_execution', HARNESS_SCHEMA))
 
 
 def checksum(sql):

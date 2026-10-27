@@ -103,6 +103,8 @@ def expire(s):
     s.execute(t.update().where(t.c.state=='running',t.c.lease_until<now).values(state='interrupted',finished_at=now,result={'error':'runner_disconnected'}))
 
 def claim(s,runner):
+    from company_projects.harness import busy
+    if busy(s,runner['id']):return dict(job=None)
     expire(s);cap=local.table(s,'runner_capabilities');current=s.execute(sa.select(cap).where(cap.c.device_id==str(runner['id']))).mappings().first()
     if not current or current['protocol']!=2:return dict(job=None)
     t=table(s)
