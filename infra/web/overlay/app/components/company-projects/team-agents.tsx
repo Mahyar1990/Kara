@@ -44,7 +44,7 @@ function useAction() {
   return { busy, error, run }
 }
 
-function RegisterAgent({ project, refresh }: { project: string; refresh: () => Promise<unknown> }) {
+function RegisterAgent({ project, refresh }: { project: string; refresh: (createdId?: string) => Promise<unknown> }) {
   const [open, setOpen] = useState(false)
   const sources = useQuery({ queryKey: ['team-agent-sources', project], queryFn: () => agentApi.sources(project), enabled: open })
   const [workflowId, setWorkflowId] = useState('')
@@ -56,7 +56,7 @@ function RegisterAgent({ project, refresh }: { project: string; refresh: () => P
   const save = () => {
     if (!source) return
     const body = { app_id: source.app_id, workflow_id: source.workflow_id, name, description, expected_revision: 1 }
-    void action.run(body, async key => { await agentApi.register(project, body, key); setName(''); setDescription(''); setWorkflowId(''); setReviewed(false); setOpen(false); await refresh() })
+    void action.run(body, async key => { const created = await agentApi.register(project, body, key); await refresh(created.id); setName(''); setDescription(''); setWorkflowId(''); setReviewed(false); setOpen(false) })
   }
   return <>
     <Button variant="primary" onClick={() => setOpen(true)}>ایجاد ایجنت</Button>
@@ -178,6 +178,14 @@ export default function TeamAgents({ projectId }: { projectId: string }) {
     focused.current = marker; setQuery(''); setStatus('all'); setPermission('all'); setSort('registered'); setPage(Math.floor(index / 8) + 1)
   }, [linkedAgent, linkedAttempt, list.data, workspace, projectId])
   const refresh = async () => { const value = await list.refetch(); void cache.invalidateQueries({ queryKey: ['company-projects', workspace, projectId, 'overview'] }); return value }
+  const registered = async (identity?: string) => {
+    const fresh = await refresh()
+    if (fresh.isError) throw new Error('Refresh failed')
+    setQuery(''); setStatus('active'); setPermission('all'); setSort('registered')
+    const index = fresh.data.data.filter(agent => !agent.archived).findIndex(agent => agent.id === identity)
+    setPage(Math.floor(Math.max(0, index) / 8) + 1)
+    return fresh
+  }
   const values = list.data?.data || []
   const ordered = sort === 'name' ? [...values].sort((a, b) => a.name.localeCompare(b.name, 'fa')) : values
   const filtered = ordered.filter(agent => matchesSearch(query, agent.name, agent.description) && (status === 'all' || (status === 'archived' ? agent.archived : !agent.archived)) && (permission === 'all' || (!agent.archived && agent.actions.includes(permission as AgentAction))))
@@ -185,7 +193,7 @@ export default function TeamAgents({ projectId }: { projectId: string }) {
   const visible = new Set(results.items.map(agent => agent.id))
   const hasFilters = !!query.trim() || status !== 'all' || permission !== 'all' || sort !== 'registered'
   const reset = () => { setQuery(''); setStatus('all'); setPermission('all'); setSort('registered'); setPage(1) }
-  return <DirectoryPage project={projectId} title="ایجنت‌های تیم" description="ایجنت مناسب کار خود را پیدا کنید، ورودی‌ها را بررسی و روش اجرا را انتخاب کنید. تنظیم دسترسی اعضا با مدیر پروژه است." actions={<><button className={directoryButton} disabled={!entered || list.isFetching} onClick={() => void refresh()}>{list.isFetching ? 'در حال تازه‌سازی…' : 'تازه‌سازی'}</button>{entered && list.data?.can_manage && <RegisterAgent project={projectId} refresh={refresh} />}</>}>
+  return <DirectoryPage project={projectId} title="ایجنت‌های تیم" description="ایجنت مناسب کار خود را پیدا کنید، ورودی‌ها را بررسی و روش اجرا را انتخاب کنید. تنظیم دسترسی اعضا با مدیر پروژه است." actions={<><button className={directoryButton} disabled={!entered || list.isFetching} onClick={() => void refresh()}>{list.isFetching ? 'در حال تازه‌سازی…' : 'تازه‌سازی'}</button>{entered && list.data?.can_manage && <RegisterAgent project={projectId} refresh={registered} />}</>}>
     <DirectoryNotice project={projectId} entered={!!entered} loading={context.isPending || (!!entered && list.isPending)} error={context.isError || (!!entered && list.isError)} retry={() => context.isError ? context.refetch() : refresh()} />
     {entered && list.data && <>
       {list.isError && <p role="status" className="text-sm leading-7 text-text-secondary">آخرین فهرست دریافت‌شده نمایش داده می‌شود؛ تازه‌سازی موفق نبوده است.</p>}
