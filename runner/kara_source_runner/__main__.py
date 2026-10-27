@@ -39,6 +39,8 @@ def main():
             job=client.post('harness/'+args.attempt+'/bundle');target=harness_runtime.prepare(job,config,args.root)
             client.post('harness/'+args.attempt+'/prepared',dict(snapshot_digest=job['snapshot_digest']))
             print('Task directory:',target/'worktree');return
+        # Deliver completed work under its original profile before changing registration.
+        harness_runtime.flush(client,config,args.root)
         registered=harness_runtime.profiles(args.harness_config,args.allow_harness)
         client.post('harness/register',dict(profiles=harness_runtime.registration(registered)))
         capabilities=['workflow-v2','http','source-v1']

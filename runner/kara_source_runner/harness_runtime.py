@@ -181,7 +181,13 @@ def deliver(client,target):
             client.post('harness/'+identity+'/fail',dict(snapshot_digest=value['body']['snapshot_digest'],error='invalid_result'))
             pending.rename(target/'invalid-result.json')
         elif getattr(error,'status',None) in (403,404,409):pending.rename(target/'rejected.json')
-        else:raise
+        else:
+            if getattr(error,'status',None)==503 and value['action']=='complete':
+                # Completion may wait for another stage transaction; keep its live lease separately.
+                # A lost success ACK can make this heartbeat return 409: retry completion anyway.
+                try:client.post('harness/'+identity+'/heartbeat')
+                except ApiError:pass
+            raise
 
 def flush(client,config,root):
     base=Path(root).expanduser().resolve()/'.kara-harness'/owner_id(config['server'],config['secret'])
