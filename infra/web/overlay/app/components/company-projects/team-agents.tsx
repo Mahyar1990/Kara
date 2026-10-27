@@ -8,9 +8,9 @@ import RuntimeModelPicker from './runtime-model-picker'
 import { RUNTIME_MODEL_INPUT } from '@/utils/company-runtime-model'
 import type { AgentAction, AgentAttempt, AgentGrants, TeamAgent } from '@/service/company-agents'
 import { Button } from '@langgenius/dify-ui/button'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { currentWorkspaceIdAtom } from '@/context/workspace-state'
 import Link from '@/next/link'
 import { useSearchParams } from '@/next/navigation'
@@ -18,11 +18,12 @@ import { agentApi } from '@/service/company-agents'
 import { projectApi } from '@/service/company-projects'
 import DeleteTeamEntity from './delete-team-entity'
 import FormDialog, { FieldHelp } from './form-dialog'
+import { DirectoryPage, DirectoryNotice, DirectorySummary, DirectoryToolbar, DirectoryPagination, DirectoryEmpty, directoryButton, directoryField, matchesSearch, resultPage, number } from './team-directory'
 
 const button = 'rounded-lg border border-divider-regular bg-components-panel-bg px-4 py-2 text-sm text-text-primary disabled:opacity-50'
 const primary = `${button} bg-components-button-primary-bg text-components-button-primary-text`
 const field = 'mt-2 block w-full rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary'
-const panel = 'space-y-4 rounded-2xl border border-divider-regular bg-background-default p-5'
+const panel = 'min-w-0 space-y-4 [overflow-wrap:anywhere] rounded-2xl border border-divider-regular bg-background-default p-5'
 const actions: [AgentAction, string][] = [['view', 'مشاهده'], ['run', 'اجرا'], ['feedback', 'بازخورد'], ['finalize', 'نهایی‌سازی'], ['edit_definition', 'ویرایش برنامه'], ['publish_definition', 'انتشار برنامه']]
 const states: Record<AgentAttempt['status'], string> = { pending: 'در صف اجرا', running: 'در حال اجرا', succeeded: 'اجرای موفق', failed: 'اجرای ناموفق', blocked: 'اجرا متوقف شد؛ دسترسی یا نسخه تغییر کرده است', interrupted: 'نیازمند بررسی مسئول پروژه' }
 
@@ -62,7 +63,7 @@ function RegisterAgent({ project, refresh }: { project: string; refresh: () => P
     <FormDialog open={open} title="ثبت ایجنت تیمی" description="یک نسخهٔ منتشرشدهٔ برنامه را به ایجنت تیم تبدیل کنید. نسخهٔ انتخاب‌شده ثابت می‌ماند و اجرا از مسیر مجوزهای تیمی انجام می‌شود. پس از ثبت، مجوز اعضا را تعیین کنید." busy={action.busy} close={() => setOpen(false)}>
       <form className="space-y-4" aria-label="ثبت ایجنت تیمی" onSubmit={event => { event.preventDefault(); if (source && reviewed) save() }}>
         <fieldset disabled={action.busy} className="space-y-4">
-          {sources.isError ? <p role="alert">دریافت برنامه‌ها انجام نشد.</p> : sources.isPending ? <p role="status">در حال دریافت برنامه‌ها…</p> : !sources.data.data.length && <p>ابتدا یک فرایند با شروع دستی و خروجی مشخص در همین پروژه بسازید و منتشر کنید.</p>}
+          {sources.isError ? <p role="alert">دریافت برنامه‌ها انجام نشد. <button type="button" className={button} onClick={() => void sources.refetch()}>تلاش دوباره</button></p> : sources.isPending ? <p role="status">در حال دریافت برنامه‌ها…</p> : !sources.data.data.length && <p>ابتدا یک فرایند با شروع دستی و خروجی مشخص در همین پروژه بسازید و منتشر کنید.</p>}
           <label className="block text-sm">نسخهٔ برنامه<select required className={field} value={workflowId} onChange={event => setWorkflowId(event.target.value)}><option value="">انتخاب کنید</option>{sources.data?.data.map(value => <option key={value.workflow_id} value={value.workflow_id}>{value.app_name} · {value.version}</option>)}</select><FieldHelp>از یک برنامه می‌توانید چند ایجنت با مجوزها و سابقهٔ مستقل بسازید. انتشار بعدی برنامه، نسخهٔ متصل به این ایجنت را تغییر نمی‌دهد.</FieldHelp></label>
           <label className="block text-sm">نام ایجنت<input required maxLength={120} className={field} value={name} onChange={event => setName(event.target.value)} /><FieldHelp>نامی متناسب با وظیفهٔ ایجنت بنویسید تا اعضای تیم آن را به‌راحتی پیدا کنند.</FieldHelp></label>
           <label className="block text-sm">توضیح<textarea maxLength={2000} className={field} value={description} onChange={event => setDescription(event.target.value)} /><FieldHelp>کار ایجنت، ورودی مورد نیاز و مسئول بررسی نتیجه را توضیح دهید؛ این متن دستورالعمل اجرای مدل نیست.</FieldHelp></label>
@@ -123,17 +124,82 @@ function RunAgent({ project, agent }: { project: string; agent: TeamAgent }) {
 }
 
 function AgentCard({ project, agent, canManage, refresh }: { project: string; agent: TeamAgent; canManage: boolean; refresh: () => Promise<unknown> }) {
+  const params = useSearchParams()
+  const incoming = params.get('agent') === agent.id && /^[a-f0-9-]{36}$/.test(params.get('harness_attempt') || '')
+  const [runOpen, setRunOpen] = useState(incoming)
+  const [runMounted, setRunMounted] = useState(incoming)
   const [editing, setEditing] = useState(false)
+  const [grantsMounted, setGrantsMounted] = useState(false)
+  const [configOpen, setConfigOpen] = useState(false)
+  const [configMounted, setConfigMounted] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const action = useAction()
-  return <article className={panel}><header className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">{agent.name}{agent.archived && ' · بایگانی‌شده'}</h2>{canManage && <div className="flex gap-3"><button className={button} onClick={() => setEditing(!editing)}>مجوزهای اعضا</button>{!agent.archived && <button className={button} onClick={() => setArchiving(!archiving)}>بایگانی ایجنت</button>}<button className={button} onClick={() => setDeleting(true)}>حذف ایجنت</button></div>}</header><p className="whitespace-pre-wrap text-sm leading-7 text-text-secondary">{agent.description}</p><details className="text-xs text-text-tertiary"><summary className="cursor-pointer">نسخهٔ برنامهٔ انتخاب‌شده</summary><p className="mt-2 break-all" dir="ltr">{agent.workflow_id}</p></details><p className="text-sm text-text-secondary">مجوزهای شما: {agent.actions.length ? actions.filter(([key]) => agent.actions.includes(key)).map(([, label]) => label).join('، ') : 'مجوز عملیاتی تعیین نشده'}</p>{archiving && <div className="space-y-3 rounded-lg border border-divider-regular p-4"><p>با بایگانی، اجرای تازه و دسترسی عملیاتی این ایجنت متوقف می‌شود. سابقه حفظ خواهد شد.</p><button disabled={action.busy} className={button} onClick={() => action.run({ archive: agent.id, revision: agent.revision }, async key => { await agentApi.archive(project, agent.id, agent.revision, key); await refresh(); setArchiving(false) })}>تأیید بایگانی</button></div>}{action.error && <p role="alert">{action.error}</p>}{canManage && editing && <GrantEditor project={project} agent={agent} refresh={refresh} />}{!agent.archived && agent.actions.includes('publish_definition') && <HarnessPolicyEditor project={project} agent={agent.id} />}{!agent.archived && agent.actions.includes('run') && <RunAgent project={project} agent={agent} />}{canManage && deleting && <DeleteTeamEntity project={project} kind="agent" value={agent} close={() => setDeleting(false)} deleted={refresh} />}</article>
+  useEffect(() => { if (incoming) { setRunMounted(true); setRunOpen(true) } }, [incoming])
+  return <article className={panel}>
+    <header className="flex min-w-0 flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="mb-2 text-xs font-medium text-text-accent">{agent.archived ? 'بایگانی‌شده؛ اجرای تازه غیرفعال است' : agent.actions.includes('run') ? 'مجوز اجرا دارید' : 'دسترسی شما: مشاهده و بررسی'}</p><h2 className="break-words text-xl font-semibold leading-8">{agent.name}</h2></div><span className="text-xs leading-6 text-text-tertiary">{number(agent.input_contract.length)} ورودی · {number(agent.output_contract.length)} خروجی</span></header>
+    {agent.description && <p className="line-clamp-2 whitespace-pre-wrap text-sm leading-7 text-text-secondary">{agent.description}</p>}
+    <div className="flex flex-wrap items-center gap-2">
+      {!agent.archived && agent.actions.includes('run') && <button aria-expanded={runOpen} aria-controls={`agent-run-${agent.id}`} className={primary} onClick={() => { setRunMounted(true); setRunOpen(!runOpen) }}>{runOpen ? 'بستن پنل اجرا' : 'ورودی‌ها و اجرا'}</button>}
+      {canManage && <><button className={button} aria-expanded={editing} aria-controls={`agent-grants-${agent.id}`} onClick={() => { setGrantsMounted(true); setEditing(!editing) }}>{editing ? 'بستن مجوزها' : 'مجوزهای اعضا'}</button><details><summary className={`${button} cursor-pointer`}>مدیریت ایجنت</summary><div className="mt-3 flex flex-wrap items-center gap-2">{!agent.archived && <button className={button} disabled={action.busy} onClick={() => setArchiving(!archiving)}>بایگانی ایجنت</button>}<button className={`${button} text-text-destructive-secondary`} disabled={action.busy} onClick={() => setDeleting(true)}>حذف ایجنت</button></div></details></>}
+      {!agent.archived && agent.actions.includes('publish_definition') && <button className={button} aria-expanded={configOpen} onClick={() => { setConfigMounted(true); setConfigOpen(!configOpen) }}>{configOpen ? 'بستن تنظیم روش اجرا' : 'اجازهٔ هارنس شخصی'}</button>}
+    </div>
+    <details className="text-sm"><summary className="cursor-pointer text-text-secondary">شرح، ورودی‌ها و مجوزهای من</summary><div className="mt-3 space-y-3 rounded-xl bg-background-section p-4">{agent.description && <p className="whitespace-pre-wrap leading-7">{agent.description}</p>}<p className="text-xs leading-6 text-text-secondary">مجوزهای شما: {agent.actions.length ? actions.filter(([key]) => agent.actions.includes(key)).map(([, label]) => label).join('، ') : 'مجوز عملیاتی تعیین نشده'}</p><p className="text-xs leading-6">ورودی‌ها: {agent.input_contract.map(item => `${item.label}${item.required ? ' (الزامی)' : ''}`).join('، ') || 'ورودی دستی ندارد'}</p><p className="text-xs leading-6">خروجی‌ها: {agent.output_contract.join('، ') || 'تعریف نشده'}</p><details className="text-xs text-text-tertiary"><summary className="cursor-pointer">شناسهٔ نسخهٔ برنامه</summary><p className="mt-2 break-all" dir="ltr">{agent.workflow_id}</p></details></div></details>
+    {archiving && <section className="space-y-3 rounded-xl border border-divider-regular p-4"><p className="text-sm leading-7">با بایگانی، اجرای تازه و دسترسی عملیاتی این ایجنت متوقف می‌شود. سابقه حفظ خواهد شد.</p><div className="flex flex-wrap gap-2"><button disabled={action.busy} className={button} onClick={() => action.run({ archive: agent.id, revision: agent.revision }, async key => { await agentApi.archive(project, agent.id, agent.revision, key); await refresh(); setArchiving(false) })}>تأیید بایگانی</button><button className={button} disabled={action.busy} onClick={() => setArchiving(false)}>انصراف</button></div></section>}
+    {action.error && <p role="alert">{action.error}</p>}
+    {canManage && grantsMounted && <div id={`agent-grants-${agent.id}`} hidden={!editing}><GrantEditor project={project} agent={agent} refresh={refresh} /></div>}
+    {!agent.archived && agent.actions.includes('publish_definition') && configMounted && <div hidden={!configOpen}><HarnessPolicyEditor project={project} agent={agent.id} /></div>}
+    {!agent.archived && agent.actions.includes('run') && runMounted && <div id={`agent-run-${agent.id}`} hidden={!runOpen}><RunAgent project={project} agent={agent} /></div>}
+    {canManage && deleting && <DeleteTeamEntity project={project} kind="agent" value={agent} close={() => setDeleting(false)} deleted={refresh} />}
+  </article>
 }
 
 export default function TeamAgents({ projectId }: { projectId: string }) {
   const workspace = useAtomValue(currentWorkspaceIdAtom)
+  const cache = useQueryClient()
+  const params = useSearchParams()
+  const linkedAgent = params.get('agent')
+  const linkedAttempt = params.get('harness_attempt')
+  const focused = useRef('')
   const context = useQuery({ queryKey: ['company-context', workspace], queryFn: projectApi.context, enabled: !!workspace })
   const entered = context.data?.current_project?.id === projectId
   const list = useQuery({ queryKey: ['team-agents', workspace, projectId], queryFn: () => agentApi.list(projectId), enabled: entered })
-  return <main dir="rtl" className="h-full overflow-y-auto bg-background-body p-5 text-text-primary md:p-8"><div className="mx-auto max-w-5xl space-y-6"><Link href={`/projects/${projectId}`} className="text-sm text-text-accent">نمای کلی پروژه ←</Link><header><h1 className="text-3xl font-bold">ایجنت‌های تیم</h1><p className="mt-3 text-sm leading-7 text-text-secondary">ایجنت‌های مجاز خود را با ورودی مشخص اجرا کنید. مدیر پروژه و ادمین کل دسترسی اعضا را تعیین می‌کنند.</p></header>{!entered ? <p role="status">ابتدا وارد فضای همین پروژه شوید.</p> : list.isSuccess ? <>{list.data.can_manage && <RegisterAgent project={projectId} refresh={list.refetch} />}{!list.data.data.length && <p className={panel}>ایجنت قابل دسترسی برای شما ثبت نشده است.</p>}{list.data.data.map(agent => <AgentCard key={`${workspace}:${agent.id}:${agent.revision}`} project={projectId} agent={agent} canManage={list.data.can_manage} refresh={list.refetch} />)}</> : <p role={list.isError ? 'alert' : 'status'}>{list.isError ? 'دریافت ایجنت‌ها انجام نشد.' : 'در حال دریافت ایجنت‌ها…'}</p>}<button className={button} disabled={!entered || list.isFetching} onClick={() => list.refetch()}>دریافت فهرست تازهٔ ایجنت‌ها</button></div></main>
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState('active')
+  const [permission, setPermission] = useState('all')
+  const [sort, setSort] = useState('registered')
+  const [page, setPage] = useState(1)
+  useEffect(() => { setQuery(''); setStatus('active'); setPermission('all'); setSort('registered'); setPage(1) }, [workspace, projectId])
+  useEffect(() => {
+    const marker = `${workspace}:${projectId}:${linkedAgent}:${linkedAttempt}`
+    if (!linkedAgent || !list.data || focused.current === marker) return
+    const index = list.data.data.findIndex(agent => agent.id === linkedAgent)
+    if (index < 0) return
+    focused.current = marker; setQuery(''); setStatus('all'); setPermission('all'); setSort('registered'); setPage(Math.floor(index / 8) + 1)
+  }, [linkedAgent, linkedAttempt, list.data, workspace, projectId])
+  const refresh = async () => { const value = await list.refetch(); void cache.invalidateQueries({ queryKey: ['company-projects', workspace, projectId, 'overview'] }); return value }
+  const values = list.data?.data || []
+  const ordered = sort === 'name' ? [...values].sort((a, b) => a.name.localeCompare(b.name, 'fa')) : values
+  const filtered = ordered.filter(agent => matchesSearch(query, agent.name, agent.description) && (status === 'all' || (status === 'archived' ? agent.archived : !agent.archived)) && (permission === 'all' || (!agent.archived && agent.actions.includes(permission as AgentAction))))
+  const results = resultPage(filtered, page)
+  const visible = new Set(results.items.map(agent => agent.id))
+  const hasFilters = !!query.trim() || status !== 'all' || permission !== 'all' || sort !== 'registered'
+  const reset = () => { setQuery(''); setStatus('all'); setPermission('all'); setSort('registered'); setPage(1) }
+  return <DirectoryPage project={projectId} title="ایجنت‌های تیم" description="ایجنت مناسب کار خود را پیدا کنید، ورودی‌ها را بررسی و روش اجرا را انتخاب کنید. تنظیم دسترسی اعضا با مدیر پروژه است." actions={<><button className={directoryButton} disabled={!entered || list.isFetching} onClick={() => void refresh()}>{list.isFetching ? 'در حال تازه‌سازی…' : 'تازه‌سازی'}</button>{entered && list.data?.can_manage && <RegisterAgent project={projectId} refresh={refresh} />}</>}>
+    <DirectoryNotice project={projectId} entered={!!entered} loading={context.isPending || (!!entered && list.isPending)} error={context.isError || (!!entered && list.isError)} retry={() => context.isError ? context.refetch() : refresh()} />
+    {entered && list.data && <>
+      {list.isError && <p role="status" className="text-sm leading-7 text-text-secondary">آخرین فهرست دریافت‌شده نمایش داده می‌شود؛ تازه‌سازی موفق نبوده است.</p>}
+      <DirectorySummary items={[{ label: 'کل ایجنت‌های در دسترس', count: values.length }, { label: 'غیربایگانی', count: values.filter(agent => !agent.archived).length }, { label: 'دارای مجوز اجرای من', count: values.filter(agent => !agent.archived && agent.actions.includes('run')).length }, { label: 'بایگانی‌شده', count: values.filter(agent => agent.archived).length }]} />
+      <DirectoryToolbar query={query} change={value => { setQuery(value); setPage(1) }} placeholder="نام یا توضیح ایجنت" filtered={filtered.length} total={values.length} hasFilters={hasFilters} reset={reset}>
+        <label className="min-w-0 flex-1 basis-36 text-sm">وضعیت<select className={directoryField} value={status} onChange={event => { setStatus(event.target.value); setPage(1) }}><option value="active">غیربایگانی</option><option value="all">همهٔ ایجنت‌ها</option><option value="archived">بایگانی‌شده</option></select></label>
+        <label className="min-w-0 flex-1 basis-40 text-sm">مجوز من<select className={directoryField} value={permission} onChange={event => { setPermission(event.target.value); setPage(1) }}><option value="all">همهٔ موارد در دسترس</option><option value="run">اجرای ایجنت</option><option value="finalize">نهایی‌سازی</option><option value="publish_definition">انتشار برنامه</option></select></label>
+        <label className="min-w-0 flex-1 basis-36 text-sm">ترتیب نمایش<select className={directoryField} value={sort} onChange={event => { setSort(event.target.value); setPage(1) }}><option value="registered">ترتیب ثبت</option><option value="name">نام ایجنت</option></select></label>
+      </DirectoryToolbar>
+      {!results.items.length && <DirectoryEmpty filtered={hasFilters && !!values.length} title="ایجنتی در دسترس شما نیست" reset={reset}>مدیر پروژه، نسخهٔ منتشرشدهٔ برنامه را ثبت و مجوزهای هر ایجنت را برای اعضا مشخص می‌کند.</DirectoryEmpty>}
+      <ul aria-label="فهرست ایجنت‌های تیم" className="m-0 list-none space-y-4 p-0">{ordered.map(agent => <li key={`${workspace}:${projectId}:${agent.id}:${agent.revision}`} hidden={!visible.has(agent.id)} className="min-w-0"><AgentCard project={projectId} agent={agent} canManage={list.data.can_manage} refresh={refresh} /></li>)}</ul>
+      <DirectoryPagination value={results} change={setPage} />
+      <p className="text-xs leading-6 text-text-tertiary">باز کردن پنل، اجرا را شروع نمی‌کند. بستن پنل یا تغییر فیلتر، اجرای در حال انجام را لغو نمی‌کند. برای انجام مرحلهٔ یک فلو، از کارتابل همان مرحله استفاده کنید.</p>
+      <Link className="inline-block text-sm text-text-accent" href={`/projects/${projectId}/inbox`}>کارتابل و اقدام‌های من ←</Link>
+    </>}
+  </DirectoryPage>
 }
