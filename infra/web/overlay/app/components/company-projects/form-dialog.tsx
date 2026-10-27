@@ -19,8 +19,8 @@ export default function FormDialog({ open, title, description, busy = false, wid
   children: ReactNode
 }) {
   return <Dialog open={open} onOpenChange={next => { if (!next && !busy) close() }}>
-    <DialogContent dir="rtl" className={`w-[calc(100vw-2rem)] ${wide ? 'max-w-5xl' : 'max-w-2xl'}`}>
-      <DialogTitle className="pe-10">{title}</DialogTitle>
+    <DialogContent dir="rtl" className={`max-h-[90dvh] w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain ${wide ? 'max-w-5xl' : 'max-w-2xl'}`}>
+      <DialogTitle className="min-w-0 break-words pe-10 [overflow-wrap:anywhere]">{title}</DialogTitle>
       <DialogDescription className="mt-2 leading-7">{description}</DialogDescription>
       <div className="mt-5">{children}</div>
       {error && <p role="alert" className="mt-4 text-sm leading-7 text-text-destructive-secondary">{error}</p>}
