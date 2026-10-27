@@ -11,6 +11,7 @@ from models.workflow import Workflow
 ACTIVE=('pending','running','awaiting_user')
 TERMINAL=('succeeded','failed','cancelled','interrupted','blocked')
 KEY=re.compile(r'[a-z][a-z0-9_-]{0,63}')
+SNAPSHOT_MAX_BYTES=8388608
 
 def table(s,name='attempts'):
     cache=s.info.setdefault('company_harness_tables',{})
@@ -31,6 +32,7 @@ def compatible(s,agent):
     workflow=s.get(Workflow,agent['workflow_id'])
     if not workflow or agents.fingerprint(workflow)!=agent['workflow_digest']: return 'نسخهٔ برنامه تغییر کرده است.'
     if definition(workflow): return 'این نسخه اعتبارسنج اختصاصی اجرای برنامه دارد؛ اتصال هارنس به قرارداد سازگار نیاز دارد.'
+    if any(n.get('data',{}).get('type')=='knowledge-retrieval' and n['data'].get('metadata_filtering_mode','disabled')!='disabled' for n in workflow.graph_dict.get('nodes',[])):return 'فیلتر دانش این برنامه در بستهٔ هارنس پشتیبانی نشده است؛ فیلتر نباید حذف شود.'
     return None
 
 def policy(s,agent):
@@ -87,6 +89,7 @@ def register(s,runner,data):
 
 def knowledge(s,workflow,actor):
     from models.dataset import Dataset,Document,DocumentSegment
+    if any(n.get('data',{}).get('type')=='knowledge-retrieval' and n['data'].get('metadata_filtering_mode','disabled')!='disabled' for n in workflow.graph_dict.get('nodes',[])):raise BadRequest('بستهٔ هارنس نمی‌تواند فیلتر دانش برنامه را نادیده بگیرد.')
     ids=sorted({source.uid(i) for n in workflow.graph_dict['nodes'] if n['data']['type']=='knowledge-retrieval' for i in n['data'].get('dataset_ids',[])})
     for identity in ids:
         dataset=s.get(Dataset,identity)
@@ -96,6 +99,10 @@ def knowledge(s,workflow,actor):
     rows=[dict(r) for r in s.execute(q.limit(501)).mappings()]
     if len(rows)>500 or len(json.dumps(rows,default=str).encode())>2097152:raise BadRequest('دانش این برنامه برای بستهٔ هارنس بزرگ است؛ مجموعهٔ دانش را محدود کنید.')
     return [dict(id=str(r['id']),dataset_id=str(r['dataset_id']),name=r['name'],content=r['content'],answer=r['answer'],digest=agents.digest([r['content'],r['answer']])) for r in rows]
+
+def check_snapshot(snapshot):
+    # Bound the escaped JSON representation too, including Persian text and stage context.
+    if len(json.dumps(snapshot,ensure_ascii=True).encode())>SNAPSHOT_MAX_BYTES:raise BadRequest('بستهٔ مأموریت بیش از حد بزرگ است.')
 
 def create(s,attempt,agent,selection):
     agents.body(selection,('method','mode','device_id','source_job_id','profile_key'))
@@ -115,7 +122,7 @@ def create(s,attempt,agent,selection):
     elif selection['profile_key'] is not None:raise BadRequest('تحویل تعاملی پروفایل اجرایی خودکار ندارد.')
     workflow=s.get(Workflow,agent['workflow_id'])
     snapshot=dict(device_name=device['name'],harness_profile=dict(profile['metadata']) if profile else None,version=1,attempt_id=attempt['id'],agent_id=agent['id'],workflow_id=workflow.id,workflow_digest=agent['workflow_digest'],instructions=cfg['instructions'],requires_source=cfg['requires_source'],inputs=attempt['inputs'],output_contract=agent['output_contract'],knowledge=knowledge(s,workflow,actor),program_instructions=[n['data'].get('prompt_template',[]) for n in workflow.graph_dict['nodes'] if n['data']['type']=='llm'],source=dict(id=str(prepared['id']),**prepared['snapshot'],result=prepared['result']) if prepared else None)
-    if len(json.dumps(snapshot,ensure_ascii=False).encode())>8388608:raise BadRequest('بستهٔ مأموریت بیش از حد بزرگ است.')
+    check_snapshot(snapshot)
     now=agents.now();state='pending' if profile else 'awaiting_user'
     s.execute(table(s).insert().values(attempt_id=attempt['id'],**{k:attempt[k] for k in ('project_id','workspace_id')},account_id=actor,device_id=str(device['id']),source_job_id=str(prepared['id']) if prepared else None,mode=selection['mode'],profile_key=selection['profile_key'],profile_digest=profile['digest'] if profile else None,policy_revision=cfg['revision'],snapshot=snapshot,snapshot_digest=agents.digest(snapshot),state=state,created_at=now,updated_at=now))
     if not profile:
@@ -328,6 +335,7 @@ def validate_artifact(s,stage,selected,content):
 def bind_stage(s,identity,stage,instance,input_digest,dependencies):
     if not is_attempt(s,identity):return
     row=load(s,identity);snapshot=dict(row['snapshot'],stage_context=dict(instance_id=instance['id'],stage_id=stage['id'],round=stage['round'],input_digest=input_digest,request_id=instance['request_id'],request_revision_id=instance['request_revision_id'],flow_version_id=instance['flow_version_id'],dependencies=dependencies))
+    check_snapshot(snapshot)
     s.execute(table(s).update().where(table(s).c.attempt_id==str(identity)).values(snapshot=snapshot,snapshot_digest=agents.digest(snapshot)))
 
 def stage_info(s,stage,actor):

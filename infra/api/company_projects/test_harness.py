@@ -162,3 +162,13 @@ class HarnessTests(StageFixture):
         harness.complete(self.session,self.runner,claimed['id'],body)
         self.assertEqual(len(self.get()['artifacts']),1)
 
+    def test_harness_does_not_export_knowledge_when_a_program_filter_is_unsupported(self):
+        import json
+        from models.workflow import Workflow
+        agent=agents.load(self.session,dict(project_id=self.a['id'],workspace_id=self.workspace_a.id),self.agent_ids[0])
+        workflow=self.session.get(Workflow,agent['workflow_id']);graph=workflow.graph_dict
+        graph['nodes'].append(dict(id='filtered-knowledge',data=dict(type='knowledge-retrieval',dataset_ids=[],metadata_filtering_mode='manual')))
+        workflow.graph=json.dumps(graph);self.session.flush()
+        candidate=dict(agent,workflow_digest=agents.fingerprint(workflow))
+        self.assertIsNotNone(harness.compatible(self.session,candidate))
+        with self.assertRaises(BadRequest):harness.knowledge(self.session,workflow,self.editor.id)
