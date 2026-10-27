@@ -34,6 +34,16 @@ class PersonalAgentSourceTests(FlowFixture):
         with patch.object(personal, 'package_text', side_effect=AssertionError('must reject before storage reads')):
             with self.assertRaises(UnprocessableEntity): personal.skills(self.session, self.source, self.snapshot, self.project_owner.id)
 
+    def test_generated_adapter_is_hidden_from_editable_catalog_without_hiding_regular_apps(self):
+        before = set(self.session.scalars(sa.select(App.id).where(App.tenant_id == self.workspace_a.id, personal.catalog_filter(self.session))))
+        connected = self.connect()
+        after = set(self.session.scalars(sa.select(App.id).where(App.tenant_id == self.workspace_a.id, personal.catalog_filter(self.session))))
+        self.assertEqual(before, after)
+        self.assertNotIn(connected['app_id'], after)
+        self.assertIsNotNone(self.session.get(App, connected['app_id']))
+        self.assertIn(connected['id'], [row['id'] for row in agents.list_agents(self.session,
+            self.a['id'], self.workspace_a.id, self.project_owner.id)['data']])
+
     def setUp(self):
         super().setUp()
         self.source = Agent(tenant_id=self.workspace_a.id, name='Synthetic personal agent', scope='roster',

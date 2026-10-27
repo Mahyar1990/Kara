@@ -70,6 +70,14 @@ def metadata(workflow):
     return workflow.features_dict.get(FEATURE) if workflow else None
 
 
+def catalog_filter(s):
+    """Generated adapters are managed in Team Agents, not the editable app catalog."""
+    events = agents.reflected(s, 'company_team_agent_events')
+    return ~sa.exists(sa.select(events.c.id).where(events.c.workspace_id == App.tenant_id,
+        events.c.event_type == 'agent.personal-source.registered',
+        events.c.result['app_id'].astext == sa.cast(App.id, sa.Text)))
+
+
 def skill_version_digest(version):
     return agents.digest([version.skill_id, version.version_number, version.hash_code,
         version.archive_tool_file_id, version.manifest.model_dump(mode='json'), version.archive_size])

@@ -45,6 +45,9 @@ changes = {
         '            form_model = session.get(HumanInputForm, form_id)\n            if form_model is None:\n                raise FormNotFoundError(f"form not found, id={form_id}")\n\n            if timeout_status not in {HumanInputFormStatus.TIMEOUT, HumanInputFormStatus.EXPIRED}:\n',
         '            form_model = session.scalar(select(HumanInputForm).where(HumanInputForm.id == form_id).with_for_update())\n            if form_model is None:\n                raise FormNotFoundError(f"form not found, id={form_id}")\n\n            if timeout_status not in {HumanInputFormStatus.TIMEOUT, HumanInputFormStatus.EXPIRED}:\n')],
 }
+changes['services/app_service.py'].append((
+    '        filters = [App.tenant_id == tenant_id, App.is_universal == False]\n',
+    '        from company_projects.personal_agent_sources import catalog_filter\n        filters = [App.tenant_id == tenant_id, App.is_universal == False, catalog_filter(session)]\n'))
 changes['app_factory.py'].append((
     '    return socketio_app, app\n',
     '    from company_projects.agent_execution import install_http_guard\n    install_http_guard(app)\n    return socketio_app, app\n'))
