@@ -86,7 +86,8 @@ def contracts(workflow):
         if kind not in {'text-input', 'paragraph', 'select', 'number', 'checkbox'} or not isinstance(name, str) or not name or name.startswith('sys.'):
             raise UnprocessableEntity('نوع ورودی این فرایند برای اجرای تیمی پشتیبانی نمی‌شود.')
         result.append(dict(variable=name, label=item.get('label') or name, type=kind,
-            required=bool(item.get('required')), max_length=item.get('max_length'), options=item.get('options', [])))
+            required=bool(item.get('required')), max_length=item.get('max_length'), options=item.get('options', []),
+            **({'default': item['default']} if 'default' in item else {})))
     if len({item['variable'] for item in result}) != len(result):
         raise UnprocessableEntity('نام ورودی‌ها باید یکتا باشد.')
     outputs = sorted({item['variable'] for node in nodes if node.get('data', {}).get('type') == 'end'
@@ -121,15 +122,20 @@ def require(session, agent, actor_id, action):
     team.scope(session, agent['project_id'], agent['workspace_id'], actor_id)
     if action not in permissions(session, agent, actor_id) or agent['archived']:
         raise Forbidden('مجوز این اقدام برای ایجنت را ندارید یا ایجنت بایگانی شده است.')
+    from company_projects.personal_agent_sources import validate
+    if action in ('run', 'feedback', 'finalize'):
+        validate(session, session.get(Workflow, agent['workflow_id']), actor_id if action == 'run' else None)
     return team.member(session, agent['workspace_id'], actor_id)
 
 
 def public(session, row, actor_id):
     from company_projects.runtime_models import policy, llm_nodes
+    from company_projects.personal_agent_sources import public as personal_source
     source = session.get(Workflow, row['workflow_id'])
     return {k: row[k] for k in ('id', 'name', 'description', 'app_id', 'workflow_id', 'revision',
         'acl_revision', 'archived', 'input_contract', 'output_contract')} | {
-        'actions': permissions(session, row, actor_id), 'runtime_model': policy(source.graph_dict) if source and llm_nodes(source.graph_dict) else None}
+        'actions': permissions(session, row, actor_id), 'runtime_model': policy(source.graph_dict) if source and llm_nodes(source.graph_dict) else None,
+        'personal_source': personal_source(source)}
 
 
 def list_agents(session, project_id, workspace_id, actor_id):
@@ -149,6 +155,9 @@ def sources(session, project_id, workspace_id, actor_id):
         App.status == 'normal', Workflow.version != 'draft').order_by(App.name, Workflow.created_at.desc()))
     result = []
     for app, workflow in rows:
+        from company_projects.personal_agent_sources import metadata
+        if metadata(workflow) is not None:
+            continue
         try:
             inputs, outputs = contracts(workflow)
         except UnprocessableEntity:
@@ -174,7 +183,7 @@ def event(session, scope, actor_id, key, request_digest, kind, result):
         correlation_id=key, request_digest=request_digest, event_type=kind, result=result, occurred_at=now()))
 
 
-def register(session, project_id, workspace_id, actor_id, data, key):
+def register(session, project_id, workspace_id, actor_id, data, key, *, _personal=False):
     body(data, ('app_id', 'workflow_id', 'name', 'description', 'expected_revision'))
     if revision(data['expected_revision']) != 1:
         raise Conflict('نسخهٔ آغاز تعریف باید یک باشد.')
@@ -195,6 +204,11 @@ def register(session, project_id, workspace_id, actor_id, data, key):
         Workflow.app_id == app.id, Workflow.tenant_id == str(workspace_id)).with_for_update())
     if app.mode != 'workflow' or app.status != 'normal' or workflow is None or workflow.version == 'draft':
         raise UnprocessableEntity('یک نسخهٔ منتشرشده از فرایند همین پروژه لازم است.')
+    from company_projects.personal_agent_sources import metadata, validate
+    if metadata(workflow) is not None:
+        if not _personal:
+            raise UnprocessableEntity('ایجنت شخصی را از گزینهٔ اتصال ایجنت شخصی ثبت کنید.')
+        validate(session, workflow)
     table = definitions(session)
     if session.scalar(sa.select(WorkflowRun.id).where(WorkflowRun.app_id == app.id,
             WorkflowRun.status.in_(['running', 'paused'])).limit(1)):

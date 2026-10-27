@@ -46,33 +46,65 @@ function useAction() {
 
 function RegisterAgent({ project, refresh }: { project: string; refresh: (createdId?: string) => Promise<unknown> }) {
   const [open, setOpen] = useState(false)
-  const sources = useQuery({ queryKey: ['team-agent-sources', project], queryFn: () => agentApi.sources(project), enabled: open })
+  const [kind, setKind] = useState<'program' | 'personal'>('program')
+  const sources = useQuery({ queryKey: ['team-agent-sources', project], queryFn: () => agentApi.sources(project), enabled: open && kind === 'program' })
+  const personal = useQuery({ queryKey: ['team-agent-personal-sources', project], queryFn: () => agentApi.personalSources(project), enabled: open && kind === 'personal' })
+  const [personalId, setPersonalId] = useState('')
   const [workflowId, setWorkflowId] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [reviewed, setReviewed] = useState(false)
   const action = useAction()
   const source = sources.data?.data.find(value => value.workflow_id === workflowId)
+  const chosen = personal.data?.data.find(value => value.id === personalId)
+  const preview = useQuery({ queryKey: ['team-agent-personal-preview', project, personalId, chosen?.snapshot_id], queryFn: () => agentApi.personalPreview(project, personalId, chosen!.snapshot_id!), enabled: open && kind === 'personal' && !!chosen?.snapshot_id && !chosen.unavailable_reason })
+  useEffect(() => { setReviewed(false) }, [kind, workflowId, personalId, chosen?.snapshot_id, preview.data?.source_digest])
+  const ready = kind === 'program' ? !!source : !!chosen?.snapshot_id && !chosen.unavailable_reason && preview.data?.available && !!preview.data.source_digest && !preview.isFetching && !preview.isError
   const save = () => {
-    if (!source) return
-    const body = { app_id: source.app_id, workflow_id: source.workflow_id, name, description, expected_revision: 1 }
-    void action.run(body, async key => { const created = await agentApi.register(project, body, key); await refresh(created.id); setName(''); setDescription(''); setWorkflowId(''); setReviewed(false); setOpen(false) })
+    if (!ready) return
+    const common = { name, description, expected_revision: 1 }
+    const body = kind === 'program' ? { ...common, app_id: source!.app_id, workflow_id: source!.workflow_id }
+      : { ...common, personal_agent_id: chosen!.id, snapshot_id: chosen!.snapshot_id!, source_digest: preview.data!.source_digest! }
+    void action.run(body, async key => {
+      const created = 'personal_agent_id' in body ? await agentApi.registerPersonal(project, body, key) : await agentApi.register(project, body, key)
+      await refresh(created.id); setName(''); setDescription(''); setWorkflowId(''); setPersonalId(''); setReviewed(false); setOpen(false)
+    })
   }
   return <>
     <Button variant="primary" onClick={() => setOpen(true)}>ایجاد ایجنت</Button>
-    <FormDialog open={open} title="ثبت ایجنت تیمی" description="یک نسخهٔ منتشرشدهٔ برنامه را به ایجنت تیم تبدیل کنید. نسخهٔ انتخاب‌شده ثابت می‌ماند و اجرا از مسیر مجوزهای تیمی انجام می‌شود. پس از ثبت، مجوز اعضا را تعیین کنید." busy={action.busy} close={() => setOpen(false)}>
-      <form className="space-y-4" aria-label="ثبت ایجنت تیمی" onSubmit={event => { event.preventDefault(); if (source && reviewed) save() }}>
+    <FormDialog open={open} title="ثبت ایجنت تیمی" description="منبع ایجنت را انتخاب کنید. نسخهٔ متصل ثابت می‌ماند؛ سپس مجوز اعضا و مسئول بررسی خروجی را تعیین کنید." busy={action.busy} close={() => setOpen(false)}>
+      <form className="space-y-4" aria-label="ثبت ایجنت تیمی" onSubmit={event => { event.preventDefault(); if (ready && reviewed) save() }}>
         <fieldset disabled={action.busy} className="space-y-4">
+          <fieldset className="flex flex-wrap gap-4"><legend className="mb-3 text-sm font-medium">منبع اجرای ایجنت</legend>{([['program', 'نسخهٔ برنامه'], ['personal', 'ایجنت شخصی']] as const).map(([value, label]) => <label key={value} className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${kind === value ? 'border-text-accent bg-background-section text-text-accent' : 'border-divider-regular'}`}><input type="radio" name="agent-source" value={value} checked={kind === value} onChange={() => setKind(value)} />{label}</label>)}</fieldset>
+          {kind === 'program' ? <>
           {sources.isError ? <p role="alert">دریافت برنامه‌ها انجام نشد. <button type="button" className={button} onClick={() => void sources.refetch()}>تلاش دوباره</button></p> : sources.isPending ? <p role="status">در حال دریافت برنامه‌ها…</p> : !sources.data.data.length && <p>ابتدا یک فرایند با شروع دستی و خروجی مشخص در همین پروژه بسازید و منتشر کنید.</p>}
           <label className="block text-sm">نسخهٔ برنامه<select required className={field} value={workflowId} onChange={event => setWorkflowId(event.target.value)}><option value="">انتخاب کنید</option>{sources.data?.data.map(value => <option key={value.workflow_id} value={value.workflow_id}>{value.app_name} · {value.version}</option>)}</select><FieldHelp>از یک برنامه می‌توانید چند ایجنت با مجوزها و سابقهٔ مستقل بسازید. انتشار بعدی برنامه، نسخهٔ متصل به این ایجنت را تغییر نمی‌دهد.</FieldHelp></label>
+          </> : <>
+            {personal.isError ? <p role="alert">دریافت ایجنت‌های شخصی انجام نشد. <button type="button" className={button} onClick={() => void personal.refetch()}>تلاش دوباره</button></p> : personal.isPending ? <p role="status">در حال دریافت ایجنت‌ها…</p> : !personal.data.data.length && <p>ایجنت شخصی قابل اتصال در دسترس نیست. در بخش ایجنت‌های شخصی همین پروژه، یک ایجنت بسازید و منتشر کنید.</p>}
+            <label className="block text-sm">ایجنت شخصی<select required className={field} value={personalId} onChange={event => setPersonalId(event.target.value)}><option value="">انتخاب کنید</option>{personal.data?.data.map(value => <option key={value.id} value={value.id}>{value.name} · {value.version ? `نسخهٔ ${value.version}` : 'منتشر نشده'}{value.unavailable_reason ? ' · نیازمند بررسی' : ''}</option>)}</select></label>
+            {chosen?.unavailable_reason && <p role="alert" className="text-sm leading-7">{chosen.unavailable_reason}</p>}
+            {!!chosen?.snapshot_id && !chosen.unavailable_reason && <section className="space-y-3 rounded-xl border border-divider-regular bg-background-section p-4 text-sm leading-7" aria-label="بررسی اتصال ایجنت شخصی">
+              {preview.isFetching ? <p role="status">در حال بررسی دستورالعمل، مهارت‌ها و دانش…</p> : preview.isError ? <p role="alert">بررسی اتصال انجام نشد؛ دسترسی منبع، مهارت‌ها و دانش را بررسی کنید.</p> : preview.data && (!preview.data.available ? <p role="alert">{preview.data.reason}</p> : <>
+                <p className="font-semibold">اتصال تسک به «{chosen.name}» · نسخهٔ {chosen.version}</p>
+                <p>دستورالعمل و نسخهٔ فعلی مهارت‌های متنی ثابت می‌شوند. برای هر تسک، دانش انتخاب‌شده جستجو و خروجی متنی تولید می‌شود. اجرا و درخواست مدل روی Runner کاربر انجام می‌شود.</p>
+                <p>این اتصال برای تسک متنی است؛ تاریخچهٔ چت و امکانات فایل و صوت گفت‌وگو منتقل نمی‌شوند.</p>
+                <p>مدل: <bdi>{preview.data.model?.name}</bdi>؛ اجراکننده باید اتصال شخصی همین مدل را داشته باشد.</p>
+                <p>مهارت‌ها: {preview.data.skills?.map(skill => `${skill.name}${skill.version ? ` (نسخهٔ ${skill.version})` : ''}`).join('، ') || 'مهارتی متصل نیست'}</p>
+                <p>دانش: {preview.data.knowledge?.join('، ') || 'مجموعه‌ای متصل نیست'}</p>
+                <p>ورودی‌ها: {preview.data.input_contract?.map(item => item.label).join('، ')} · خروجی: result</p>
+                <p>یک برنامهٔ اتصال مستقل ساخته می‌شود. برای استفاده در فلو، آن را به مرحله وصل و خروجی result را به ورودی مرحلهٔ بعد نگاشت کنید. تغییرات بعدی منبع خودکار اعمال نمی‌شوند.</p>
+              </>)}
+              <button type="button" className={button} disabled={preview.isFetching} onClick={() => { setReviewed(false); void personal.refetch(); void preview.refetch() }}>تازه‌سازی بررسی منبع</button>
+            </section>}
+          </>}
           <label className="block text-sm">نام ایجنت<input required maxLength={120} className={field} value={name} onChange={event => setName(event.target.value)} /><FieldHelp>نامی متناسب با وظیفهٔ ایجنت بنویسید تا اعضای تیم آن را به‌راحتی پیدا کنند.</FieldHelp></label>
           <label className="block text-sm">توضیح<textarea maxLength={2000} className={field} value={description} onChange={event => setDescription(event.target.value)} /><FieldHelp>کار ایجنت، ورودی مورد نیاز و مسئول بررسی نتیجه را توضیح دهید؛ این متن دستورالعمل اجرای مدل نیست.</FieldHelp></label>
-          <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /><span>برنامه و نسخه را بررسی کرده‌ام و اجرای آن را به مجوزهای تیمی محدود می‌کنم.<FieldHelp>پس از ثبت، مسیرهای اجرای مستقیم برنامه محدود می‌شوند. مجوزهای هر ایجنت را جدا تعیین کنید؛ ویرایش یا انتشار برنامهٔ مشترک به مجوز مربوط در همهٔ ایجنت‌های فعال متصل نیاز دارد.</FieldHelp></span></label>
+          <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={reviewed} disabled={!ready} onChange={event => setReviewed(event.target.checked)} /><span>منبع، نسخه و روش اتصال را بررسی کرده‌ام و دسترسی اعضا را پس از ثبت تعیین می‌کنم.<FieldHelp>{kind === 'program' ? 'اجرای مستقیم برنامه محدود می‌شود؛ ویرایش و انتشار منبع مشترک به مجوز مربوط در همهٔ ایجنت‌های فعال نیاز دارد.' : 'نسخهٔ ایجنت شخصی و مهارت‌ها مستقل می‌ماند؛ برای تغییر آن یک اتصال تازه بسازید.'} اجرای موفق، مرحله را خودکار تأیید نمی‌کند؛ تصمیم با مسئول مرحله است.</FieldHelp></span></label>
         </fieldset>
         {action.error && <p role="alert">{action.error}</p>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" disabled={action.busy} onClick={() => setOpen(false)}>انصراف</Button>
-          <Button type="submit" variant="primary" disabled={action.busy || !source || !name.trim() || !reviewed}>{action.busy ? 'در حال ثبت…' : 'ثبت ایجنت'}</Button>
+          <Button type="submit" variant="primary" disabled={action.busy || !ready || !name.trim() || !reviewed}>{action.busy ? 'در حال ثبت…' : 'ثبت ایجنت'}</Button>
         </div>
       </form>
     </FormDialog>
@@ -104,7 +136,7 @@ function GrantEditor({ project, agent, refresh }: { project: string; agent: Team
 function RunAgent({ project, agent }: { project: string; agent: TeamAgent }) {
   const params = useSearchParams()
   const incoming = params.get('agent') === agent.id && /^[a-f0-9-]{36}$/.test(params.get('harness_attempt') || '') ? params.get('harness_attempt') : null
-  const [inputs, setInputs] = useState<Record<string, unknown>>(() => Object.fromEntries(agent.input_contract.filter(item => item.type === 'checkbox').map(item => [item.variable, false])))
+  const [inputs, setInputs] = useState<Record<string, unknown>>(() => Object.fromEntries(agent.input_contract.filter(item => item.default != null || item.type === 'checkbox').map(item => [item.variable, item.default ?? false])))
   const [execution, setExecution] = useState<ExecutionChoice | null>(null)
   const [attemptExecution, setAttemptExecution] = useState<ExecutionChoice | null>(incoming ? { method: 'harness', mode: 'manual', device_id: '', source_job_id: null, profile_key: null } : null)
   const [executionReady, setExecutionReady] = useState(true)
@@ -142,6 +174,7 @@ function AgentCard({ project, agent, canManage, refresh }: { project: string; ag
     <header className="flex min-w-0 flex-wrap items-start gap-4"><div className="min-w-0 flex-1"><p className="mb-2 text-xs font-medium text-text-accent">{agent.archived ? 'بایگانی‌شده؛ اجرای تازه غیرفعال است' : agent.actions.includes('run') ? 'مجوز اجرا دارید' : 'دسترسی شما: مشاهده و بررسی'}</p><h2 className="break-words text-xl font-semibold leading-8">{agent.name}</h2></div>
       {canManage && <div aria-label={`مدیریت ${agent.name}`} className="ms-auto flex flex-wrap items-center justify-end gap-2">{!agent.archived && <button className={`${button} ${archiving ? 'bg-background-section font-semibold text-text-accent ring-1 ring-text-accent' : ''}`} aria-pressed={archiving} disabled={action.busy} onClick={() => setArchiving(!archiving)}>بایگانی</button>}<button className={`${button} text-text-destructive-secondary`} disabled={action.busy} onClick={() => setDeleting(true)}>حذف</button></div>}
     </header>
+    {agent.personal_source && <p className="text-sm leading-7 text-text-secondary">منبع: ایجنت شخصی «{agent.personal_source.name}» · نسخهٔ {number(agent.personal_source.snapshot_version)} · مدل <bdi>{agent.personal_source.model.name}</bdi></p>}
     {agent.description && <p className="line-clamp-2 whitespace-pre-wrap text-sm leading-7 text-text-secondary">{agent.description}</p>}
     <p className="text-xs leading-6 text-text-tertiary">{number(agent.input_contract.length)} ورودی · {number(agent.output_contract.length)} خروجی</p>
     <div aria-label="بخش‌های ایجنت" className="flex flex-wrap items-center gap-2">

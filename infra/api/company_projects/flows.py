@@ -236,6 +236,8 @@ def compile_stages(session, scoped, actor_id, stages):
                 workflow.tenant_id != scoped['workspace_id'] or workflow.app_id != app.id or workflow.version == 'draft' or
                 agents.fingerprint(workflow) != agent['workflow_digest']):
             raise UnprocessableEntity('نسخهٔ منتشرشدهٔ ایجنت معتبر نیست.')
+        from company_projects.personal_agent_sources import validate
+        validate(session, workflow, stage['executor_id'])
         from configs import dify_config
         if dify_config.RBAC_ENABLED:
             from core.rbac import RBACPermission

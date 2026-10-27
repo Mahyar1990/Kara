@@ -82,6 +82,8 @@ def project_key(s,workspace,actor):
 def build_snapshot(s,workflow,actor,inputs):
     from company_projects import runtime_models
     from kara_source_runner.workflow_contract import validate_graph
+    from company_projects.personal_agent_sources import validate
+    validate(s,workflow,actor)
     graph=deepcopy(workflow.graph_dict)
     # Selection resolves only metadata and the actor's connection. No model inference here.
     selection=runtime_models.select(s,workflow,actor,inputs.get(runtime_models.INPUT))
@@ -137,6 +139,8 @@ def validate_access(s,job):
     if str(join.id)!=str(job['membership_id']): raise Forbidden('عضویت اجرا تغییر کرده است.')
     workflow=s.get(Workflow,job['workflow_id']); app=s.get(App,job['app_id'])
     if not app or app.status!='normal' or not workflow or workflow.app_id!=app.id or workflow.tenant_id!=job['workspace_id'] or agents.fingerprint(workflow)!=job['snapshot']['workflow_digest']: raise Conflict('نسخه یا دسترسی برنامه تغییر کرده است.')
+    from company_projects.personal_agent_sources import validate
+    validate(s,workflow,job['account_id'])
     if job['team_attempt_id']:
         attempts=agents.tables(s)[2]
         attempt=s.execute(sa.select(attempts).where(attempts.c.id==job['team_attempt_id'])).mappings().first()

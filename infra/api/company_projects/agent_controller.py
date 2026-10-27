@@ -37,6 +37,27 @@ class AgentSourcesApi(Resource):
         return invoke(agents.sources, project_id)
 
 
+@console_ns.route('/company/projects/<uuid:project_id>/team/agents/personal-sources')
+class PersonalAgentSourcesApi(Resource):
+    @guarded()
+    def get(self, project_id):
+        from company_projects.personal_agent_sources import sources
+        return invoke(sources, project_id)
+
+    @guarded()
+    def post(self, project_id):
+        from company_projects.personal_agent_sources import register
+        return invoke(register, project_id, payload(), request.headers.get('Idempotency-Key')), 201
+
+
+@console_ns.route('/company/projects/<uuid:project_id>/team/agents/personal-sources/<uuid:source_id>')
+class PersonalAgentSourcePreviewApi(Resource):
+    @guarded()
+    def get(self, project_id, source_id):
+        from company_projects.personal_agent_sources import preview
+        return invoke(preview, project_id, source_id, request.args.get('snapshot_id'))
+
+
 @console_ns.route('/company/projects/<uuid:project_id>/team/agents/<uuid:agent_id>/grants')
 class AgentGrantsApi(Resource):
     @guarded()

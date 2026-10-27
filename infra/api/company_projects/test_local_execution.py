@@ -41,7 +41,7 @@ class LocalExecutionTests(ProjectDatabaseFixture):
         self.assertEqual(self.workflow.graph,original)
         self.assertEqual(self.job['state'],'pending')
         self.assertEqual(agents.get_attempt(*self.scope,self.agent['id'],self.attempt['id'])['status'],'pending')
-        with patch.object(agent_execution,'Session') as session_factory:
+        with patch.object(agent_execution,'Session'), patch('company_projects.harness.is_attempt', return_value=False):
             with patch.object(local,'dispatch_team') as enqueue:
                 agent_execution.execute(self.attempt['id']);enqueue.assert_called_once()
         self.assertNotIn('credentials',json.dumps(self.job,default=str))
