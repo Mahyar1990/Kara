@@ -98,7 +98,7 @@ function GrantsForm({ project, agent, value, refresh }: { project: string; agent
 
 function GrantEditor({ project, agent, refresh }: { project: string; agent: TeamAgent; refresh: () => Promise<unknown> }) {
   const value = useQuery({ queryKey: ['team-agent-grants', project, agent.id, agent.acl_revision], queryFn: () => agentApi.grants(project, agent.id) })
-  return <section aria-label="مدیریت مجوزها" className="space-y-4 border-t border-divider-regular pt-4"><h3 className="font-semibold">مدیریت مجوزها</h3>{value.isSuccess ? <GrantsForm key={value.data.revision} project={project} agent={agent} value={value.data} refresh={async () => { await value.refetch(); await refresh() }} /> : <p role={value.isError ? 'alert' : 'status'}>{value.isError ? 'دریافت مجوزها انجام نشد.' : 'در حال دریافت مجوزها…'}</p>}<button className={button} disabled={value.isFetching} onClick={() => value.refetch()}>دریافت مجوزهای تازه</button></section>
+  return <section aria-label="مدیریت مجوزها" className="space-y-4 border-t border-divider-regular pt-4"><h3 className="font-semibold">مدیریت مجوزها</h3>{value.data ? <GrantsForm key={value.data.revision} project={project} agent={agent} value={value.data} refresh={async () => { await value.refetch(); await refresh() }} /> : <p role={value.isError ? 'alert' : 'status'}>{value.isError ? 'دریافت مجوزها انجام نشد.' : 'در حال دریافت مجوزها…'}</p>}{value.isError && value.data && <p role="alert" className="text-sm">تازه‌سازی مجوزها موفق نبود؛ اطلاعات قبلی و انتخاب‌های شما حفظ شده‌اند.</p>}<button className={button} disabled={value.isFetching} onClick={() => value.refetch()}>دریافت مجوزهای تازه</button></section>
 }
 
 function RunAgent({ project, agent }: { project: string; agent: TeamAgent }) {
