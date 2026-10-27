@@ -53,7 +53,7 @@ export const projectApi = {
   detail: (id: string) => get<CompanyProject>(`${base}/${id}`),
   create: (body: { name: string; description: string; owner_id?: string }) => post<CompanyProject>(base, { body }),
   update: (id: string, body: { name: string; description: string }) => patch<CompanyProject>(`${base}/${id}`, { body }),
-  apps: (id: string, kind: ResourceKind, page: number) => get<ProjectAppPage>(`${base}/${id}/apps`, { params: { kind, page } }),
+  apps: (id: string, kind: ResourceKind, page: number, limit = 30) => get<ProjectAppPage>(`${base}/${id}/apps`, { params: { kind, page, limit } }),
   resources: (name: string, page: number) => get<ProjectAppPage>(`${base}/resources`, { params: { name, page } }),
   createApp: (id: string, body: { name: string; description: string; mode: string }) => post<ProjectApp>(`${base}/${id}/apps`, { body }),
   assign: (id: string, appId: string) => put(`${base}/${id}/apps/${appId}`),

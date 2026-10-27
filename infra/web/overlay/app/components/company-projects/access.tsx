@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { CompanyProject, ResourceKind } from '@/service/company-projects'
+import type { CompanyProject } from '@/service/company-projects'
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
 import { useState } from 'react'
@@ -16,13 +16,12 @@ import { consoleClient } from '@/service/console'
 import { getRedirectionPath } from '@/utils/app-redirection'
 import { AppForm } from './forms'
 import FormDialog, { FieldHelp } from './form-dialog'
+import ProjectOverview from './overview'
 
 const primary = 'rounded-xl bg-components-button-primary-bg px-4 py-2 text-sm font-semibold text-components-button-primary-text hover:opacity-90 disabled:opacity-50'
 const secondary = 'rounded-xl border border-divider-regular bg-components-panel-bg px-4 py-2 text-sm text-text-secondary disabled:opacity-50'
 const input = 'mt-2 w-full rounded-xl border border-divider-regular bg-components-panel-bg px-3 py-2 text-sm text-text-primary'
 const panel = 'rounded-2xl border border-divider-regular bg-components-panel-bg p-6'
-const number = (value: number) => value.toLocaleString('fa-IR')
-const modeLabels: Record<string, string> = { workflow: 'فرایند', 'advanced-chat': 'گفتگو با فرایند', 'agent-chat': 'ایجنت', agent: 'ایجنت', chat: 'گفتگو', completion: 'تولید متن' }
 
 function useProjectTools() {
   const workspace = useAtomValue(currentWorkspaceIdAtom)
@@ -46,7 +45,7 @@ function useProjectTools() {
   return { key, workspace, enabled: !!workspace, busy, error, run, enter }
 }
 function Page({ children }: { children: ReactNode }) {
-  return <main dir="rtl" className="h-full overflow-y-auto bg-background-default-subtle p-6 lg:p-10"><div className="mx-auto max-w-6xl space-y-6">{children}</div></main>
+  return <main dir="rtl" className="h-full min-w-0 overflow-y-auto bg-background-default-subtle p-6 lg:p-10"><div className="mx-auto min-w-0 max-w-6xl space-y-6">{children}</div></main>
 }
 function Notice({ error, retry }: { error: boolean; retry: () => void }) {
   return error ? <section role="alert" className={panel}><p className="mb-3 text-text-primary">دریافت اطلاعات انجام نشد. اتصال و دسترسی خود را بررسی کنید.</p><button className={secondary} onClick={retry}>تلاش دوباره</button></section> : <p role="status" className="p-6 text-text-tertiary">در حال دریافت اطلاعات…</p>
@@ -85,22 +84,33 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [editing, setEditing] = useState(false)
   const [owning, setOwning] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [kind, setKind] = useState<ResourceKind>('all')
-  const [page, setPage] = useState(1)
   const { push } = useRouter()
   const permissions = useAtomValue(workspacePermissionKeysAtom)
   const { data: features } = useSuspenseQuery(systemFeaturesQueryOptions())
   const { data: profile } = useSuspenseQuery(userProfileQueryOptions())
   const project = useQuery({ queryKey: [...tools.key, projectId], queryFn: () => projectApi.detail(projectId), enabled: tools.enabled })
   const entered = !!project.data?.workspace_id && project.data.workspace_id === tools.workspace
-  const apps = useQuery({ queryKey: [...tools.key, projectId, 'apps', kind, page], queryFn: () => projectApi.apps(projectId, kind, page), enabled: entered })
-  const openApp = (id: string) => tools.run(async () => { const app = await consoleClient.apps.byAppId.get({ params: { app_id: id } }); push(getRedirectionPath(app, { currentUserId: profile.profile.id, resourceMaintainer: app.maintainer, workspacePermissionKeys: permissions, isRbacEnabled: features.rbac_enabled })) })
-  if (!project.isSuccess) return <Page><Link href="/projects" className="text-sm text-text-accent">← همهٔ پروژه‌ها</Link><Notice error={project.isError} retry={() => project.refetch()} /></Page>
+  const openApp = (id: string) => tools.run(async () => {
+    const app = await consoleClient.apps.byAppId.get({ params: { app_id: id } })
+    push(getRedirectionPath(app, { currentUserId: profile.profile.id, resourceMaintainer: app.maintainer, workspacePermissionKeys: permissions, isRbacEnabled: features.rbac_enabled }))
+  })
+  if (!project.isSuccess) return <Page><Link href="/projects" className="text-sm text-text-accent">همهٔ پروژه‌ها</Link><Notice error={project.isError} retry={() => project.refetch()} /></Page>
   const value = project.data
-  return <Page><Link href="/projects" className="text-sm font-medium text-text-accent">← همهٔ پروژه‌ها</Link><header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="break-words text-3xl font-bold text-text-primary">{value.name}</h1><p className="mt-3 max-w-3xl whitespace-pre-wrap text-sm leading-7 text-text-secondary">{value.description}</p><p className="mt-3 text-sm text-text-tertiary">مالک پروژه: {value.owner?.name || 'تعیین نشده'}</p></div>{value.is_product_owner && <div className="flex flex-wrap gap-2"><button disabled={tools.busy} className={secondary} onClick={() => { setEditing(!editing); setOwning(false) }}>ویرایش پروژه</button><button disabled={tools.busy || !value.workspace_id} className={secondary} onClick={() => { setOwning(!owning); setEditing(false) }}>تعیین مالک پروژه</button></div>}</header>{tools.error && <p role="alert" className="text-text-primary">{tools.error}</p>}{editing && value.is_product_owner && <ProjectForm key={value.updated_at} project={value} busy={tools.busy} error={tools.error} onCancel={() => setEditing(false)} onSave={values => tools.run(() => projectApi.update(projectId, values), () => setEditing(false))} />}{owning && value.is_product_owner && <OwnerForm project={value} busy={tools.busy} error={tools.error} onCancel={() => setOwning(false)} onSave={id => tools.run(() => projectApi.setOwner(projectId, id), () => setOwning(false))} />}
-    {!entered ? <section className={panel}><h2 className="mb-3 text-lg font-semibold text-text-primary">ورود به فضای پروژه</h2><p className="mb-5 text-sm leading-7 text-text-secondary">برای کار با برنامه‌ها، دانش، مهارت‌ها و اعضا، ابتدا وارد همین پروژه شوید. منوهای محصول پس از ورود، محتوای این پروژه را نشان می‌دهند.</p>{value.workspace_id ? <button className={primary} disabled={tools.busy} onClick={() => tools.enter(projectId)}>ورود به پروژه</button> : <p className="text-sm text-text-tertiary">فضای مستقل این پروژه هنوز آماده نشده است.</p>}</section> : <>
-      <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2" aria-label="نوع برنامه">{([['all', 'همهٔ برنامه‌ها'], ['workflow', 'فرایندها'], ['agent', 'ایجنت‌ها'], ['other', 'سایر برنامه‌ها']] as const).map(([value, label]) => <button aria-pressed={kind === value} className={kind === value ? primary : secondary} key={value} onClick={() => { setKind(value); setPage(1) }}>{label}</button>)}</div>{value.can_edit && <button className={primary} disabled={tools.busy} onClick={() => setCreating(!creating)}>ساخت برنامه</button>}</div>{creating && value.can_edit && <AppForm busy={tools.busy} error={tools.error} onCancel={() => setCreating(false)} onSave={values => tools.run(() => projectApi.createApp(projectId, values), () => { setCreating(false); setKind('all'); setPage(1) })} />}
-      {apps.isPending || apps.isError ? <Notice error={apps.isError} retry={() => apps.refetch()} /> : <><p className="text-sm text-text-tertiary">{number(apps.data.total)} برنامه در این بخش</p>{apps.data.data.length ? <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{apps.data.data.map(app => <article key={app.id} className={`${panel} flex min-h-48 flex-col`}><span className="mb-4 text-xs font-medium text-text-accent">{modeLabels[app.mode] || 'برنامه'}</span><h2 className="break-words text-lg font-semibold text-text-primary">{app.name}</h2><p className="mb-6 mt-2 line-clamp-3 text-sm leading-6 text-text-secondary">{app.description}</p><button className={`${secondary} mt-auto self-start`} disabled={tools.busy} onClick={() => openApp(app.id)}>باز کردن برنامه</button></article>)}</div> : <section className={`${panel} py-14 text-center`}><h2 className="mb-3 text-lg font-semibold text-text-primary">هنوز برنامه‌ای در این بخش وجود ندارد</h2><p className="text-sm text-text-secondary">{value.can_edit ? 'یک فرایند یا ایجنت در همین پروژه بسازید.' : 'برنامه‌های ثبت‌شدهٔ تیم در این بخش نمایش داده می‌شوند.'}</p></section>}{(page > 1 || apps.data.has_more) && <nav aria-label="صفحه‌بندی برنامه‌ها" className="flex items-center justify-center gap-4"><button className={secondary} disabled={page === 1} onClick={() => setPage(page - 1)}>صفحهٔ قبل</button><span className="text-sm text-text-secondary">صفحهٔ {number(page)}</span><button className={secondary} disabled={!apps.data.has_more} onClick={() => setPage(page + 1)}>صفحهٔ بعد</button></nav>}</>}
+  return <Page>
+    <nav aria-label="مسیر صفحه" className="flex flex-wrap items-center gap-2 text-sm"><Link href="/projects" className="text-text-accent">پروژه‌ها</Link><span aria-hidden="true" className="text-text-tertiary">/</span><span className="text-text-tertiary">نمای کلی پروژه</span></nav>
+    <header className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+      <div className="min-w-0 max-w-3xl flex-1"><h1 className="break-words text-3xl font-bold leading-normal text-text-primary [overflow-wrap:anywhere]">{value.name}</h1>
+        {value.description && (value.description.length > 180 ? <details className="mt-3 text-sm leading-7 text-text-secondary"><summary className="cursor-pointer">هدف و توضیحات پروژه</summary><p className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{value.description}</p></details> : <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-text-secondary">{value.description}</p>)}
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs leading-6 text-text-tertiary"><span className="break-words">مالک پروژه: {value.owner?.name || 'تعیین نشده'}</span>{entered && <span>در فضای همین پروژه هستید</span>}</div>
+      </div>
+      {value.is_product_owner && <details className="shrink-0"><summary className={`${secondary} cursor-pointer`}>تنظیمات پروژه</summary><div className="mt-2 flex flex-wrap gap-2"><button disabled={tools.busy} className={secondary} onClick={() => { setEditing(true); setOwning(false) }}>ویرایش پروژه</button><button disabled={tools.busy || !value.workspace_id} className={secondary} onClick={() => { setOwning(true); setEditing(false) }}>تعیین مالک پروژه</button></div></details>}
+    </header>
+    {tools.error && <p role="alert" className="text-sm leading-7 text-text-primary">{tools.error}</p>}
+    {editing && value.is_product_owner && <ProjectForm key={value.updated_at} project={value} busy={tools.busy} error={tools.error} onCancel={() => setEditing(false)} onSave={values => tools.run(() => projectApi.update(projectId, values), () => setEditing(false))} />}
+    {owning && value.is_product_owner && <OwnerForm project={value} busy={tools.busy} error={tools.error} onCancel={() => setOwning(false)} onSave={id => tools.run(() => projectApi.setOwner(projectId, id), () => setOwning(false))} />}
+    {!entered ? <section className={panel}><h2 className="mb-3 text-lg font-semibold text-text-primary">ورود به فضای پروژه</h2><p className="mb-5 text-sm leading-7 text-text-secondary">برای دیدن وضعیت کارها، برنامه‌ها و اعضای این پروژه، ابتدا وارد فضای همین پروژه شوید.</p>{value.workspace_id ? <button className={primary} disabled={tools.busy} onClick={() => tools.enter(projectId)}>ورود به پروژه</button> : <p className="text-sm text-text-tertiary">فضای مستقل این پروژه هنوز آماده نشده است.</p>}</section> : <>
+      {creating && value.can_edit && <AppForm busy={tools.busy} error={tools.error} onCancel={() => setCreating(false)} onSave={values => tools.run(() => projectApi.createApp(projectId, values), () => setCreating(false))} />}
+      <ProjectOverview key={`${value.workspace_id}:${value.id}:${profile.profile.id}`} project={value} accountId={profile.profile.id} opening={tools.busy} openApp={openApp} createApp={() => setCreating(true)} />
     </>}
   </Page>
 }
