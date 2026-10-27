@@ -6,3 +6,6 @@ infra/web/users.patch whitespace=-blank-at-eol
 infra/web/ownership.patch whitespace=-blank-at-eol
 
 infra/web/runtime-model.patch whitespace=-blank-at-eol
+
+# Preserve byte-exact third-party snapshots; audit their changes via catalog hashes.
+workflows/agency-agents/upstream/** -text -diff linguist-vendored
