@@ -28,6 +28,7 @@ RUN if [ "$KARA_WEB_OFFLINE" = "true" ]; then \
 
 FROM packages AS builder
 ARG KARA_WEB_SKIP_CHECKS=false
+ARG KARA_WEB_DISABLE_CACHE=false
 COPY . .
 RUN rm -rf web/.next && if [ "$KARA_WEB_SKIP_CHECKS" != "true" ]; then NODE_OPTIONS=--max-old-space-size=4096 node .company-web/check-projects-types.mjs; fi
 RUN node .company-web/localize-literals.mjs web && if [ "$KARA_WEB_SKIP_CHECKS" != "true" ]; then node --test .company-web/rtl.spec.mjs .company-web/members.spec.mjs .company-web/navigation.spec.mjs; fi
@@ -35,7 +36,7 @@ WORKDIR /app/web
 ENV NODE_OPTIONS=--max-old-space-size=4096
 ENV pnpm_config_verify_deps_before_run=false
 RUN mkdir -p public/fonts && cp ../.company-web/node_modules/@fontsource-variable/vazirmatn/files/vazirmatn-arabic-wght-normal.woff2 public/fonts/ && cp ../.company-web/node_modules/@fontsource-variable/vazirmatn/LICENSE public/fonts/vazirmatn-license.txt
-RUN pnpm exec next build --webpack && rm -rf .next/cache
+RUN KARA_WEB_DISABLE_CACHE="$KARA_WEB_DISABLE_CACHE" pnpm exec next build --webpack && rm -rf .next/cache
 
 FROM base AS production
 ENV NODE_ENV=production

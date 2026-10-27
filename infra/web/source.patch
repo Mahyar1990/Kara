@@ -461,11 +461,17 @@
      enableSelector: 'optimize',
 --- a/web/next.config.ts
 +++ b/web/next.config.ts
-@@ -38,6 +38,7 @@
+@@ -38,6 +38,13 @@
      ]
    },
    output: 'standalone',
 +  experimental: { cpus: 1, webpackMemoryOptimizations: true },
++  ...(process.env.KARA_WEB_DISABLE_CACHE === 'true' ? {
++    webpack: (config: Parameters<NonNullable<NextConfig['webpack']>>[0]) => {
++      config.cache = false
++      return config
++    },
++  } : {}),
    compiler: {
      removeConsole: isDev ? false : { exclude: ['warn', 'error'] },
    },
