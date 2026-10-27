@@ -1,3 +1,4 @@
+import type { ExecutionChoice } from './company-harness'
 import { get, post, put } from '@/service/base'
 
 export type AgentAction = 'view' | 'run' | 'feedback' | 'finalize' | 'edit_definition' | 'publish_definition'
@@ -17,6 +18,6 @@ export const agentApi = {
   replaceGrants: (project: string, agent: string, body: { expected_revision: number; grants: AgentGrant[] }, key: string) => put<AgentGrants>(`${base(project)}/${agent}/grants`, { body, headers: headers(key) }),
   remove: (project: string, id: string, expected_revision: number, confirmation_name: string, key: string) => post<{ id: string; deleted: boolean }>(`${base(project)}/${id}/delete`, { body: { expected_revision, confirmation_name }, headers: headers(key) }),
   archive: (project: string, agent: string, revision: number, key: string) => post<TeamAgent>(`${base(project)}/${agent}/archive`, { body: { expected_revision: revision }, headers: headers(key) }),
-  run: (project: string, agent: string, body: { inputs: Record<string, unknown>; expected_revision: number }, key: string) => post<AgentAttempt>(`${base(project)}/${agent}/attempts`, { body, headers: headers(key) }),
+  run: (project: string, agent: string, body: { inputs: Record<string, unknown>; expected_revision: number; execution?: ExecutionChoice }, key: string) => post<AgentAttempt>(`${base(project)}/${agent}/attempts`, { body, headers: headers(key) }),
   attempt: (project: string, agent: string, attempt: string) => get<AgentAttempt>(`${base(project)}/${agent}/attempts/${attempt}`),
 }

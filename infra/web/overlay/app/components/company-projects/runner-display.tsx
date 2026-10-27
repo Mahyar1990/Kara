@@ -2,7 +2,7 @@ import type { Device } from '@/service/company-source'
 
 export const panel = 'rounded-2xl border border-divider-regular bg-background-default p-5 md:p-6'
 export const dateLabel = (value: string) => new Date(value).toLocaleString('fa-IR', { dateStyle: 'medium', timeStyle: 'short' })
-export const stateLabels: Record<string, string> = { pending: 'در صف دستگاه', running: 'در حال اجرا', succeeded: 'انجام شد', failed: 'ناموفق', cancelled: 'لغو شد', interrupted: 'ارتباط قطع شد', blocked: 'نیازمند بررسی دسترسی یا نسخه' }
+export const stateLabels: Record<string, string> = { awaiting_user: 'در اختیار کاربر', pending: 'در صف دستگاه', running: 'در حال اجرا', succeeded: 'انجام شد', failed: 'ناموفق', cancelled: 'لغو شد', interrupted: 'ارتباط قطع شد', blocked: 'نیازمند بررسی دسترسی یا نسخه' }
 
 export function connectionState(device: Device) {
   if (device.revoked_at) return 'دسترسی لغوشده'

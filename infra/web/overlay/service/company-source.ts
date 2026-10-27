@@ -4,9 +4,9 @@ export type Repository = { id: string; name: string; url: string; branch: string
 export type Component = { key: string; path: string; repository_id: string; connection_id: string; repository_revision?: number; connection_revision?: number; url?: string; branch?: string }
 export type Document = { path: string; content: string }
 export type Workspace = { id: string; name: string; revision: number; components: Component[]; documents: Document[] }
-export type Device = { protocol?: number; capabilities?: string[]; id: string; name: string; revoked_at: string | null; last_seen_at: string | null }
+export type Device = { harnesses?: { key: string; name: string; kind: string; version: string }[]; protocol?: number; capabilities?: string[]; id: string; name: string; revoked_at: string | null; last_seen_at: string | null }
 export type RunnerProject = { id: string; name: string; workspace_id: string; binding: null | { device_id: string; source_job_id: string | null; source_name: string | null; source_revision: number | null; source_state: string | null } }
-export type RunnerActivity = { id: string; kind: 'workflow' | 'rpc' | 'source'; title: string; project_id: string; device_id: string | null; state: string; created_at: string }
+export type RunnerActivity = { agent_id?: string; instance_id?: string; stage_id?: string; id: string; kind: 'workflow' | 'rpc' | 'source' | 'harness'; title: string; project_id: string; device_id: string | null; state: string; created_at: string }
 export type RunnerOverview = { devices: Device[]; projects: RunnerProject[]; active: RunnerActivity[]; recent: RunnerActivity[] }
 export type Job = { id: string; source_workspace_id: string; device_id: string; state: string; created_at: string; snapshot_revision: number; result: null | { error?: string; local_directory?: string; components?: { key: string; commit: string }[] } }
 const base = (id: string) => `/company/projects/${id}/source-code`
