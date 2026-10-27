@@ -130,10 +130,16 @@ def run_cli(job,profile,target,heartbeat):
             value=json.loads(''.join(messages));value.setdefault('session_id',session);atomic_json(candidate,value)
         return read_candidate(candidate)
     finally:
-        if process and process.poll() is None:
-            os.killpg(process.pid,signal.SIGTERM)
+        if process:
+            try:os.killpg(process.pid,signal.SIGTERM)
+            except ProcessLookupError:pass
             try:process.wait(timeout=5)
-            except subprocess.TimeoutExpired:os.killpg(process.pid,signal.SIGKILL);process.wait()
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid,signal.SIGKILL);process.wait()
+            # A CLI may exit before its private helper. Never leave its process group behind.
+            try:
+                os.killpg(process.pid,0);time.sleep(1);os.killpg(process.pid,signal.SIGKILL)
+            except ProcessLookupError:pass
         stdout.unlink(missing_ok=True)
         signal.signal(signal.SIGTERM,previous)
 
