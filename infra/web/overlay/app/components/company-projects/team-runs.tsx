@@ -11,14 +11,15 @@ import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState } from 'react'
 import { currentWorkspaceIdAtom } from '@/context/workspace-state'
 import Link from '@/next/link'
-import { useSearchParams } from '@/next/navigation'
+import { useRouter, useSearchParams } from '@/next/navigation'
 import { stageStates as states, teamStageHref } from '@/utils/company-team-work'
 import { projectApi } from '@/service/company-projects'
 import { stageApi } from '@/service/company-stages'
 import TeamRecovery from './team-recovery'
 import FormDialog from './form-dialog'
+import { DirectoryPage, DirectoryNotice, DirectorySummary, DirectoryToolbar, DirectoryPagination, DirectoryEmpty, directoryButton, directoryField, matchesSearch, resultPage } from './team-directory'
 
-const panel = 'space-y-4 rounded-2xl border border-divider-regular bg-background-default p-5'
+const panel = 'min-w-0 space-y-4 [overflow-wrap:anywhere] rounded-2xl border border-divider-regular bg-background-default p-5'
 const button = 'rounded-lg border border-divider-regular px-4 py-2 text-sm disabled:opacity-50'
 const primary = `${button} bg-components-button-primary-bg text-components-button-primary-text`
 const field = 'mt-2 block w-full rounded-lg border border-divider-regular bg-background-default p-3 text-text-primary'
@@ -144,6 +145,7 @@ function StagePanel({ project, instance, stage, title, changed, close }: { proje
 
 export default function TeamRuns({ projectId }: { projectId: string }) {
   const cache = useQueryClient()
+  const router = useRouter()
   const queryStageRefresh = () => cache.invalidateQueries({ queryKey: ['team-stage'] })
   const workspace = useAtomValue(currentWorkspaceIdAtom)
   const params = useSearchParams()
@@ -154,24 +156,41 @@ export default function TeamRuns({ projectId }: { projectId: string }) {
   const [selection, setSelection] = useState<{ instance: string; stage: string } | null>(null)
   const [controlInstance, setControlInstance] = useState<string | null>(null)
   const [creating, setCreating] = useState<AvailableRequest | null>(null)
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState(linkedRequest ? 'all' : 'active')
+  const [page, setPage] = useState(1)
+  const [readyPage, setReadyPage] = useState(1)
   useEffect(() => { setSelection(linkedInstance && linkedStage ? { instance: linkedInstance, stage: linkedStage } : null); setControlInstance(null); setCreating(null) }, [linkedInstance, linkedStage, projectId, workspace])
+  useEffect(() => { setQuery(''); setStatus(linkedRequest ? 'all' : 'active'); setPage(1); setReadyPage(1) }, [linkedRequest, workspace, projectId])
   const action = useAction()
-  const refresh = async () => { const result = await list.refetch(); if (result.isError) throw new Error('Refresh failed') }
-  const choose = (value: TeamInstance) => { const first = value.stages.find(stage => stage.state !== 'completed') || value.stages[0]; setControlInstance(null); if (first) setSelection({ instance: value.id, stage: first.id }) }
-  return <main dir="rtl" className="h-full overflow-y-auto bg-background-body p-5 text-text-primary md:p-8"><div className="mx-auto max-w-5xl space-y-6"><Link className="text-sm text-text-accent" href={`/projects/${projectId}`}>نمای کلی پروژه ←</Link><header><h1 className="text-3xl font-bold">اجرای تیمی</h1><p className="mt-3 text-sm leading-7 text-text-secondary">مرحلهٔ خود را اجرا کنید، بازخورد بدهید و خروجی را برای تصمیم انسانی آماده کنید.</p></header>
-    {!entered ? <p role="status">ابتدا وارد فضای همین پروژه شوید.</p> : list.isSuccess ? <>
-      {!!list.data.available_requests.length && <section className={panel}><h2 className="text-lg font-semibold">درخواست‌های آمادهٔ ورود</h2>{list.data.available_requests.map(request => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3"><p>{request.title}</p><button className={button} disabled={action.busy} onClick={() => setCreating(request)}>ایجاد اجرای تیمی</button></div>)}<p className="text-xs leading-6 text-text-tertiary">ایجاد پرونده، ایجنت را اجرا نمی‌کند؛ شروع هر مرحله با مسئول مجاز آن است.</p></section>}{action.error && <p role="alert">{action.error}</p>}
-      {creating && <FormDialog open title="ایجاد اجرای تیمی" description="برای این درخواست، پروندهٔ اجرا بر اساس نسخهٔ فلویی که PO تأیید کرده ساخته می‌شود. ورودی‌ها و مسئولان از همان نسخه گرفته می‌شوند؛ ایجاد پرونده، ایجنت را اجرا نمی‌کند." busy={action.busy} error={action.error} close={() => setCreating(null)}>
-        <form className="space-y-4" onSubmit={event => { event.preventDefault(); void action.run(creating, async key => { const value = await stageApi.create(projectId, creating, key); await refresh(); choose(value); setCreating(null) }) }}>
-          <p className="text-sm leading-7">درخواست منتخب: <strong>{creating.title}</strong></p>
-          <p className="text-xs leading-6 text-text-tertiary">پس از ایجاد، مرحلهٔ خود را باز کنید و ورودی‌ها را پیش از اجرا بررسی کنید.</p>
-          <div className="flex justify-end gap-3"><button type="button" className={button} disabled={action.busy} onClick={() => setCreating(null)}>انصراف</button><button className={primary} disabled={action.busy}>{action.busy ? 'در حال ایجاد…' : 'ایجاد اجرای تیمی'}</button></div>
-        </form>
-      </FormDialog>}
-      <section aria-label="اجراهای تیمی" className="space-y-4">{!list.data.data.length && <p className={panel}>هنوز اجرای تیمی ایجاد نشده است؛ درخواست باید تأیید ورود معتبر داشته باشد.</p>}{list.data.data.filter(value => !linkedRequest || value.request_id === linkedRequest).map(value => <article className={panel} key={value.id}><h2 className="text-xl font-semibold">{value.title}</h2><p className="text-sm">{num(value.completed_stages)} از {num(value.total_stages)} مرحله نهایی شده · مسئول فعلی: {value.responsibility.person?.name || (value.responsibility.kind === 'po' ? 'مالک محصول' : value.responsibility.kind === 'cancelled' ? 'فرایند لغو شده است' : 'فرایند تمام شده است')}</p>{value.responsibility.reason && <p className="text-sm">{value.responsibility.reason}</p>}{!value.intake_valid && !value.cancellation && <p className="text-sm">تصمیم ورود نیاز به بررسی مجدد دارد.</p>}<ol className="flex flex-wrap gap-3">{value.stages.map(stage => <li key={stage.id}><Link className={`${button} inline-block`} aria-current={selection?.stage === stage.id ? 'step' : undefined} href={teamStageHref(projectId, value.id, stage.id)} onClick={event => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setControlInstance(null); setSelection({ instance: value.id, stage: stage.id }) }}>{stage.title} · {states[stage.state]}</Link></li>)}</ol><button className={button} onClick={() => { setSelection(null); setControlInstance(value.id) }}>بازبینی و بازیابی این فرایند</button></article>)}</section>
+  const refresh = async () => { const result = await list.refetch(); void cache.invalidateQueries({ queryKey: ['company-projects', workspace, projectId, 'overview'] }); if (!result.isSuccess) throw new Error('Refresh failed') }
+  const choose = (value: TeamInstance) => { const stage = value.stages.find(stage => stage.id === value.current_stage_id) || value.stages.find(stage => stage.state !== 'completed') || value.stages[value.stages.length - 1]; setControlInstance(null); if (stage) setSelection({ instance: value.id, stage: stage.id }) }
+  const values = list.data?.data || []
+  const needsReview = (value: TeamInstance) => value.state === 'active' && (!value.intake_valid || value.stages.some(stage => stage.id === value.current_stage_id && ['failed', 'stale', 'interrupted'].includes(stage.state)))
+  const filtered = values.filter(value => (!linkedRequest || value.request_id === linkedRequest) && matchesSearch(query, value.title, value.responsibility.person?.name) && (status === 'all' || (status === 'attention' ? needsReview(value) : value.state === status)))
+  const results = resultPage(filtered, page)
+  const ready = list.data?.available_requests || []
+  const readyResults = resultPage(ready.filter(value => (!linkedRequest || value.id === linkedRequest) && matchesSearch(query, value.title)), readyPage)
+  const hasFilters = !!query.trim() || status !== 'all' || !!linkedRequest
+  const reset = () => { setQuery(''); setStatus('all'); setPage(1); setReadyPage(1); if (linkedRequest) router.replace(`/projects/${projectId}/team-runs`) }
+  return <DirectoryPage project={projectId} title="اجرای تیمی" description="وضعیت رسیدگی به درخواست‌ها، مسئول ادامهٔ کار و مرحلهٔ بعد را پیگیری کنید. هر مرحله با اقدام صریح مسئول مجاز آن اجرا یا نهایی می‌شود." actions={<><button className={directoryButton} disabled={!entered || list.isFetching} onClick={() => void refresh().catch(() => {})}>{list.isFetching ? 'در حال تازه‌سازی…' : 'تازه‌سازی'}</button><Link className={directoryButton} href={`/projects/${projectId}/inbox`}>اقدام‌های من</Link></>}>
+    <DirectoryNotice project={projectId} entered={!!entered} loading={context.isPending || (!!entered && list.isPending)} error={context.isError || (!!entered && list.isError)} retry={() => context.isError ? context.refetch() : refresh()} />
+    {entered && list.data && <>
+      {list.isError && <p role="status" className="text-sm">آخرین فهرست دریافت‌شده نمایش داده می‌شود؛ دریافت اطلاعات تازه موفق نبود.</p>}
+      <DirectorySummary items={[{ label: 'کل اجراهای تیمی', count: values.length }, { label: 'اجرای باز', count: values.filter(value => value.state === 'active').length }, { label: 'نهایی‌شده', count: values.filter(value => value.state === 'completed').length }, { label: 'درخواست آمادهٔ شروع با دسترسی من', count: ready.length }]} />
+      <DirectoryToolbar query={query} change={value => { setQuery(value); setPage(1); setReadyPage(1) }} placeholder="عنوان درخواست یا مسئول فعلی" filtered={filtered.length} total={values.length} hasFilters={hasFilters} reset={reset}><label className="min-w-0 flex-1 basis-48 text-sm">وضعیت اجرا<select className={directoryField} value={status} onChange={event => { setStatus(event.target.value); setPage(1) }}><option value="active">اجراهای باز</option><option value="attention">نیازمند بررسی ورودی یا خطا</option><option value="completed">نهایی‌شده</option><option value="cancelled">لغوشده</option><option value="all">همهٔ اجراها</option></select></label></DirectoryToolbar>
+      {linkedRequest && <p className="rounded-xl bg-background-section p-3 text-sm leading-7">فهرست به درخواست انتخاب‌شده محدود است. <button className="text-text-accent" onClick={reset}>نمایش همهٔ درخواست‌ها</button></p>}
+      {!!readyResults.total && <section id="ready-team-requests" className={`${panel} space-y-4`}><header><h2 className="text-lg font-semibold">درخواست‌های آمادهٔ شروع</h2><p className="mt-2 text-xs leading-6 text-text-secondary">ایجاد پرونده، ایجنت را اجرا نمی‌کند. مرحلهٔ اول پس از ایجاد، ورودی‌ها و مسئول مشخص خواهد داشت.</p></header><ul className="m-0 list-none divide-y divide-divider-regular p-0">{readyResults.items.map(request => <li key={request.id} className="flex min-w-0 flex-wrap items-center justify-between gap-3 py-3"><p className="min-w-0 break-words text-sm font-medium">{request.title}</p><button className={button} disabled={action.busy} onClick={() => setCreating(request)}>بررسی و ایجاد اجرا</button></li>)}</ul><DirectoryPagination value={readyResults} change={setReadyPage} /></section>}
+      {action.error && <p role="alert">{action.error}</p>}
+      {creating && <FormDialog open title="ایجاد اجرای تیمی" description="پرونده بر اساس نسخهٔ فلویی که مالک محصول تأیید کرده ساخته می‌شود؛ این اقدام هیچ ایجنتی را اجرا نمی‌کند." busy={action.busy} error={action.error} close={() => setCreating(null)}><form className="space-y-4" onSubmit={event => { event.preventDefault(); void action.run(creating, async key => { const value = await stageApi.create(projectId, creating, key); await refresh(); setQuery(''); setStatus('active'); choose(value); setCreating(null) }) }}><p className="text-sm leading-7">درخواست منتخب: <strong>{creating.title}</strong></p><div className="flex justify-end gap-3"><button type="button" className={button} disabled={action.busy} onClick={() => setCreating(null)}>انصراف</button><button className={primary} disabled={action.busy}>{action.busy ? 'در حال ایجاد…' : 'ایجاد پروندهٔ اجرا'}</button></div></form></FormDialog>}
+      {!results.items.length ? <DirectoryEmpty filtered={hasFilters && !!values.length} title="اجرای تیمی‌ای برای نمایش وجود ندارد" reset={reset}>درخواست باید تأیید ورود معتبر داشته باشد. درخواست‌های آماده از همین صفحه وارد رسیدگی می‌شوند.</DirectoryEmpty> : <ul aria-label="اجراهای تیمی" className="m-0 list-none space-y-4 p-0">{results.items.map(value => {
+        const current = value.stages.find(stage => stage.id === value.current_stage_id)
+        return <li key={value.id}><article className={panel}><header><p className="mb-2 text-xs font-medium text-text-accent">{value.state === 'completed' ? 'نهایی‌شده' : value.state === 'cancelled' ? 'لغوشده' : current ? states[current.state] || 'در حال رسیدگی' : 'نیاز به بررسی'}</p><h2 className="break-words text-xl font-semibold leading-8">{value.title}</h2></header><progress className="h-2 w-full accent-current text-text-accent" max={value.total_stages || 1} value={value.completed_stages} aria-label={`پیشرفت ${value.title}`} /><p className="text-sm leading-7">{num(value.completed_stages)} از {num(value.total_stages)} مرحله نهایی‌شده · مسئول ادامه: {value.responsibility.person?.name || (value.responsibility.kind === 'po' ? 'مالک محصول' : value.state === 'cancelled' ? 'فرایند لغوشده' : value.state === 'completed' ? 'کار تمام شده' : 'نیاز به بررسی')}</p>{value.responsibility.reason && <p className="rounded-xl bg-background-section p-3 text-sm leading-7">{value.responsibility.reason}</p>}{!value.intake_valid && !value.cancellation && <p className="text-sm leading-7">تصمیم ورود نیاز به بررسی مجدد مالک محصول دارد.</p>}<details><summary className="cursor-pointer text-sm text-text-secondary">همهٔ مراحل ({num(value.total_stages)})</summary><ol className="m-0 mt-4 flex list-none flex-wrap gap-3 p-0">{value.stages.map(stage => <li key={stage.id}><Link className={`${button} inline-block ${selection?.stage === stage.id ? 'bg-background-section font-semibold text-text-accent ring-1 ring-text-accent' : ''}`} aria-current={selection?.stage === stage.id ? 'step' : undefined} href={teamStageHref(projectId, value.id, stage.id)} onClick={event => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setControlInstance(null); setSelection({ instance: value.id, stage: stage.id }) }}>{stage.title} · {states[stage.state] || 'نیاز به بررسی'}</Link></li>)}</ol></details><footer className="flex flex-wrap gap-2 border-t border-divider-regular pt-5"><button className={primary} onClick={() => choose(value)}>{value.state === 'active' ? 'بررسی مرحلهٔ فعلی' : 'مشاهدهٔ مراحل و نتیجه'}</button><button className={button} onClick={() => { setSelection(null); setControlInstance(value.id) }}>بازبینی و بازیابی</button><Link className={button} href={`/projects/${projectId}/requests?request=${encodeURIComponent(value.request_id)}`}>درخواست و تصمیم ورود</Link></footer></article></li>
+      })}</ul>}
+      <DirectoryPagination value={results} change={setPage} />
       {controlInstance && <TeamRecovery key={`${workspace}:${controlInstance}`} projectId={projectId} instanceId={controlInstance} changed={async () => { await refresh(); await queryStageRefresh() }} close={() => setControlInstance(null)} />}
-      {selection && <StagePanel key={`${workspace}:${selection.instance}:${selection.stage}`} project={projectId} instance={selection.instance} stage={selection.stage} title={list.data.data.find(value => value.id === selection.instance)?.title || 'در حال دریافت اطلاعات'} changed={refresh} close={() => setSelection(null)} />}
-    </> : <p role={list.isError ? 'alert' : 'status'}>{list.isError ? 'دریافت اجراها انجام نشد.' : 'در حال دریافت اجراها…'}</p>}
-    <div className="flex flex-wrap gap-3"><button className={button} disabled={!entered || list.isFetching} onClick={() => list.refetch()}>تازه‌سازی اجراهای تیمی</button><Link className={button} href={`/projects/${projectId}/requests`}>درخواست‌های پروژه</Link><Link className={button} href={`/projects/${projectId}/inbox`}>اقدام‌های من و وضعیت تیم</Link></div>
-  </div></main>
+      {selection && <StagePanel key={`${workspace}:${selection.instance}:${selection.stage}`} project={projectId} instance={selection.instance} stage={selection.stage} title={values.find(value => value.id === selection.instance)?.title || 'مرحلهٔ انتخاب‌شده'} changed={refresh} close={() => setSelection(null)} />}
+      <Link className="text-sm text-text-accent" href={`/projects/${projectId}/requests`}>درخواست‌های پروژه ←</Link>
+    </>}
+  </DirectoryPage>
 }
