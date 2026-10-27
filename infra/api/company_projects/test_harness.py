@@ -1,8 +1,9 @@
 """Focused server-only checks. Never start a harness, model, browser or client."""
+from datetime import timedelta
 from uuid import uuid4
 from unittest.mock import patch
 import sqlalchemy as sa
-from werkzeug.exceptions import BadRequest,Conflict,Forbidden,NotFound
+from werkzeug.exceptions import BadRequest,Conflict,Forbidden,NotFound,ServiceUnavailable
 from company_projects import harness,agents,stages,access,source_code as source
 from company_projects.test_stages import StageFixture
 from models.workflow import WorkflowRun
@@ -102,3 +103,62 @@ class HarnessTests(StageFixture):
         cfg=harness.settings(*self.policy_args)['policy']
         harness.save_policy(*self.policy_args,dict(expected_revision=cfg['revision'],enabled=True,instructions='Requires source',requires_source=True))
         with self.assertRaises(BadRequest):self.launch_harness()
+
+    def test_stale_cleanup_cannot_replace_a_successful_result(self):
+        row=self.launch_harness();old=harness.load(self.session,row['active_attempt_id'])
+        result=self.submit(row)
+        self.assertFalse(harness.finish(self.session,old,'interrupted',{'error':'stale sweep'})['recorded'])
+        current=harness.load(self.session,old['attempt_id'])
+        self.assertEqual(current['state'],'succeeded');self.assertEqual(current['result']['outputs'],{'answer':'Harness result'})
+        self.assertEqual(len(self.get()['artifacts']),1);self.assertEqual(self.get()['state'],result['state'])
+
+    def test_policy_change_stops_active_work_and_program_retry_has_no_stale_harness_card(self):
+        row=self.launch_harness();cfg=harness.settings(*self.policy_args)['policy']
+        same=dict(expected_revision=cfg['revision'],enabled=True,instructions=cfg['instructions'],requires_source=False)
+        self.assertEqual(harness.save_policy(*self.policy_args,same)['policy']['revision'],cfg['revision'])
+        self.assertEqual(harness.load(self.session,row['active_attempt_id'])['state'],'awaiting_user')
+        harness.save_policy(*self.policy_args,dict(same,enabled=False))
+        self.assertEqual(self.get()['state'],'failed');self.assertEqual(harness.load(self.session,row['active_attempt_id'])['state'],'blocked')
+        ready=self.act(self.get(),'retry');program=self.act(ready,'run')
+        self.assertIsNone(program['harness']);self.assertEqual(self.get(self.second)['state'],'blocked')
+
+    def test_read_expiry_rechecks_a_renewed_lease(self):
+        profile=dict(key='synthetic',name='Synthetic',kind='custom',version='test',digest='b'*64)
+        harness.register(self.session,self.runner,dict(profiles=[profile]));row=self.launch_harness('managed')
+        harness.claim(self.session,self.runner);t=harness.table(self.session)
+        self.session.execute(t.update().where(t.c.attempt_id==row['active_attempt_id']).values(lease_until=agents.now()-timedelta(seconds=1)))
+        old=harness.load(self.session,row['active_attempt_id'])
+        self.session.execute(t.update().where(t.c.attempt_id==row['active_attempt_id']).values(lease_until=agents.now()+timedelta(seconds=90)))
+        self.assertFalse(harness._expire_one(self.session,old)['recorded'])
+        self.assertEqual(harness.load(self.session,row['active_attempt_id'])['state'],'running')
+        self.session.execute(t.update().where(t.c.attempt_id==row['active_attempt_id']).values(lease_until=agents.now()-timedelta(seconds=1)))
+        with patch.object(harness,'_lock_tenant',side_effect=ServiceUnavailable('busy')):
+            with self.assertRaises(Conflict):harness.heartbeat(self.session,self.runner,row['active_attempt_id'])
+        self.assertEqual(self.get()['state'],'failed')
+        self.assertEqual(harness.load(self.session,row['active_attempt_id'])['state'],'interrupted')
+
+    def test_removed_profile_blocks_pending_work_but_preserves_a_completed_delivery(self):
+        profile=dict(key='synthetic',name='Synthetic',kind='custom',version='test',digest='c'*64)
+        harness.register(self.session,self.runner,dict(profiles=[profile]));row=self.launch_harness('managed')
+        harness.register(self.session,self.runner,dict(profiles=[]))
+        self.assertEqual(harness.load(self.session,row['active_attempt_id'])['state'],'blocked');self.assertEqual(self.get()['state'],'failed')
+        ready=self.act(self.get(),'retry');harness.register(self.session,self.runner,dict(profiles=[profile]))
+        row=self.act(ready,'run',execution=dict(self.selection,mode='managed',profile_key='synthetic'))
+        claimed=harness.claim(self.session,self.runner)['job']
+        body={k:v for k,v in self.payload(row).items() if k in ('snapshot_digest','outputs','evidence','session_id')}
+        harness.complete(self.session,self.runner,claimed['id'],body)
+        harness.register(self.session,self.runner,dict(profiles=[]))
+        self.assertEqual(harness.load(self.session,claimed['id'])['state'],'succeeded');self.assertEqual(len(self.get()['artifacts']),1)
+
+    def test_busy_stage_keeps_result_retryable_without_reexecution(self):
+        profile=dict(key='synthetic',name='Synthetic',kind='custom',version='test',digest='d'*64)
+        harness.register(self.session,self.runner,dict(profiles=[profile]));row=self.launch_harness('managed')
+        claimed=harness.claim(self.session,self.runner)['job']
+        body={k:v for k,v in self.payload(row).items() if k in ('snapshot_digest','outputs','evidence','session_id')}
+        with patch.object(harness,'_lock_tenant',side_effect=ServiceUnavailable('retry')):
+            with self.assertRaises(ServiceUnavailable):harness.complete(self.session,self.runner,claimed['id'],body)
+            self.assertTrue(harness.heartbeat(self.session,self.runner,claimed['id'])['active'])
+        self.assertEqual(harness.load(self.session,claimed['id'])['state'],'running');self.assertEqual(self.get()['artifacts'],[])
+        harness.complete(self.session,self.runner,claimed['id'],body)
+        self.assertEqual(len(self.get()['artifacts']),1)
+

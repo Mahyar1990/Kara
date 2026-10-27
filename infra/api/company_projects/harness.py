@@ -3,7 +3,8 @@ import json
 import re
 from datetime import timedelta
 import sqlalchemy as sa
-from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound, HTTPException
+from sqlalchemy.exc import OperationalError
+from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound, HTTPException, ServiceUnavailable
 from company_projects import agents, source_code as source, team, local_execution as local
 from models.workflow import Workflow
 
@@ -54,9 +55,11 @@ def save_policy(s,project,workspace,actor,agent_id,data):
     old=policy(s,agent);source.check_revision(data,old)
     if type(data['enabled']) is not bool or type(data['requires_source']) is not bool or not isinstance(data['instructions'],str) or len(data['instructions'])>32000: raise BadRequest('تنظیم هارنس معتبر نیست.')
     if data['enabled'] and (not data['instructions'].strip() or compatible(s,agent)): raise BadRequest(compatible(s,agent) or 'مأموریت و معیار پذیرش هارنس را بنویسید.')
+    if all(old[k]==v for k,v in dict(enabled=data['enabled'],instructions=data['instructions'].strip(),requires_source=data['requires_source']).items()):return settings(s,project,workspace,actor,agent_id)
     t=table(s,'policies'); values=dict(agent_id=agent['id'],workflow_digest=agent['workflow_digest'],revision=old['revision']+1,enabled=data['enabled'],instructions=data['instructions'].strip(),requires_source=data['requires_source'],updated_by=str(actor),updated_at=agents.now())
     if 'agent_id' in old: s.execute(t.update().where(t.c.agent_id==agent['id'],t.c.workflow_digest==agent['workflow_digest']).values(**values))
     else:s.execute(t.insert().values(**values))
+    _retire_invalid(s,sa.and_(table(s).c.snapshot['agent_id'].astext==str(agent['id']),table(s).c.snapshot['workflow_digest'].astext==agent['workflow_digest']))
     return settings(s,project,workspace,actor,agent_id)
 
 def profiles(s,actor):
@@ -78,6 +81,8 @@ def register(s,runner,data):
         values.append(dict(device_id=str(runner['id']),profile_key=p['key'],metadata=dict(name=name,kind=p['kind'],version=p['version']),digest=p['digest'],updated_at=agents.now()))
     t=table(s,'profiles');s.execute(t.delete().where(t.c.device_id==str(runner['id'])))
     if values:s.execute(t.insert(),values)
+    jobs=table(s)
+    _retire_invalid(s,sa.and_(jobs.c.device_id==str(runner['id']),jobs.c.mode=='managed'))
     return dict(registered=True)
 
 def knowledge(s,workflow,actor):
@@ -143,6 +148,7 @@ def public(row):
 def console_detail(s,project,workspace,actor,agent_id,identity):
     from company_projects.agents import get_attempt
     get_attempt(s,project,workspace,actor,agent_id,identity)
+    expire(s,project=project)
     row=load(s,identity,actor=actor)
     return public(row)
 
@@ -170,9 +176,24 @@ def validate_result(row,outputs,evidence):
     if len(json.dumps(dict(outputs=outputs,evidence=evidence),ensure_ascii=False).encode())>524288:raise BadRequest('نتیجه بیش از حد مجاز است.')
     if row['snapshot']['requires_source'] and not row['prepared']:raise Conflict('ابتدا پوشهٔ مستقل این تسک را روی دستگاه آماده کنید.')
 
-def finish(s,row,state,result,completion_digest=None):
+def _lock_tenant(s,workspace):
     from models.account import Tenant
-    s.scalar(sa.select(Tenant).where(Tenant.id==row['workspace_id']).with_for_update())
+    try:
+        with s.begin_nested():s.scalar(sa.select(Tenant).where(Tenant.id==str(workspace)).with_for_update(nowait=True))
+    except OperationalError as error:
+        if (getattr(error.orig,'pgcode',None) or getattr(error.orig,'sqlstate',None))!='55P03':raise
+        raise ServiceUnavailable('مرحله هم‌زمان در حال تغییر است؛ نتیجه را بدون اجرای دوباره، مجدداً ارسال کنید.') from None
+
+def finish(s,row,state,result,completion_digest=None,guard=None):
+    _lock_tenant(s,row['workspace_id'])
+    row=load(s,row['attempt_id'],lock=True)
+    # A stale sweep, profile update or cancellation must never replace a completed result.
+    if row['state'] in TERMINAL:
+        if state=='succeeded':
+            if row['state']=='succeeded' and completion_digest==row['completion_digest']:return dict(recorded=True)
+            raise Conflict('تلاش قبلاً پایان یافته است.')
+        return dict(recorded=False)
+    if guard and not guard(s,row):return dict(recorded=False)
     if state=='succeeded':authorize(s,row)
     native=agents.tables(s)[2]; status='succeeded' if state=='succeeded' else 'interrupted' if state in ('interrupted','cancelled') else 'blocked' if state=='blocked' else 'failed'
     s.execute(table(s).update().where(table(s).c.attempt_id==row['attempt_id']).values(state=state,result=result,completion_digest=completion_digest,lease_until=None,updated_at=agents.now()))
@@ -196,12 +217,53 @@ def submit(s,row,data,*,observed=False):
     result=dict(outputs=data['outputs'],evidence=data['evidence'],origin='managed_harness' if observed else 'user_submission',session_id=data['session_id'],snapshot_digest=row['snapshot_digest'])
     return finish(s,row,'succeeded',result,digest)
 
-def expire(s):
-    t=table(s);native=agents.tables(s)[2]
-    for value in s.execute(sa.select(t,native.c.status.label('native_status')).join(native,native.c.id==t.c.attempt_id).where(t.c.state.in_(ACTIVE))).mappings():
-        row=dict(value)
-        if row['native_status'] not in ('pending','running'):finish(s,row,'interrupted',{'error':'تلاش متوقف شده است.'})
-        elif row['state']=='running' and row['lease_until'] and row['lease_until']<agents.now():finish(s,row,'interrupted',{'error':'ارتباط Runner قطع شد؛ اجرای مجدد نیازمند اقدام صریح است.'})
+def _configuration_error(s,row):
+    try:
+        key={k:row[k] for k in ('project_id','workspace_id')}
+        agent=agents.load(s,key,row['snapshot']['agent_id'])
+        cfg=policy(s,agent)
+        reason=compatible(s,agent)
+        if reason:return reason
+        if not cfg['enabled'] or cfg['revision']!=row['policy_revision'] or agent['workflow_digest']!=row['snapshot']['workflow_digest']:
+            return 'قرارداد هارنس تغییر کرده است؛ تلاش تازه لازم است.'
+        native=agents.tables(s)[2]
+        attempt=s.execute(sa.select(native).where(native.c.id==row['attempt_id'])).mappings().one()
+        join=agents.require(s,agent,row['account_id'],'run')
+        if join.id!=attempt['membership_id']:return 'عضویت اجرای تسک تغییر کرده است.'
+        from company_projects.stages import validate_attempt
+        validate_attempt(s,attempt)
+        source.device(s,row['account_id'],row['device_id'])
+        if row['mode']=='managed':
+            p=table(s,'profiles')
+            digest=s.scalar(sa.select(p.c.digest).where(p.c.device_id==row['device_id'],p.c.profile_key==row['profile_key']))
+            if digest!=row['profile_digest']:return 'پروفایل هارنس تغییر کرده یا غیرفعال شده است؛ روش اجرا را دوباره انتخاب کنید.'
+    except HTTPException:return 'دسترسی، درخواست یا نسخهٔ تسک تغییر کرده است.'
+    return None
+
+def _retire_invalid(s,condition):
+    t=table(s)
+    for value in s.execute(sa.select(t).where(t.c.state.in_(ACTIVE),condition)).mappings().all():
+        row=dict(value);reason=_configuration_error(s,row)
+        if reason:finish(s,row,'blocked',{'error':reason},guard=lambda session,current:bool(_configuration_error(session,current)))
+
+def _expiry_due(s,row):
+    native=agents.tables(s)[2]
+    status=s.scalar(sa.select(native.c.status).where(native.c.id==row['attempt_id']))
+    return status not in ('pending','running') or (row['state']=='running' and row['lease_until'] and row['lease_until']<agents.now())
+
+def _expire_one(s,row):
+    if _expiry_due(s,row):
+        return finish(s,row,'interrupted',{'error':'تلاش متوقف یا ارتباط Runner قطع شده است؛ اجرای دوباره نیازمند اقدام صریح است.'},guard=_expiry_due)
+    reason=_configuration_error(s,row)
+    if reason:return finish(s,row,'blocked',{'error':reason},guard=lambda session,current:bool(_configuration_error(session,current)))
+    return dict(recorded=False)
+
+def expire(s,project=None):
+    t=table(s);query=sa.select(t).where(t.c.state.in_(ACTIVE))
+    if project is not None:query=query.where(t.c.project_id==str(project))
+    for value in s.execute(query).mappings().all():
+        try:_expire_one(s,dict(value))
+        except ServiceUnavailable:continue  # Another transaction owns this stage; a later read retries cleanup.
 
 def claim(s,runner):
     expire(s);t=table(s)
@@ -213,9 +275,11 @@ def claim(s,runner):
     for value in s.execute(sa.select(t).where(t.c.device_id==runner['id'],t.c.account_id==runner['account_id'],t.c.state=='pending',t.c.mode=='managed').order_by(t.c.created_at).with_for_update(skip_locked=True).limit(10)).mappings():
         row=dict(value)
         try:
+            _lock_tenant(s,row['workspace_id'])
             authorize(s,row)
             from company_projects.agent_execution import claim as native_claim
             if not native_claim(s,row['attempt_id']):continue
+        except ServiceUnavailable:return dict(job=None)
         except HTTPException:
             finish(s,row,'blocked',{'error':'مجوز یا قرارداد هارنس تغییر کرده است.'});continue
         s.execute(t.update().where(t.c.attempt_id==row['attempt_id']).values(state='running',lease_until=agents.now()+timedelta(seconds=90),updated_at=agents.now()))
@@ -227,7 +291,7 @@ def busy(s,device_id):
 
 def heartbeat(s,runner,identity):
     expire(s);row=load(s,identity,runner=runner,lock=True)
-    if row['state']!='running':raise Conflict('هارنس باید متوقف شود.')
+    if row['state']!='running' or row['lease_until'] is None or row['lease_until']<=agents.now():raise Conflict('هارنس باید متوقف شود؛ مهلت اجرا پایان یافته است.')
     authorize(s,row);s.execute(table(s).update().where(table(s).c.attempt_id==row['attempt_id']).values(lease_until=agents.now()+timedelta(seconds=90)))
     return dict(active=True)
 
@@ -269,7 +333,8 @@ def bind_stage(s,identity,stage,instance,input_digest,dependencies):
 def stage_info(s,stage,actor):
     from company_projects import stages
     bridge=stages.tables(s)[2];t=table(s)
-    row=s.execute(sa.select(t).join(bridge,bridge.c.attempt_id==t.c.attempt_id).where(bridge.c.stage_id==stage['id'],bridge.c.round==stage['round']).order_by(t.c.created_at.desc()).limit(1)).mappings().first()
+    latest=stage['active_attempt_id'] or s.scalar(sa.select(bridge.c.attempt_id).where(bridge.c.stage_id==stage['id'],bridge.c.round==stage['round']).order_by(bridge.c.created_at.desc(),bridge.c.attempt_id.desc()).limit(1))
+    row=s.execute(sa.select(t).where(t.c.attempt_id==latest)).mappings().first() if latest else None
     if not row:return None
     mine=str(actor)==str(row['account_id']);actions=[]
     if mine and row['state'] in ACTIVE:

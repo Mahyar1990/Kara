@@ -313,6 +313,8 @@ def available_actions(session, scope, value, stage, actor, *, input_error=None):
 
 def get_stage(session, project, workspace, actor, instance_id, stage_id):
     scope = scoped(session, project, workspace, actor)
+    from company_projects.harness import expire as expire_harness
+    expire_harness(session,project=project)
     value = instance(session, scope, instance_id)
     stage = load(session, tables(session)[1], scope, stage_id)
     if stage['instance_id'] != value['id']:
