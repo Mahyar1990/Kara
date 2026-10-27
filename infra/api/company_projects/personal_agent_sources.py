@@ -166,10 +166,20 @@ def skills(s, source, snapshot, actor):
     from models.skill import AgentSkillBindingSnapshot, Skill, SkillVersion
     texts = []; pins = []
     # Snapshot bindings only: unpublished draft bindings must never leak into a team version.
-    bindings = s.scalars(sa.select(AgentSkillBindingSnapshot).where(
+    bindings = list(s.scalars(sa.select(AgentSkillBindingSnapshot).where(
         AgentSkillBindingSnapshot.tenant_id == source.tenant_id,
         AgentSkillBindingSnapshot.agent_id == source.id,
-        AgentSkillBindingSnapshot.config_snapshot_id == snapshot.id).order_by(AgentSkillBindingSnapshot.priority))
+        AgentSkillBindingSnapshot.config_snapshot_id == snapshot.id).order_by(AgentSkillBindingSnapshot.priority).limit(21)))
+    attached = snapshot.config_snapshot_dict.get('config_skills', [])
+    if len(bindings) + len(attached) > 20:
+        raise UnprocessableEntity('حداکثر بیست مهارت برای هر اتصال انتخاب کنید.')
+    total = 0
+    def append(text, pin):
+        nonlocal total
+        total += len(text.encode())
+        if total > LIMIT:
+            raise UnprocessableEntity('حجم مهارت‌های این اتصال بیش از بودجهٔ مجاز است.')
+        texts.append(text); pins.append(pin)
     for binding in bindings:
         skill = s.get(Skill, binding.skill_id)
         if not skill or skill.tenant_id != source.tenant_id:
@@ -179,17 +189,13 @@ def skills(s, source, snapshot, actor):
         if not version or version.skill_id != skill.id:
             raise UnprocessableEntity('مهارت متصل باید نسخهٔ منتشرشده داشته باشد.')
         text, archive_hash = package_text(s, source.tenant_id, version.archive_tool_file_id)
-        texts.append(f'\n## Skill: {skill.name}\n{text}')
-        pins.append(dict(skill_id=skill.id, name=skill.display_name, version_id=version.id,
+        append(f'\n## Skill: {skill.name}\n{text}', dict(skill_id=skill.id, name=skill.display_name, version_id=version.id,
             version=version.version_number, digest=skill_version_digest(version), archive_digest=archive_hash))
-    for item in snapshot.config_snapshot_dict.get('config_skills', []):
+    for item in attached:
         if item.get('is_missing') or not item.get('file_id'):
             raise UnprocessableEntity('فایل مهارت پیوست‌شده در دسترس نیست.')
         text, archive_hash = package_text(s, source.tenant_id, item['file_id'], item.get('hash'))
-        texts.append(f"\n## Skill: {item['name']}\n{text}")
-        pins.append(dict(name=item['name'], file_id=item['file_id'], archive_digest=archive_hash))
-    if len(pins) > 20 or sum(len(text.encode()) for text in texts) > LIMIT:
-        raise UnprocessableEntity('حجم مهارت‌های این اتصال بیش از بودجهٔ مجاز است.')
+        append(f"\n## Skill: {item['name']}\n{text}", dict(name=item['name'], file_id=item['file_id'], archive_digest=archive_hash))
     return '\n'.join(texts), pins
 
 
@@ -228,6 +234,21 @@ def template(value, names):
             raise UnprocessableEntity('متغیر متن ایجنت برای اجرای تیمی شناخته‌شده نیست: ' + key[:100])
         return '{{#start.' + key + '#}}'
     return re.sub(r'\{\{#?([^{}#]+)#?\}\}', replace, value)
+
+
+def query_template(value, names):
+    if '{%' in value or re.search(r'(?<!\{)\{#', value):
+        raise UnprocessableEntity('متن جستجو فقط متن و متغیرهای اعلام‌شده را می‌پذیرد؛ دستور قالب پشتیبانی نمی‌شود.')
+    variables = []
+    chunks = []
+    for part in re.split(r'(\{\{#start\.[A-Za-z][A-Za-z0-9_]*#\}\})', template(value, names)):
+        if part.startswith('{{#start.') and part.endswith('#}}'):
+            name = f'kara_query_{len(variables)}'
+            variables.append(dict(variable=name, value_selector=['start', part[9:-3]]))
+            chunks.append('{{ ' + name + ' }}')
+        elif part:
+            chunks.append('{{ ' + repr(part) + ' }}')
+    return ''.join(chunks), variables
 
 
 def compile_graph(s, source, snapshot, actor):
@@ -282,12 +303,10 @@ def compile_graph(s, source, snapshot, actor):
         else:
             if not query.get('value'):
                 raise UnprocessableEntity('متن جستجوی سفارشی دانش خالی است.')
-            if '{%' in query['value'] or '{#' in query['value']:
-                raise UnprocessableEntity('متن جستجو فقط متن و متغیرهای اعلام‌شده را می‌پذیرد؛ دستور قالب پشتیبانی نمی‌شود.')
+            query_text, query_variables = query_template(query['value'], names)
             # Use a literal template node, so custom queries keep their declared variables.
             add(f'query_{i}', type='template-transform', title='عبارت جستجوی دانش',
-                template=template(query['value'], names).replace('{{#start.', '{{ ').replace('#}}', ' }}'),
-                variables=[dict(variable=name, value_selector=['start', name]) for name in sorted(names)])
+                template=query_text, variables=query_variables)
             selector = [f'query_{i}', 'output']
         rerank = retrieval.get('reranking_model') or {}
         if retrieval['reranking_enable'] and not rerank:

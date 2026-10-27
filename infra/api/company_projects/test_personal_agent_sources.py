@@ -20,6 +20,20 @@ from models.workflow import Workflow
 
 
 class PersonalAgentSourceTests(FlowFixture):
+    def test_custom_query_selectors_and_skill_budget(self):
+        from jinja2 import Environment
+        rendered, variables = personal.query_template('Find {{#sys.query#}} / {{none}} / {{request_context}}', {'task', 'none', 'request_context'})
+        values = {'task': 'task text', 'none': 'named value', 'request_context': 'context'}
+        self.assertEqual(Environment().from_string(rendered).render(**{v['variable']: values[v['value_selector'][1]] for v in variables}),
+            'Find task text / named value / context')
+        for value in ('{% include "file" %}', '{# comment #}', '{{unknown}}'):
+            with self.assertRaises(UnprocessableEntity): personal.query_template(value, {'task'})
+        config = self.config.model_dump()
+        config['config_skills'] = [dict(name=f'skill-{i}', file_kind='tool_file', file_id=str(uuid4())) for i in range(21)]
+        self.snapshot.config_snapshot = AgentSoulConfig.model_validate(config); self.session.flush()
+        with patch.object(personal, 'package_text', side_effect=AssertionError('must reject before storage reads')):
+            with self.assertRaises(UnprocessableEntity): personal.skills(self.session, self.source, self.snapshot, self.project_owner.id)
+
     def setUp(self):
         super().setUp()
         self.source = Agent(tenant_id=self.workspace_a.id, name='Synthetic personal agent', scope='roster',
