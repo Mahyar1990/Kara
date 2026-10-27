@@ -180,7 +180,7 @@ export default function TeamAgents({ projectId }: { projectId: string }) {
   const refresh = async () => { const value = await list.refetch(); void cache.invalidateQueries({ queryKey: ['company-projects', workspace, projectId, 'overview'] }); return value }
   const registered = async (identity?: string) => {
     const fresh = await refresh()
-    if (fresh.isError) throw new Error('Refresh failed')
+    if (!fresh.isSuccess) throw new Error('Refresh failed')
     setQuery(''); setStatus('active'); setPermission('all'); setSort('registered')
     const index = fresh.data.data.filter(agent => !agent.archived).findIndex(agent => agent.id === identity)
     setPage(Math.floor(Math.max(0, index) / 8) + 1)

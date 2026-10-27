@@ -139,7 +139,7 @@ export default function TeamRequests({ projectId }: { projectId: string }) {
   useEffect(() => { setQuery(''); setStatus('all'); setOrigin('all'); setPage(1) }, [workspace, projectId])
   const detail = useQuery({ queryKey: ['team-request', workspace, projectId, selected], queryFn: () => requestApi.detail(projectId, selected!), enabled: entered && !!selected })
   const invalidateOverview = () => cache.invalidateQueries({ queryKey: ['company-projects', workspace, projectId, 'overview'] })
-  const saved = async (value: TeamRequest) => { const fresh = await list.refetch(); void invalidateOverview(); if (fresh.isError) throw new Error('Refresh failed'); setSelected(value.id); setEditing(false); if (selected === value.id) { const result = await detail.refetch(); if (result.isError) throw new Error('Refresh failed') } }
+  const saved = async (value: TeamRequest) => { const fresh = await list.refetch(); void invalidateOverview(); if (!fresh.isSuccess) throw new Error('Refresh failed'); setSelected(value.id); setEditing(false); if (selected === value.id) { const result = await detail.refetch(); if (result.isError) throw new Error('Refresh failed') } }
   const refresh = async () => { await list.refetch(); void invalidateOverview(); if (selected) await detail.refetch() }
   const values = list.data?.data || []
   const filtered = values.filter(value => matchesSearch(query, value.title, value.jira?.key) && (status === 'all' || (status === 'jira_review' ? value.jira?.needs_review : value.state === status)) && (origin === 'all' || (origin === 'jira' ? !!value.jira : !value.jira)))
