@@ -29,6 +29,20 @@ class TeamInboxTests(StageFixture):
             self.assertEqual(self.inbox(self.project_owner)['data'], [])
         self.assertEqual(before, counts())
 
+    def test_filters_keep_authority_counts_and_apply_before_paging(self):
+        task = self.inbox()['data'][0]
+        found = self.inbox(name=task['title'].upper(), kind='run')
+        self.assertEqual((found['total'], found['unfiltered_total'], found['counts']['run']), (1, 1, 1))
+        self.assertEqual(self.inbox(name='no matching request')['total'], 0)
+        self.assertEqual(self.inbox(kind='finalize')['total'], 0)
+        self.assertEqual(self.inbox(page='2', name=task['title'])['total'], 1)
+        self.assertEqual(self.inbox(self.admin, name=task['title'])['unfiltered_total'], 0)
+        extra = self.decision(self.request(title='نياز ۱۲۳'))
+        self.create_instance(req=extra)
+        self.assertEqual(self.inbox(name='نیاز 123')['total'], 1)
+        for kw in ({'kind': 'delete'}, {'name': 'x' * 201}):
+            with self.assertRaises(BadRequest): self.inbox(**kw)
+
     def test_review_decision_progress_and_next_ready_are_human_owned(self):
         row = self.complete()
         self.assertEqual(self.inbox()['data'][0]['kind'], 'request_decision')

@@ -14,7 +14,7 @@ const base = (project: string) => `/company/projects/${project}/team/instances`
 export const stageApi = {
   controls: (project: string, instance: string) => get<TeamControls>(`${base(project)}/${instance}/controls`),
   control: (project: string, instance: string, stage: string | null, action: string, body: Record<string, unknown>, key: string) => post(`${base(project)}/${instance}/${stage ? `stages/${stage}/control/${action}` : 'cancellations'}`, { body, headers: { 'Idempotency-Key': key } }),
-  tasks: (project: string, page: number) => get<{ data: TeamTask[]; total: number; page: number; has_more: boolean }>(`/company/projects/${project}/team/actions`, { params: { page } }),
+  tasks: (project: string, page: number, name = '', kind = 'all') => get<{ data: TeamTask[]; total: number; unfiltered_total?: number; counts?: Record<string, number>; page_size?: number; page: number; has_more: boolean }>(`/company/projects/${project}/team/actions`, { params: { page, name, kind } }),
   list: (project: string) => get<{ data: TeamInstance[]; available_requests: AvailableRequest[] }>(base(project)),
   create: (project: string, request: AvailableRequest, key: string) => post<TeamInstance>(base(project), { body: { request_id: request.id, expected_revision: request.revision, intake_decision_id: request.intake_decision_id }, headers: { 'Idempotency-Key': key } }),
   detail: (project: string, instance: string, stage: string) => get<TeamStage>(`${base(project)}/${instance}/stages/${stage}`),

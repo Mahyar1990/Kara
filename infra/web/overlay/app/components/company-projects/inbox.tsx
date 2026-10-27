@@ -4,7 +4,7 @@ import type { CompanyProject } from '@/service/company-projects'
 import type { RunDetail, RunSummary } from '@/service/company-inbox'
 import type { HumanInputFormData } from '@/types/workflow'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from '@/next/navigation'
 import HumanInputForm from '@/app/components/base/chat/chat/answer/human-input-content/human-input-form'
 import Link from '@/next/link'
@@ -62,6 +62,8 @@ function Runs({ project }: { project: CompanyProject }) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<string | null>(params.get('run'))
+  const linkedRun = params.get('run')
+  useEffect(() => { setSelected(linkedRun) }, [linkedRun])
   const runs = useQuery({ queryKey: ['company-runs', project.workspace_id, status, search, page], queryFn: () => inboxApi.runs(project.id, status, search, page), refetchInterval: 10000 })
   return <><p className="text-sm leading-7 text-text-secondary">وضعیت اجراها، نتیجه‌ها و درخواست‌های تصمیم را پیگیری کنید. تصمیم‌های ارجاع‌شده به شما در همین کارتابل قابل بررسی‌اند.</p>
     <div className="grid gap-4 sm:grid-cols-3">{(['running', 'paused', 'failed'] as const).map(state => <button key={state} className={`${panel} text-right`} onClick={() => { setStatus(state); setPage(1); setSelected(null) }}><p className="text-sm text-text-secondary">{states[state]}</p><p className="mt-3 text-3xl font-bold text-text-primary">{number(runs.data?.counts[state] || 0)}</p></button>)}</div>
@@ -73,8 +75,10 @@ function Runs({ project }: { project: CompanyProject }) {
 function InboxSections({ project }: { project: CompanyProject }) {
   const params = useSearchParams()
   const [section, setSection] = useState(params.get('run') ? 'technical' : 'team')
-  return <><nav aria-label="بخش‌های کارتابل" className="flex flex-wrap gap-3"><button className={button} aria-pressed={section === 'team'} onClick={() => setSection('team')}>اقدام‌های من و وضعیت تیم</button><button className={button} aria-pressed={section === 'technical'} onClick={() => setSection('technical')}>اجراها و تأییدهای فنی</button></nav>{section === 'team' ? <TeamInbox key={project.workspace_id} projectId={project.id} /> : <Runs key={project.workspace_id} project={project} />}</>
+  const linkedRun = params.get('run')
+  useEffect(() => { if (linkedRun) setSection('technical') }, [linkedRun])
+  return <><p className="text-sm leading-7 text-text-secondary">اقدام‌های مراحل تیمی را از بخش اول و سوابق اجرای برنامه‌ها و فرم‌های تأیید آن‌ها را از بخش دوم پیگیری کنید.</p><nav aria-label="بخش‌های کارتابل" className="flex flex-wrap gap-3"><button className={`${button} ${section === 'team' ? 'bg-background-section font-semibold text-text-accent ring-1 ring-text-accent' : ''}`} aria-pressed={section === 'team'} onClick={() => setSection('team')}>اقدام‌های من و وضعیت تیم</button><button className={`${button} ${section === 'technical' ? 'bg-background-section font-semibold text-text-accent ring-1 ring-text-accent' : ''}`} aria-pressed={section === 'technical'} onClick={() => setSection('technical')}>سوابق اجرا و تأییدهای برنامه‌ها</button></nav>{section === 'team' ? <TeamInbox key={project.workspace_id} projectId={project.id} /> : <Runs key={project.workspace_id} project={project} />}</>
 }
 export default function ProjectInbox({ projectId }: { projectId: string }) {
-  return <ProjectPage projectId={projectId} title="کارتابل پروژه">{project => <InboxSections project={project} />}</ProjectPage>
+  return <ProjectPage projectId={projectId} title="کارتابل و اقدام‌های من">{project => <InboxSections project={project} />}</ProjectPage>
 }

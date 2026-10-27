@@ -47,7 +47,7 @@ class StageActionApi(Resource):
 class TeamActionsApi(Resource):
     @guarded()
     def get(self, project_id):
-        return invoke(team_inbox.list_actions, project_id, request.args.get('page', '1'))
+        return invoke(team_inbox.list_actions, project_id, request.args.get('page', '1'), request.args.get('name', ''), request.args.get('kind', 'all'))
 
 
 @console_ns.route('/company/projects/<uuid:project_id>/team/instances/<uuid:instance_id>/controls')

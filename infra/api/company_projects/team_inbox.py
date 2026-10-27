@@ -1,4 +1,5 @@
 """Read-only human work projections. No engine dispatch, decision or new authority."""
+import unicodedata
 import sqlalchemy as sa
 from werkzeug.exceptions import BadRequest, HTTPException
 
@@ -52,7 +53,14 @@ def handoffs(session, value, stage):
     return result
 
 
-def list_actions(session, project, workspace, actor, page='1'):
+def list_actions(session, project, workspace, actor, page='1', name='', kind='all'):
+    kinds = ('finalize', 'revalidate', 'run', 'retry', 'request_decision', 'feedback')
+    if not isinstance(name, str) or len(name) > 200 or kind not in ('all', *kinds):
+        raise BadRequest('فیلتر کارتابل معتبر نیست.')
+    def normalize(value):
+        text = unicodedata.normalize('NFKC', value or '').casefold().translate(str.maketrans('يك۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', 'یک01234567890123456789')).replace('\u200c', ' ').replace('\u200d', ' ')
+        return ' '.join(''.join(c for c in text if unicodedata.category(c) != 'Mn').split())
+    words = normalize(name).split()
     try:
         page = int(page)
         if page < 1:
@@ -79,13 +87,16 @@ def list_actions(session, project, workspace, actor, page='1'):
             actions = stages.available_actions(session, scope, value, stage, actor, input_error=error)
             if not actions:
                 continue
-            kind = next((action for action in ('finalize', 'revalidate', 'run', 'retry', 'request_decision', 'feedback') if action in actions), None)
+            task_kind = next((action for action in kinds if action in actions), None)
             revision = stages.table(session, 'company_team_request_revisions')
             title = session.scalar(sa.select(revision.c.title).where(revision.c.id == value['request_revision_id']))
             result.append(dict(instance_id=value['id'], stage_id=stage['id'], request_id=value['request_id'],
-                title=title, stage_title=stage['binding']['title'], state=stage['state'], kind=kind,
+                title=title, stage_title=stage['binding']['title'], state=stage['state'], kind=task_kind,
                 actions=actions, expected_outputs=stage['binding']['output_contract'],
                 executor=stage['binding']['executor'], finalizer=stage['binding']['finalizer'],
                 selected_artifact_id=stage['selected_artifact_id']))
+    counts = {item: sum(row['kind'] == item for row in result) for item in kinds}
+    total = len(result)
+    result = [row for row in result if (kind == 'all' or row['kind'] == kind) and all(word in normalize(row['title'] + ' ' + row['stage_title']) for word in words)]
     offset = (page - 1) * 25
-    return dict(data=result[offset:offset + 25], total=len(result), page=page, has_more=offset + 25 < len(result))
+    return dict(data=result[offset:offset + 25], total=len(result), unfiltered_total=total, counts=counts, page_size=25, page=page, has_more=offset + 25 < len(result))

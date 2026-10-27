@@ -46,10 +46,10 @@ export function DirectorySummary({ items }: { items: { label: string; count: num
   return <section aria-label="خلاصهٔ فهرست کامل" className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">{items.map(item => <div key={item.label} className={directoryPanel}><p className="text-xs leading-6 text-text-secondary">{item.label}</p><p className="mt-2 text-2xl font-bold">{number(item.count)}</p></div>)}</section>
 }
 
-export function DirectoryToolbar({ query, change, placeholder, filtered, total, reset, hasFilters, children }: { query: string; change: (value: string) => void; placeholder: string; filtered: number; total: number; reset: () => void; hasFilters: boolean; children?: ReactNode }) {
+export function DirectoryToolbar({ query, change, placeholder, filtered, total, reset, hasFilters, children }: { query: string; change: (value: string) => void; placeholder: string; filtered?: number; total?: number; reset: () => void; hasFilters: boolean; children?: ReactNode }) {
   return <section aria-label="جستجو و فیلتر فهرست" className={`${directoryPanel} space-y-4`}>
     <div className="flex min-w-0 flex-wrap items-end gap-4"><label className="min-w-0 flex-[2] basis-56 text-sm">جستجو<input type="search" maxLength={200} className={directoryField} value={query} placeholder={placeholder} onChange={event => change(event.target.value)} /></label>{children}</div>
-    <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className="text-xs leading-6 text-text-secondary">{number(filtered)} مورد از {number(total)} مورد در دسترس، مطابق فیلترها</p>{hasFilters && <button className={directoryButton} onClick={reset}>پاک‌کردن فیلترها</button>}</div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className="text-xs leading-6 text-text-secondary">{filtered === undefined || total === undefined ? 'تعداد موارد هنوز دریافت نشده است.' : `${number(filtered)} مورد از ${number(total)} مورد در دسترس، مطابق فیلترها`}</p>{hasFilters && <button className={directoryButton} onClick={reset}>پاک‌کردن فیلترها</button>}</div>
   </section>
 }
 

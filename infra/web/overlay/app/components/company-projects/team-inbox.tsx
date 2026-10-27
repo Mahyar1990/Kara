@@ -1,26 +1,36 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { keepPreviousData, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { userProfileQueryOptions } from '@/features/account-profile/client'
 import Link from '@/next/link'
 import { stageApi } from '@/service/company-stages'
 import { stageStates, taskLabels, teamStageHref } from '@/utils/company-team-work'
 import { button, panel, QueryNotice } from './project-page'
-
-const num = (value: number) => value.toLocaleString('fa-IR')
+import { DirectorySummary, DirectoryToolbar, DirectoryPagination, DirectoryEmpty, directoryField } from './team-directory'
 
 export default function TeamInbox({ projectId }: { projectId: string }) {
+  const { data: { profile } } = useSuspenseQuery(userProfileQueryOptions())
   const [page, setPage] = useState(1)
-  const tasks = useQuery({ queryKey: ['team-actions', projectId, page], queryFn: () => stageApi.tasks(projectId, page), staleTime: 0 })
-  const progress = useQuery({ queryKey: ['team-instances', projectId], queryFn: () => stageApi.list(projectId), staleTime: 0 })
-  const refresh = () => { void tasks.refetch(); void progress.refetch() }
-  return <div className="space-y-6">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold text-text-primary">اقدام‌های من</h2><p className="mt-2 text-sm leading-7 text-text-secondary">مرحله و تصمیمی که اکنون مجوز انجامش را دارید. باز کردن کارتابل یا مرحله، ایجنتی را اجرا نمی‌کند.</p></div><button className={button} disabled={tasks.isFetching || progress.isFetching} onClick={refresh}>تازه‌سازی کارتابل</button></div>
-    {!tasks.isSuccess ? <QueryNotice error={tasks.isError} retry={() => tasks.refetch()} /> : <section aria-label="اقدام‌های من" className="space-y-4"><p className="text-sm text-text-secondary">{num(tasks.data.total)} اقدام در انتظار شما</p>{!tasks.data.data.length && <p className={panel}>در حال حاضر اقدام آماده‌ای با مجوز فعلی شما وجود ندارد.</p>}{tasks.data.data.map(task => <article className={`${panel} space-y-3`} key={`${task.instance_id}:${task.stage_id}`}><h3 className="text-lg font-semibold text-text-primary">{task.title}</h3><p className="text-sm text-text-secondary">{task.stage_title} · {stageStates[task.state]}</p><p className="font-medium text-text-primary">{taskLabels[task.kind]}</p><p className="text-sm text-text-secondary">خروجی مورد نیاز: {task.expected_outputs.join('، ')}</p><p className="text-sm text-text-secondary">اجراکننده: {task.executor.name} · نهایی‌کننده: {task.finalizer.name}</p><Link className={`${button} inline-block`} href={teamStageHref(projectId, task.instance_id, task.stage_id)}>بررسی مرحله و انجام اقدام</Link></article>)}{(page > 1 || tasks.data.has_more) && <nav aria-label="صفحه‌بندی اقدام‌ها" className="flex items-center gap-3"><button className={button} disabled={page === 1} onClick={() => setPage(page - 1)}>صفحهٔ قبل</button><span className="text-sm text-text-secondary">صفحهٔ {num(page)}</span><button className={button} disabled={!tasks.data.has_more} onClick={() => setPage(page + 1)}>صفحهٔ بعد</button></nav>}</section>}
-    <section aria-label="وضعیت درخواست‌های پروژه" className="space-y-4"><h2 className="text-xl font-semibold text-text-primary">وضعیت درخواست‌های پروژه</h2>{!progress.isSuccess ? <QueryNotice error={progress.isError} retry={() => progress.refetch()} /> : <>{!progress.data.data.length && <p className={panel}>هنوز درخواست وارد اجرای تیمی نشده است.</p>}{progress.data.data.map(value => {
-      const current = value.stages.find(stage => stage.id === value.current_stage_id)
-      return <article key={value.id} className={`${panel} space-y-3`}><h3 className="font-semibold text-text-primary">{value.title}</h3><p className="text-sm text-text-secondary">{num(value.completed_stages)} از {num(value.total_stages)} مرحله نهایی شده{current && ` · مرحلهٔ فعلی: ${current.title} · ${stageStates[current.state]}`}</p><progress className="w-full" aria-label={`پیشرفت ${value.title}`} max={value.total_stages || 1} value={value.completed_stages} /><p className="text-sm text-text-primary">مسئول فعلی: {value.responsibility.kind === 'cancelled' ? 'فرایند لغو شده است' : value.responsibility.kind === 'completed' ? 'فرایند تمام شده است' : value.responsibility.kind === 'po' ? 'مالک محصول' : value.responsibility.person?.name || 'نیاز به بررسی'}</p>{value.responsibility.reason && <p role="status" className="text-sm leading-7 text-text-secondary">{value.responsibility.reason}</p>}<div className="flex flex-wrap gap-3"><Link className={button} href={`/projects/${projectId}/team-runs?request=${value.request_id}`}>پیگیری کل فلو</Link><Link className={button} href={`/projects/${projectId}/requests?request=${value.request_id}`}>درخواست و تصمیم ورود</Link></div></article>
-    })}</>}</section>
-    <Link className={`${button} inline-block`} href={`/projects/${projectId}/team-runs`}>درخواست‌های آماده و اجراهای تیمی</Link>
+  const [query, setQuery] = useState('')
+  const [search, setSearch] = useState('')
+  const [kind, setKind] = useState('all')
+  useEffect(() => { const timer = setTimeout(() => { setSearch(query.trim()); setPage(1) }, 350); return () => clearTimeout(timer) }, [query])
+  const tasks = useQuery({ queryKey: ['team-actions', projectId, profile.id, page, search, kind], queryFn: () => stageApi.tasks(projectId, page, search, kind), placeholderData: keepPreviousData, staleTime: 0 })
+  const size = tasks.data?.page_size || 25
+  const pages = Math.max(1, Math.ceil((tasks.data?.total || 0) / size))
+  useEffect(() => { if (tasks.isSuccess && !tasks.isPlaceholderData && page > pages) setPage(pages) }, [tasks.isSuccess, tasks.isPlaceholderData, page, pages])
+  const counts = tasks.data?.counts || {}
+  const reset = () => { setQuery(''); setSearch(''); setKind('all'); setPage(1) }
+  const hasFilters = !!query.trim() || kind !== 'all'
+  return <div className="min-w-0 space-y-6">
+    <header className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-semibold text-text-primary">اقدام بعدی من</h2><p className="mt-2 max-w-3xl text-sm leading-7 text-text-secondary">فقط مرحله‌هایی که اکنون مجوز اقدام در آن‌ها دارید. بررسی خروجی و تصمیم نهایی، اجرای تازه‌ای شروع نمی‌کند.</p></div><button className={button} disabled={tasks.isFetching} onClick={() => void tasks.refetch()}>{tasks.isFetching ? 'در حال تازه‌سازی…' : 'تازه‌سازی کارتابل'}</button></header>
+    {tasks.data && <DirectorySummary items={[{ label: 'کل اقدام‌های مجاز من', count: tasks.data.unfiltered_total ?? tasks.data.total }, { label: 'تصمیم نهایی', count: counts.finalize || 0 }, { label: 'اجرا یا تلاش مجدد', count: (counts.run || 0) + (counts.retry || 0) }, { label: 'بررسی، بازخورد و اصلاح', count: (counts.feedback || 0) + (counts.request_decision || 0) + (counts.revalidate || 0) }]} />}
+    <DirectoryToolbar query={query} change={setQuery} placeholder="عنوان درخواست یا مرحله" filtered={tasks.data?.total} total={tasks.data?.unfiltered_total ?? tasks.data?.total} hasFilters={hasFilters} reset={reset}><label className="min-w-0 flex-1 basis-48 text-sm">اقدام مورد نیاز<select className={directoryField} value={kind} onChange={event => { setKind(event.target.value); setPage(1) }}><option value="all">همهٔ اقدام‌ها</option>{Object.entries(taskLabels).map(([key, title]) => <option key={key} value={key}>{title}</option>)}</select></label></DirectoryToolbar>
+    {(tasks.isFetching || tasks.isPlaceholderData) && <p role="status" className="text-xs text-text-tertiary">در حال دریافت نتیجهٔ جستجو…{tasks.isPlaceholderData && ' موارد قبلی تا دریافت پاسخ تازه نمایش داده می‌شوند.'}</p>}
+    {tasks.isError && <QueryNotice error retry={() => tasks.refetch()} />}
+    {tasks.isPending && <QueryNotice error={false} retry={() => tasks.refetch()} />}
+    {tasks.data && <>{!tasks.data.data.length ? <DirectoryEmpty filtered={hasFilters} title="اکنون مرحله‌ای در انتظار اقدام شما نیست" reset={reset}>برای تصمیم ورود درخواست‌ها به بخش درخواست‌های پروژه و برای پیگیری کار تیم به اجرای تیمی بروید.</DirectoryEmpty> : <ul aria-label="اقدام‌های من" className="m-0 grid list-none grid-cols-1 gap-4 p-0 lg:grid-cols-2">{tasks.data.data.map(task => <li key={`${task.instance_id}:${task.stage_id}`} className="min-w-0"><article className={`${panel} flex h-full min-w-0 flex-col space-y-3 [overflow-wrap:anywhere]`}><p className="text-xs font-semibold text-text-accent">{taskLabels[task.kind] || 'بررسی مرحله'}</p><h3 className="break-words text-lg font-semibold leading-8 text-text-primary">{task.title}</h3><p className="text-sm leading-7 text-text-secondary">{task.stage_title} · {stageStates[task.state] || 'نیاز به بررسی'}</p><p className="text-xs leading-6 text-text-tertiary">اجراکننده: {task.executor.name} · نهایی‌کننده: {task.finalizer.name}</p><details className="text-xs text-text-secondary"><summary className="cursor-pointer">خروجی مورد انتظار</summary><p className="mt-2 leading-6">{task.expected_outputs.join('، ')}</p></details><footer className="mt-auto border-t border-divider-regular pt-4"><Link className={`${button} inline-block`} href={teamStageHref(projectId, task.instance_id, task.stage_id)}>بررسی مرحله و انجام اقدام ←</Link></footer></article></li>)}</ul>}<DirectoryPagination value={{ page, pages, total: tasks.data.total, start: tasks.data.data.length ? (page - 1) * size + 1 : 0, end: tasks.data.data.length ? (page - 1) * size + tasks.data.data.length : 0 }} change={setPage} /></>}
+    <footer className="space-y-3 border-t border-divider-regular pt-5"><div className="flex flex-wrap gap-3"><Link className={`${button} inline-block`} href={`/projects/${projectId}/team-runs`}>پیگیری کار تیم و درخواست‌های آماده</Link><Link className={`${button} inline-block`} href={`/projects/${projectId}/requests`}>درخواست‌ها و تصمیم ورود</Link></div><p className="text-xs leading-6 text-text-tertiary">پیشرفت کلی پروژه در اجرای تیمی نمایش داده می‌شود؛ این بخش روی اقدام‌های مرحله‌ای خود شما تمرکز دارد.</p></footer>
   </div>
 }
