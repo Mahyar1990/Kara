@@ -31,13 +31,14 @@ export function productNavigation(isOwner: boolean): MainNavItem[] {
 export function projectNavigation(projectId: string, nativeItems: MainNavItem[]): MainNavItem[] {
   const base = `/projects/${projectId}`
   const native = (href: string) => nativeItems.filter(entry => entry.href === href)
-    .map(entry => href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها' } : entry)
+    .map(entry => href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها' } : href === '/agents' ? { ...entry, label: 'ایجنت‌های شخصی' } : entry)
   const group = (entries: MainNavItem[]) => entries.map((entry, index) => index === 0 ? { ...entry, separatorBefore: true } : entry)
   return [
     item(base, 'نمای کلی پروژه', 'i-ri-folder-line', path => path === base),
     ...group([
       item(`${base}/requests`, 'درخواست‌های پروژه', 'i-ri-file-list-3-line', path => path === `${base}/requests`),
       ...native('/apps'),
+      ...native('/agents'),
       item(`${base}/team-agents`, 'ایجنت‌های تیم', 'i-ri-team-line', path => path === `${base}/team-agents`),
       item(`${base}/team-flows`, 'فلوهای تیم', 'i-ri-route-line', path => path === `${base}/team-flows`),
     ]),
@@ -60,6 +61,6 @@ export function projectNavigation(projectId: string, nativeItems: MainNavItem[])
     item(`${base}/gitlab-connections`, 'اتصال به گیت‌لب', 'i-ri-git-repository-line', path => path === `${base}/gitlab-connections`),
     item(`${base}/model-connections`, 'اتصال به مدل هوش مصنوعی', 'i-ri-brain-line', path => path === `${base}/model-connections`),
     item(`${base}/source-runners`, 'Runnerهای شخصی', 'i-ri-computer-line', path => path === `${base}/source-runners`),
-    ...nativeItems.filter(entry => !['/', '/projects', '/users', '/apps', '/datasets', '/skills', '/integrations/model-provider'].includes(entry.href)),
+    ...nativeItems.filter(entry => !['/', '/projects', '/users', '/apps', '/agents', '/datasets', '/skills', '/integrations/model-provider'].includes(entry.href)),
   ]
 }
