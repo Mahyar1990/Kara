@@ -124,32 +124,41 @@ function RunAgent({ project, agent }: { project: string; agent: TeamAgent }) {
 }
 
 function AgentCard({ project, agent, canManage, refresh }: { project: string; agent: TeamAgent; canManage: boolean; refresh: () => Promise<unknown> }) {
+  type Panel = 'run' | 'grants' | 'harness' | 'info'
   const params = useSearchParams()
   const incoming = params.get('agent') === agent.id && /^[a-f0-9-]{36}$/.test(params.get('harness_attempt') || '')
-  const [runOpen, setRunOpen] = useState(incoming)
+  const [active, setActive] = useState<Panel | null>(incoming ? 'run' : null)
   const [runMounted, setRunMounted] = useState(incoming)
-  const [editing, setEditing] = useState(false)
   const [grantsMounted, setGrantsMounted] = useState(false)
-  const [configOpen, setConfigOpen] = useState(false)
   const [configMounted, setConfigMounted] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const action = useAction()
-  useEffect(() => { if (incoming) { setRunMounted(true); setRunOpen(true) } }, [incoming])
+  const titles: Record<Panel, string> = { run: 'ورودی‌ها و اجرای ایجنت', grants: 'مجوزهای اعضا', harness: 'اجازهٔ استفاده از هارنس شخصی', info: 'شرح و قرارداد ایجنت' }
+  const toggle = (next: Panel) => setActive(current => current === next ? null : next)
+  const tab = (value: Panel) => `${button} ${active === value ? 'bg-background-section font-semibold text-text-accent ring-1 ring-text-accent' : ''}`
+  useEffect(() => { if (incoming) { setRunMounted(true); setActive('run') } }, [incoming])
   return <article className={panel}>
-    <header className="flex min-w-0 flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="mb-2 text-xs font-medium text-text-accent">{agent.archived ? 'بایگانی‌شده؛ اجرای تازه غیرفعال است' : agent.actions.includes('run') ? 'مجوز اجرا دارید' : 'دسترسی شما: مشاهده و بررسی'}</p><h2 className="break-words text-xl font-semibold leading-8">{agent.name}</h2></div><span className="text-xs leading-6 text-text-tertiary">{number(agent.input_contract.length)} ورودی · {number(agent.output_contract.length)} خروجی</span></header>
+    <header className="flex min-w-0 flex-wrap items-start gap-4"><div className="min-w-0 flex-1"><p className="mb-2 text-xs font-medium text-text-accent">{agent.archived ? 'بایگانی‌شده؛ اجرای تازه غیرفعال است' : agent.actions.includes('run') ? 'مجوز اجرا دارید' : 'دسترسی شما: مشاهده و بررسی'}</p><h2 className="break-words text-xl font-semibold leading-8">{agent.name}</h2></div>
+      {canManage && <div aria-label={`مدیریت ${agent.name}`} className="ms-auto flex flex-wrap items-center justify-end gap-2">{!agent.archived && <button className={`${button} ${archiving ? 'bg-background-section font-semibold text-text-accent ring-1 ring-text-accent' : ''}`} aria-pressed={archiving} disabled={action.busy} onClick={() => setArchiving(!archiving)}>بایگانی</button>}<button className={`${button} text-text-destructive-secondary`} disabled={action.busy} onClick={() => setDeleting(true)}>حذف</button></div>}
+    </header>
     {agent.description && <p className="line-clamp-2 whitespace-pre-wrap text-sm leading-7 text-text-secondary">{agent.description}</p>}
-    <div className="flex flex-wrap items-center gap-2">
-      {!agent.archived && agent.actions.includes('run') && <button aria-expanded={runOpen} aria-controls={`agent-run-${agent.id}`} className={primary} onClick={() => { setRunMounted(true); setRunOpen(!runOpen) }}>{runOpen ? 'بستن پنل اجرا' : 'ورودی‌ها و اجرا'}</button>}
-      {canManage && <><button className={button} aria-expanded={editing} aria-controls={`agent-grants-${agent.id}`} onClick={() => { setGrantsMounted(true); setEditing(!editing) }}>{editing ? 'بستن مجوزها' : 'مجوزهای اعضا'}</button><details><summary className={`${button} cursor-pointer`}>مدیریت ایجنت</summary><div className="mt-3 flex flex-wrap items-center gap-2">{!agent.archived && <button className={button} disabled={action.busy} onClick={() => setArchiving(!archiving)}>بایگانی ایجنت</button>}<button className={`${button} text-text-destructive-secondary`} disabled={action.busy} onClick={() => setDeleting(true)}>حذف ایجنت</button></div></details></>}
-      {!agent.archived && agent.actions.includes('publish_definition') && <button className={button} aria-expanded={configOpen} onClick={() => { setConfigMounted(true); setConfigOpen(!configOpen) }}>{configOpen ? 'بستن تنظیم روش اجرا' : 'اجازهٔ هارنس شخصی'}</button>}
+    <p className="text-xs leading-6 text-text-tertiary">{number(agent.input_contract.length)} ورودی · {number(agent.output_contract.length)} خروجی</p>
+    <div aria-label="بخش‌های ایجنت" className="flex flex-wrap items-center gap-2">
+      {!agent.archived && agent.actions.includes('run') && <button aria-pressed={active === 'run'} aria-expanded={active === 'run'} aria-controls={`agent-run-${agent.id}`} className={tab('run')} onClick={() => { setRunMounted(true); toggle('run') }}>ورودی‌ها و اجرا</button>}
+      {canManage && <button className={tab('grants')} aria-pressed={active === 'grants'} aria-expanded={active === 'grants'} aria-controls={`agent-grants-${agent.id}`} onClick={() => { setGrantsMounted(true); toggle('grants') }}>مجوزهای اعضا</button>}
+      {!agent.archived && agent.actions.includes('publish_definition') && <button className={tab('harness')} aria-pressed={active === 'harness'} aria-expanded={active === 'harness'} aria-controls={`agent-harness-${agent.id}`} onClick={() => { setConfigMounted(true); toggle('harness') }}>هارنس شخصی</button>}
+      <button className={tab('info')} aria-pressed={active === 'info'} aria-expanded={active === 'info'} aria-controls={`agent-info-${agent.id}`} onClick={() => toggle('info')}>شرح و ورودی‌ها</button>
     </div>
-    <details className="text-sm"><summary className="cursor-pointer text-text-secondary">شرح، ورودی‌ها و مجوزهای من</summary><div className="mt-3 space-y-3 rounded-xl bg-background-section p-4">{agent.description && <p className="whitespace-pre-wrap leading-7">{agent.description}</p>}<p className="text-xs leading-6 text-text-secondary">مجوزهای شما: {agent.actions.length ? actions.filter(([key]) => agent.actions.includes(key)).map(([, label]) => label).join('، ') : 'مجوز عملیاتی تعیین نشده'}</p><p className="text-xs leading-6">ورودی‌ها: {agent.input_contract.map(item => `${item.label}${item.required ? ' (الزامی)' : ''}`).join('، ') || 'ورودی دستی ندارد'}</p><p className="text-xs leading-6">خروجی‌ها: {agent.output_contract.join('، ') || 'تعریف نشده'}</p><details className="text-xs text-text-tertiary"><summary className="cursor-pointer">شناسهٔ نسخهٔ برنامه</summary><p className="mt-2 break-all" dir="ltr">{agent.workflow_id}</p></details></div></details>
-    {archiving && <section className="space-y-3 rounded-xl border border-divider-regular p-4"><p className="text-sm leading-7">با بایگانی، اجرای تازه و دسترسی عملیاتی این ایجنت متوقف می‌شود. سابقه حفظ خواهد شد.</p><div className="flex flex-wrap gap-2"><button disabled={action.busy} className={button} onClick={() => action.run({ archive: agent.id, revision: agent.revision }, async key => { await agentApi.archive(project, agent.id, agent.revision, key); await refresh(); setArchiving(false) })}>تأیید بایگانی</button><button className={button} disabled={action.busy} onClick={() => setArchiving(false)}>انصراف</button></div></section>}
+    <section hidden={!active} className="min-w-0 space-y-4 rounded-xl border border-text-accent bg-background-section p-4" aria-label={active ? titles[active] : 'پنل ایجنت'}>
+      <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">{active && titles[active]}</h3><button className={button} aria-label={`بستن بخش باز ${agent.name}`} onClick={() => setActive(null)}>بستن بخش</button></div>
+      <div id={`agent-info-${agent.id}`} hidden={active !== 'info'} className="space-y-3">{agent.description && <p className="whitespace-pre-wrap text-sm leading-7">{agent.description}</p>}<p className="text-xs leading-6 text-text-secondary">مجوزهای شما: {agent.actions.length ? actions.filter(([key]) => agent.actions.includes(key)).map(([, label]) => label).join('، ') : 'مجوز عملیاتی تعیین نشده'}</p><p className="text-xs leading-6">ورودی‌ها: {agent.input_contract.map(item => `${item.label}${item.required ? ' (الزامی)' : ''}`).join('، ') || 'ورودی دستی ندارد'}</p><p className="text-xs leading-6">خروجی‌ها: {agent.output_contract.join('، ') || 'تعریف نشده'}</p><details className="text-xs text-text-tertiary"><summary className="cursor-pointer">شناسهٔ نسخهٔ برنامه</summary><p className="mt-2 break-all" dir="ltr">{agent.workflow_id}</p></details></div>
+      {canManage && grantsMounted && <div id={`agent-grants-${agent.id}`} hidden={active !== 'grants'}><GrantEditor project={project} agent={agent} refresh={refresh} /></div>}
+      {!agent.archived && agent.actions.includes('publish_definition') && configMounted && <div id={`agent-harness-${agent.id}`} hidden={active !== 'harness'}><HarnessPolicyEditor embedded project={project} agent={agent.id} /></div>}
+      {!agent.archived && agent.actions.includes('run') && runMounted && <div id={`agent-run-${agent.id}`} hidden={active !== 'run'}><RunAgent project={project} agent={agent} /></div>}
+    </section>
+    {archiving && <section className="space-y-3 rounded-xl border border-divider-regular p-4"><p className="text-sm leading-7">با بایگانی «{agent.name}»، اجرای تازه و دسترسی عملیاتی آن متوقف می‌شود. سابقه حفظ خواهد شد.</p><div className="flex flex-wrap gap-2"><button disabled={action.busy} className={button} onClick={() => action.run({ archive: agent.id, revision: agent.revision }, async key => { await agentApi.archive(project, agent.id, agent.revision, key); await refresh(); setArchiving(false) })}>تأیید بایگانی</button><button className={button} disabled={action.busy} onClick={() => setArchiving(false)}>انصراف</button></div></section>}
     {action.error && <p role="alert">{action.error}</p>}
-    {canManage && grantsMounted && <div id={`agent-grants-${agent.id}`} hidden={!editing}><GrantEditor project={project} agent={agent} refresh={refresh} /></div>}
-    {!agent.archived && agent.actions.includes('publish_definition') && configMounted && <div hidden={!configOpen}><HarnessPolicyEditor project={project} agent={agent.id} /></div>}
-    {!agent.archived && agent.actions.includes('run') && runMounted && <div id={`agent-run-${agent.id}`} hidden={!runOpen}><RunAgent project={project} agent={agent} /></div>}
     {canManage && deleting && <DeleteTeamEntity project={project} kind="agent" value={agent} close={() => setDeleting(false)} deleted={refresh} />}
   </article>
 }
