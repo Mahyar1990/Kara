@@ -125,3 +125,5 @@ make check
 - [راهنمای رسمی نصب Dify](https://docs.dify.ai/en/self-host/deploy/quick-start/docker-compose)
 - [نسخهٔ مبنای Dify](https://github.com/langgenius/dify/releases/tag/1.17.1)
 - [Colima](https://github.com/abiosoft/colima)
+
+- [انتخاب LLM برنامه یا هارنس شخصی و تحویل به فلو](docs/personal-harness.md)

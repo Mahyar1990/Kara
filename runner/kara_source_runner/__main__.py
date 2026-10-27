@@ -10,6 +10,7 @@ import time
 from .client import Client, ApiError
 from .execution_worker import execute as execute_workflow, flush_outbox, owner_id
 from .executor import materialize, RunnerFailure, validate_job
+from . import harness_runtime
 
 def save_config(path,value):
     path.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
@@ -23,6 +24,8 @@ def main():
     sub=parser.add_subparsers(dest='action',required=True)
     pair=sub.add_parser('pair'); pair.add_argument('--server',required=True)
     run=sub.add_parser('run'); run.add_argument('--root',type=Path,default=Path.home()/'KaraSourceWorkspaces'); run.add_argument('--once',action='store_true'); run.add_argument('--python-image',default='kara/code-python:2.0'); run.add_argument('--javascript-image',default='node:22-alpine'); run.add_argument('--allow-worktree-write',action='store_true'); run.add_argument('--code-backend',choices=['auto','docker','process'],default='auto'); run.add_argument('--allow-local-code',action='store_true')
+    run.add_argument('--allow-harness',action='store_true');run.add_argument('--harness-config',type=Path,default=Path.home()/'.config/kara-source-runner/harnesses.json')
+    harness=sub.add_parser('harness-prepare');harness.add_argument('--attempt',required=True);harness.add_argument('--root',type=Path,default=Path.home()/'KaraSourceWorkspaces')
     args=parser.parse_args()
     try:
         if args.action=='pair':
@@ -32,6 +35,12 @@ def main():
             print('Runner paired. Keep this config private:',args.config); return
         if args.config.is_symlink() or stat.S_IMODE(args.config.stat().st_mode)&0o077: raise ValueError('Device config must be private (chmod 600).')
         config=json.loads(args.config.read_text()); client=Client(config['server'],config['secret'])
+        if args.action=='harness-prepare':
+            job=client.post('harness/'+args.attempt+'/bundle');target=harness_runtime.prepare(job,config,args.root)
+            client.post('harness/'+args.attempt+'/prepared',dict(snapshot_digest=job['snapshot_digest']))
+            print('Task directory:',target/'worktree');return
+        registered=harness_runtime.profiles(args.harness_config,args.allow_harness)
+        client.post('harness/register',dict(profiles=harness_runtime.registration(registered)))
         capabilities=['workflow-v2','http','source-v1']
         backend=args.code_backend
         if backend=='auto':backend='docker' if shutil.which('docker') else 'process'
@@ -45,6 +54,13 @@ def main():
         while True:
             try:
                 flush_outbox(client,args.root.expanduser().resolve())
+                harness_runtime.flush(client,config,args.root)
+                if registered:
+                    job=client.post('harness/claim').get('job')
+                    if job:
+                        harness_runtime.execute(job,config,args.root,registered,client)
+                        if args.once:break
+                        continue
                 rpc=client.post('rpc/claim').get('job')
                 if rpc:
                     credentials=client.post('rpc/'+rpc['id']+'/credentials')
@@ -86,7 +102,7 @@ def main():
                 print('Job stopped or connection unavailable; reconnecting without replay.')
                 if args.once:break
                 time.sleep(5)
-    except (ApiError,RunnerFailure,ValueError,OSError,KeyError):
+    except (ApiError,RunnerFailure,harness_runtime.HarnessFailure,ValueError,OSError,KeyError,TypeError):
         # Do not log config, payloads or upstream Git output.
         print('Runner stopped. Check connection, permissions and local files.'); raise SystemExit(1) from None
     except KeyboardInterrupt: print('\nRunner stopped; unfinished jobs expire in Kara.')
