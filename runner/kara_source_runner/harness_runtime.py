@@ -95,8 +95,34 @@ def read_candidate(path):
     if not isinstance(value,dict) or set(value)-{'outputs','evidence','session_id'} or not {'outputs','evidence'}<=set(value):raise HarnessFailure('invalid_result')
     return value
 
+def opencode_result(output):
+    # Text parts can include progress from earlier turns. Only use the final message.
+    groups={};order=[];session=None
+    for line in output.decode('utf-8').splitlines():
+        try:event=json.loads(line)
+        except ValueError:continue
+        if not isinstance(event,dict):continue
+        if event.get('type') in ('error','session.error'):raise HarnessFailure('harness_failed')
+        part=event.get('part')
+        if event.get('type')!='text' or not isinstance(part,dict) or not isinstance(part.get('text'),str):continue
+        metadata=part.get('metadata')
+        if part.get('synthetic') or (isinstance(metadata,dict) and metadata.get('compaction_continue')):continue
+        if not part['text'].strip():continue
+        identity=part.get('messageID') or event.get('messageID') or part.get('id') or str(len(order))
+        if not isinstance(identity,str):raise HarnessFailure('invalid_result')
+        if identity not in groups:groups[identity]={};order.append(identity)
+        parts=groups[identity];part_id=part.get('id') or str(len(parts))
+        if not isinstance(part_id,str):raise HarnessFailure('invalid_result')
+        parts[part_id]=part['text']
+        if isinstance(event.get('sessionID'),str):session=event['sessionID']
+    if not order:raise HarnessFailure('invalid_result')
+    value=json.loads(''.join(groups[order[-1]].values()))
+    if not isinstance(value,dict):raise HarnessFailure('invalid_result')
+    value['session_id']=session
+    return value
+
 def run_cli(job,profile,target,heartbeat):
-    worktree=target/'worktree';meta=worktree/'.kara-task';candidate=target/'candidate.json';stdout=target/'output.events'
+    worktree=target/'worktree';meta=worktree/'.kara-task';candidate=target/'candidate.json'
     prompt='Read .kara-task/TASK.md and .kara-task/task.json. Complete the mission. Return ONLY the JSON result described in .kara-task/result.example.json.'
     executable=profile['executable']
     if profile['kind']=='codex':argv=[executable,'exec','--sandbox','workspace-write','--output-last-message',str(candidate),'-'];input_text=prompt
@@ -104,31 +130,33 @@ def run_cli(job,profile,target,heartbeat):
     else:
         tokens={'{bundle}':str(meta/'task.json'),'{result}':str(candidate),'{worktree}':str(worktree)}
         argv=[executable,*[tokens.get(v,v) for v in profile.get('argv',[])]];input_text=prompt
-    # Harness uses the user's own login/configuration; the Runner token is never in env/argv.
     env={k:v for k,v in os.environ.items() if not k.startswith('KARA_')}
     process=None
     def stopped(*args):raise KeyboardInterrupt()
     previous=signal.signal(signal.SIGTERM,stopped)
     try:
-        with stdout.open('xb') as log:
-            os.chmod(stdout,0o600)
-            process=subprocess.Popen(argv,cwd=worktree,env=env,stdin=subprocess.PIPE,stdout=log,stderr=subprocess.DEVNULL,start_new_session=True)
-            process.stdin.write(input_text.encode());process.stdin.close()
-            deadline=time.monotonic()+profile.get('timeout',1800);next_heartbeat=0
-            while process.poll() is None:
-                if time.monotonic()>deadline or stdout.stat().st_size>4194304:raise HarnessFailure('harness_failed')
-                if time.monotonic()>=next_heartbeat:heartbeat();next_heartbeat=time.monotonic()+10
-                time.sleep(1)
-            if process.returncode:raise HarnessFailure('harness_failed')
-        if profile['kind']=='opencode':
-            messages=[];session=None
-            for line in stdout.read_text().splitlines():
-                try:event=json.loads(line)
-                except ValueError:continue
-                if event.get('type')=='text' and isinstance(event.get('part',{}).get('text'),str):messages.append(event['part']['text'])
-                if isinstance(event.get('sessionID'),str):session=event['sessionID']
-            value=json.loads(''.join(messages));value.setdefault('session_id',session);atomic_json(candidate,value)
-        return read_candidate(candidate)
+        process=subprocess.Popen(argv,cwd=worktree,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,start_new_session=True)
+        process.stdin.write(input_text.encode());process.stdin.close()
+        deadline=time.monotonic()+profile.get('timeout',1800);next_heartbeat=0;output=bytearray();eof=False;exited=None
+        while True:
+            now=time.monotonic()
+            if now>deadline:raise HarnessFailure('harness_failed')
+            if now>=next_heartbeat:heartbeat();next_heartbeat=now+10
+            if not eof and select.select([process.stdout],[],[],0.2)[0]:
+                chunk=os.read(process.stdout.fileno(),65536)
+                if chunk:
+                    if len(output)+len(chunk)>4194304:raise HarnessFailure('harness_failed')
+                    output.extend(chunk)
+                else:eof=True
+            elif eof:time.sleep(0.1)
+            if process.poll() is not None:
+                if exited is None:exited=time.monotonic()
+                if eof or time.monotonic()-exited>2:break
+        if process.returncode:raise HarnessFailure('harness_failed')
+        if profile['kind']=='opencode':atomic_json(candidate,opencode_result(output))
+        value=read_candidate(candidate)
+        if profile['kind']=='codex':value['session_id']=None  # This adapter does not observe Codex session IDs.
+        return value
     finally:
         if process:
             try:os.killpg(process.pid,signal.SIGTERM)
@@ -136,11 +164,10 @@ def run_cli(job,profile,target,heartbeat):
             try:process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid,signal.SIGKILL);process.wait()
-            # A CLI may exit before its private helper. Never leave its process group behind.
             try:
                 os.killpg(process.pid,0);time.sleep(1);os.killpg(process.pid,signal.SIGKILL)
             except ProcessLookupError:pass
-        stdout.unlink(missing_ok=True)
+            if process.stdout:process.stdout.close()
         signal.signal(signal.SIGTERM,previous)
 
 def capture_changes(target,value,heartbeat):
