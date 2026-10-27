@@ -45,6 +45,9 @@ def fingerprint():
     for path in sorted((ROOT / 'runner/kara_source_runner').rglob('*.py')):
         digest.update(path.relative_to(ROOT).as_posix().encode()); digest.update(path.read_bytes())
     digest.update(Path(__file__).read_bytes())
+    for path in sorted((ROOT / 'workflows/agency-agents').rglob('*')):
+        if path.is_file():
+            digest.update(path.relative_to(ROOT).as_posix().encode()); digest.update(path.read_bytes())
     digest.update((ROOT / 'infra/catalog.lock.json').read_bytes())
     for name, content in sorted(catalog_files().items()):
         digest.update(name.encode()); digest.update(content)
@@ -65,6 +68,7 @@ def prepare_source():
         shutil.rmtree(context)
     shutil.copytree(CUSTOM, context, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     shutil.copytree(ROOT / 'runner/kara_source_runner', context / 'kara_source_runner', ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    shutil.copytree(ROOT / 'workflows/agency-agents', context / 'company_agency')
     templates = context / 'company_templates'
     templates.mkdir()
     for name, content in catalog_files().items():

@@ -1343,6 +1343,7 @@
       "original_description": "Expert in cultural systems, rituals, kinship, belief systems, and ethnographic method — builds culturally coherent societies that feel lived-in rather than invented",
       "category": "academic",
       "category_label": "دانشگاهی",
+      "category_original_label": "Academic",
       "recommended": false,
       "sha256": "2668602164abf574cb4e432a0cd40727a943de0b59864abb5b73956a0eb26146"
     },
@@ -1355,6 +1356,7 @@
       "original_description": "Expert in physical and human geography, climate systems, cartography, and spatial analysis — builds geographically coherent worlds where terrain, climate, resources, and settlement patterns make scientific sense",
       "category": "academic",
       "category_label": "دانشگاهی",
+      "category_original_label": "Academic",
       "recommended": false,
       "sha256": "4acf4a6ee6ae96ce562323c8ce508db9f2eb0ece016fc754214be9587c071c0d"
     },
@@ -1367,6 +1369,7 @@
       "original_description": "Expert in historical analysis, periodization, material culture, and historiography — validates historical coherence and enriches settings with authentic period detail grounded in primary and secondary sources",
       "category": "academic",
       "category_label": "دانشگاهی",
+      "category_original_label": "Academic",
       "recommended": false,
       "sha256": "2c59c10dceec033d9e92990b6156553471b7b94dd8e0c64fe27148f612be8955"
     },
@@ -1379,6 +1382,7 @@
       "original_description": "Expert in narrative theory, story structure, character arcs, and literary analysis — grounds advice in established frameworks from Propp to Campbell to modern narratology",
       "category": "academic",
       "category_label": "دانشگاهی",
+      "category_original_label": "Academic",
       "recommended": false,
       "sha256": "12d7a6fa6134c014e3734f8203f0b8634e627cffe5985fa1b69d25c4a69094b5"
     },
@@ -1391,6 +1395,7 @@
       "original_description": "Expert in human behavior, personality theory, motivation, and cognitive patterns — builds psychologically credible characters and interactions grounded in clinical and research frameworks",
       "category": "academic",
       "category_label": "دانشگاهی",
+      "category_original_label": "Academic",
       "recommended": false,
       "sha256": "193b7dba6d04346d15ee21753fd1cdb69dc1a21a5ac30d5d62726654820a5633"
     },
@@ -1403,6 +1408,7 @@
       "original_description": "Expert in quantitative research methodology, experimental design, and statistical inference — pressure-tests claims, designs sound studies, and separates real signal from noise, chance, and bias",
       "category": "academic",
       "category_label": "دانشگاهی",
+      "category_original_label": "Academic",
       "recommended": false,
       "sha256": "4b023595c59becec2026cab38807f835e48e280885f9cd381bab7845cbf4280c"
     },
@@ -1415,6 +1421,7 @@
       "original_description": "Expert brand strategist and guardian specializing in brand identity development, consistency maintenance, and strategic brand positioning",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "d1d5c78af85d4d35be94b93d5c011d17e3cf5dcb69b2037a3ebf3059803b893e"
     },
@@ -1427,6 +1434,7 @@
       "original_description": "Expert photography prompt engineer specializing in crafting detailed, evocative prompts for AI image generation. Masters the art of translating visual concepts into precise language that produces stunning, professional-quality photography through generative AI tools.",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "63a564d01dc5812c494cd8aa034ce1217031d8fe8b3eca1323316879769ff13f"
     },
@@ -1439,6 +1447,7 @@
       "original_description": "Representation expert who defeats systemic AI biases to generate culturally accurate, affirming, and non-stereotypical images and video.",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "6529724ca198344f31209c0e685a7460c087483b5a4b3a965798e09df70dde07"
     },
@@ -1451,6 +1460,7 @@
       "original_description": "Simulate cognitive walkthroughs of web pages from a defined persona's psychological perspective — captures emotional reactions and rational thought at each scroll position, then delivers structured CRO reports grounded in LIFT, Cialdini, and Fogg frameworks",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "8def8c73df7f79a61704e7353b85b915afa31c4a9fa1100fbb9220c50d6a1c55"
     },
@@ -1463,6 +1473,7 @@
       "original_description": "Expert UI designer specializing in visual design systems, component libraries, and pixel-perfect interface creation. Creates beautiful, consistent, accessible user interfaces that enhance UX and reflect brand identity",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "4dc51255ffcb47e2bf4289a7d49a7cc224238af759f9e6e3c56771c698575d6d"
     },
@@ -1475,6 +1486,7 @@
       "original_description": "Product-interface reviewer who catches generic, interchangeable UI before it ships by grounding critique in real product evidence, a written design contract, and a hard implementation finish gate.",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "cc2cc803782a791797b63530bfd46ee676148f05bc1db7c614c8860f9798bc86"
     },
@@ -1487,6 +1499,7 @@
       "original_description": "Technical architecture and UX specialist who provides developers with solid foundations, CSS systems, and clear implementation guidance",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "7d373da3fd204db3c830f28e03cdf85bcacd3858e38fbdad58489953f811c296"
     },
@@ -1499,6 +1512,7 @@
       "original_description": "Expert user experience researcher specializing in user behavior analysis, usability testing, and data-driven design insights. Provides actionable research findings that improve product usability and user satisfaction",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "25f59c4333df2d0f1170ff7a1b11ea8415fd3d0ef80c3e0985209aeb4018680f"
     },
@@ -1511,6 +1525,7 @@
       "original_description": "Expert visual communication specialist focused on creating compelling visual narratives, multimedia content, and brand storytelling through design. Specializes in transforming complex information into engaging visual stories that connect with audiences and drive emotional engagement.",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "f4950c9d65b5d105ec48ebce4b7621154e3bf89871dbbf07af245476930eb4dd"
     },
@@ -1523,6 +1538,7 @@
       "original_description": "Expert creative specialist focused on adding personality, delight, and playful elements to brand experiences. Creates memorable, joyful interactions that differentiate brands through unexpected moments of whimsy",
       "category": "design",
       "category_label": "طراحی و تجربهٔ کاربری",
+      "category_original_label": "Design",
       "recommended": false,
       "sha256": "b1cc9abd37723ff12b508717e4f7f9621aafd8c20014894d93a8d6e2bc5657a4"
     },
@@ -1535,6 +1551,7 @@
       "original_description": "Specialist in self-healing data pipelines — uses air-gapped local SLMs and semantic clustering to automatically detect, classify, and fix data anomalies at scale. Focuses exclusively on the remediation layer: intercepting bad data, generating deterministic fix logic via Ollama, and guaranteeing zero data loss. Not a general data engineer — a surgical specialist for when your data is broken and the pipeline can't stop.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "5aa193052f15283493eeb9749bc346d09c02407f26760fe0d08f8bd9242ede79"
     },
@@ -1547,6 +1564,7 @@
       "original_description": "Expert AI/ML engineer specializing in machine learning model development, deployment, and integration into production systems. Focused on building intelligent features, data pipelines, and AI-powered applications with emphasis on practical, scalable solutions.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "f25a69aad25acd35dd1d62e33d5a814f4a26b075d90f968b4d778452e53924d8"
     },
@@ -1559,6 +1577,7 @@
       "original_description": "Expert API platform engineer for public and partner APIs — contract-first design (OpenAPI/gRPC), versioning and deprecation policy, SDK generation, API gateway concerns (auth, rate limiting, quotas), and developer-portal DX.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "21076c3abab2c93f459ff7e2becc83287a200d966c40fc1db868fcbcf36067dd"
     },
@@ -1571,6 +1590,7 @@
       "original_description": "Architect and validator for Applicant Tracking Systems (ATS) and resume parsers. Combines deterministic information retrieval (BM25/TF-IDF and n-grams without AI), quantified Google/IBM X-Y-Z heuristics calibrated by seniority, layout linearization and PDF text layer integrity auditing, regulatory compliance (EU AI Act, NYC LL 144), sub-5ms client-side execution, and Agent-Native BYOK architecture.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "742c17d1885f4345c366a4050e12e3b61711f38dc576a24fe365ed3ee7f266d5"
     },
@@ -1583,6 +1603,7 @@
       "original_description": "Intelligent system governor that continuously shadow-tests APIs for performance while enforcing strict financial and security guardrails against runaway costs.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "76a8df3dfd4af54d0830daef736873209bd62cb155b9ed0f3c3a6aec369a9519"
     },
@@ -1595,6 +1616,7 @@
       "original_description": "Senior backend architect specializing in scalable system design, database architecture, API development, and cloud infrastructure. Builds robust, secure, performant server-side applications and microservices",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "45d94306c8f0f4c51efb76066008297fa4e87ce5b69f509cfede224084b74dfb"
     },
@@ -1607,6 +1629,7 @@
       "original_description": "Expert in mainland China's mainstream enterprise networking stacks — Huawei VRP, H3C Comware, Ruijie RGOS, and Hillstone StoneOS — covering routing, switching, firewalling, NAT, and MLPS 2.0 (等保) compliant border design for domestic deployments.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "d375db645d1192fb8be3dd4e40de005d55edd33557abf909a4a4135257e03788"
     },
@@ -1619,6 +1642,7 @@
       "original_description": "Drupal and WordPress specialist for theme development, custom plugins/modules, content architecture, and code-first CMS implementation",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "e072ac6e3d485483818880846b145c85b5224045a68c45dddc4e087940d57ba4"
     },
@@ -1631,6 +1655,7 @@
       "original_description": "Expert code reviewer who provides constructive, actionable feedback focused on correctness, maintainability, security, and performance — not style preferences.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": true,
       "sha256": "7509fcc3ea1dda46511b2801996305bf3d4a125576f9655ff0b63df25602f446"
     },
@@ -1643,6 +1668,7 @@
       "original_description": "Expert developer onboarding specialist who helps new engineers understand unfamiliar codebases fast by reading source code, tracing code paths, and stating only facts grounded in the code.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "07aa548b45887c3ad768efad5fdbf6e57bea639df4f1b74c7e383142f454e2a1"
     },
@@ -1655,6 +1681,7 @@
       "original_description": "Expert data engineer specializing in building reliable data pipelines, lakehouse architectures, and scalable data infrastructure. Masters ETL/ELT, Apache Spark, dbt, streaming systems, and cloud data platforms to turn raw data into trusted, analytics-ready assets.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "3f6f629f0e4e00a0010bcd98675cb5183cca89b29b6d3fe2f6db2db474c2d800"
     },
@@ -1667,6 +1694,7 @@
       "original_description": "Expert data visualization engineer — chart-type selection by data and question, perceptually honest encodings, colorblind-safe data palettes, accessible and interactive charts, and rendering large datasets performantly with D3, Vega, and charting libraries.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "0f5b5391f82aa98ca489768d31024f7a5f840a8ee5fe968fe1499ed538948ce5"
     },
@@ -1679,6 +1707,7 @@
       "original_description": "Expert database specialist focusing on schema design, query optimization, indexing strategies, and performance tuning for PostgreSQL, MySQL, and modern databases like Supabase and PlanetScale.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "6d773003e3b9251068ab537be94d6827c118201e0e17c11d789cb29dc245bf99"
     },
@@ -1691,6 +1720,7 @@
       "original_description": "Expert database reliability engineer (DBRE) — high availability and replication, automated failover, backup and point-in-time recovery, zero-downtime online schema migrations, connection pooling, and disaster-recovery drills. Focused on keeping data safe and available, not query tuning.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "0096dc3c1b31e33814c509fda43853cc77cef6252bb94da527b833be13b53a5a"
     },
@@ -1703,6 +1733,7 @@
       "original_description": "Expert desktop application engineer for Electron and Tauri — secure IPC and process isolation, code signing and notarization, auto-update pipelines, native OS integration, and resource-footprint discipline.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "aadae54475480341ee9db1017bc19778596f80ff25092970dabc7fba75b1d951"
     },
@@ -1715,6 +1746,7 @@
       "original_description": "Expert developer-tooling and CLI engineer — building command-line tools and internal developer platforms with great DX: intuitive command design, helpful errors, shell completions, fast startup, cross-platform distribution, and scriptable, composable interfaces.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "948d44fddfa47e2363236de150f9dc948edd79599609a92af8bf6b72b5b9b609"
     },
@@ -1727,6 +1759,7 @@
       "original_description": "Expert DevOps engineer specializing in infrastructure automation, CI/CD pipeline development, and cloud operations",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "1b67b3bdc6a076d42281e38bb811250eb04415bb241cdd4c3a7df38ecd20e88b"
     },
@@ -1739,6 +1772,7 @@
       "original_description": "Expert Drupal 10/11 performance engineer specializing in Core Web Vitals, render and dynamic page caching, BigPipe, cache tags and contexts, database query and Views optimization, CSS/JS aggregation, responsive images and lazy loading, CDN integration, and opcache/PHP-FPM tuning for fast, audit-passing sites",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "544942f460b76e15c2cd6e9a820b4048e3344186db3a7123d99adfbdf6c41d09"
     },
@@ -1751,6 +1785,7 @@
       "original_description": "Expert Drupal e-commerce engineer specializing in Drupal Commerce for product catalog management, payment gateway integration, checkout workflow design, order management, tax and promotion configuration, and high-reliability storefront delivery on Drupal 10/11",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "cbd06e6d27363029dbbc6638297d47608c78d3b93b3e4a6ff52d16757199ee50"
     },
@@ -1763,6 +1798,7 @@
       "original_description": "Power systems engineer for telecom sites, buildings and infrastructure projects. Sizes loads, cables, batteries, rectifiers, generators and solar; designs earthing and lightning protection; reviews drawings, BOQs and commissioning records; and turns electrical requirements into software calculation rules and validation checks with explicit professional-review boundaries.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "e62de4808d0209db518f4bde393af88dd5e3d0d74b053d14de91c2b80d2638c0"
     },
@@ -1775,6 +1811,7 @@
       "original_description": "Expert in extracting structured, reasoning-ready data from raw email threads for AI agents and automation systems",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "70955ab959caccfd769963e9151a645a425e31d40777d00bf31e20fa0d7f8d03"
     },
@@ -1787,6 +1824,7 @@
       "original_description": "Specialist in bare-metal and RTOS firmware - ESP32/ESP-IDF, PlatformIO, Arduino, ARM Cortex-M, STM32 HAL/LL, Nordic nRF5/nRF Connect SDK, FreeRTOS, Zephyr",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "f01fc2e817071c4ae10f14b49f0c4866a802f5bf3d8901d3ad0ab68cf61f2743"
     },
@@ -1799,6 +1837,7 @@
       "original_description": "Full-stack integration expert specializing in the Feishu (Lark) Open Platform — proficient in Feishu bots, mini programs, approval workflows, Bitable (multidimensional spreadsheets), interactive message cards, Webhooks, SSO authentication, and workflow automation, building enterprise-grade collaboration and automation solutions within the Feishu ecosystem.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "22f4c40c0d2681918b1bd5884edfca2a3556325054d1b8e912f6524111e2e4fb"
     },
@@ -1811,6 +1850,7 @@
       "original_description": "Expert in restructuring and optimizing Filament PHP admin interfaces for maximum usability and efficiency. Focuses on impactful structural changes — not just cosmetic tweaks.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "428f6a6be2318a123678b2838600e33c5e193afecbe8f828fa97c779eaf85fbf"
     },
@@ -1823,6 +1863,7 @@
       "original_description": "Expert cloud cost engineer for AWS/GCP/Azure — cost allocation and tagging, rightsizing, commitment planning (reserved instances/savings plans), egress and storage optimization, and unit-economics dashboards that tie spend to business value.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "2971ce273c45e96002127fd8456cfcb3dce761595aab5b6428cd1f5036dc9cd1"
     },
@@ -1835,6 +1876,7 @@
       "original_description": "Expert frontend developer specializing in modern web technologies, React/Vue/Angular frameworks, UI implementation, and performance optimization",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "71eeb60cbeedd94b41b2e5852d8986c909e8d150c324b4bb99e3b184ae202094"
     },
@@ -1847,6 +1889,7 @@
       "original_description": "Expert database specialist focusing on GaussDB OLTP — Huawei's self-developed enterprise-grade relational database (NOT GaussDB(DWS) OLAP, NOT GaussDB(for openGauss) cloud service, NOT GaussDB(for MySQL)). Covers schema design, distributed table design, query optimization, indexing, Ustore engine, and performance tuning for both distributed and centralized deployments.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "db3e2fbd178e4df20885c5d5f27b0a552061c7736374f9977807fc374ff99e07"
     },
@@ -1859,6 +1902,7 @@
       "original_description": "Expert in Git workflows, branching strategies, and version control best practices including conventional commits, rebasing, worktrees, and CI-friendly branch management.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "d3f7718f852e03d5cd83a97340550a5b82694547c4b9b22c9e77bb40c1467ba3"
     },
@@ -1871,6 +1915,7 @@
       "original_description": "Expert i18n engineer for ICU MessageFormat, CLDR plural rules, RTL and bidirectional layouts, locale-aware date/number/currency formatting, string extraction pipelines, and pseudo-localization testing.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "4239debe839a7ba60ad1339bb5527e816dda87a6ff3e1fa4caddd838b56917fc"
     },
@@ -1883,6 +1928,7 @@
       "original_description": "Expert identity engineer for OAuth 2.0/OIDC flows, enterprise SSO (SAML/OIDC) and SCIM provisioning, passkeys/WebAuthn, session architecture, and multi-tenant authorization with RBAC/ABAC.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "803b047d1b838fba2687a95bf2b8528cee86cf744130037f8380b1cc172c3f8e"
     },
@@ -1895,6 +1941,7 @@
       "original_description": "Expert incident commander specializing in production incident management, structured response coordination, post-mortem facilitation, SLO/SLI tracking, and on-call process design for reliable engineering organizations.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "89b9c1294879dd24804c8b6d7805fde193e868a3c930a1ac515a36d527b8522a"
     },
@@ -1907,6 +1954,7 @@
       "original_description": "Expert IoT and edge fleet engineer — device provisioning and identity, MQTT/telemetry pipelines, staged over-the-air (OTA) firmware updates with rollback, edge compute, and observability across fleets of unreliable, intermittently-connected devices.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "90cfb3b713d0cd11e9529f6158ed72ac99fe1d945a838d9d740009a51e9d3421"
     },
@@ -1919,6 +1967,7 @@
       "original_description": "Expert IT service management specialist using ITIL 4 framework for service catalog design, incident and problem management, change control, SLA governance, CMDB maintenance, and continual service improvement — ensuring IT delivers reliable, measurable business value across any organization size",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "26c23ef51726da346dcdf5b9eb004e7c03cfae4ad6a995ed46a26ec6cd5520e6"
     },
@@ -1931,6 +1980,7 @@
       "original_description": "Structures information and capabilities into interconnected nodes (entities) and edges (relationships) — enabling dynamic context navigation, modular competency chaining, lower token costs, and hallucination reduction.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "5c01d27d814425a6f72e55bbf14011e8bbdbd088ec2e7854675d8c39dd3f8185"
     },
@@ -1943,6 +1993,7 @@
       "original_description": "Evidence-driven owner for SFT, preference optimization, RLHF/RLVR, MoE post-training, and the release gates that turn a checkpoint into a defensible model change.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "aa697dc1c0eb402551b9f6764a89938c8787c9628760b74065d3e383299a980a"
     },
@@ -1955,6 +2006,7 @@
       "original_description": "Engineering specialist focused on minimum-viable diffs — fixes only what was asked, refuses scope creep, prefers three similar lines over a premature abstraction. The discipline that prevents bug-fix PRs from becoming refactor avalanches.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": true,
       "sha256": "9999cc74e7b3936af892ef2c2793d105bb92f6c47789aa23db6df92bf68b45e5"
     },
@@ -1967,6 +2019,7 @@
       "original_description": "Specialized mobile application developer with expertise in native iOS/Android development and cross-platform frameworks",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "1a3e043f806b0b7c071d58b2ee3ab3c58c8342e2727c1ca9e6e5175f86986caf"
     },
@@ -1979,6 +2032,7 @@
       "original_description": "Expert mobile release and distribution engineer for iOS and Android — code signing, provisioning, fastlane pipelines, App Store Connect and Play Console submission, phased rollouts, and crash-triaged release health.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "3fae6975de4c2038a7fb0c4a8e366b8f87e8f3bb89e0a64ce4d4bcfdead15617"
     },
@@ -1991,6 +2045,7 @@
       "original_description": "Systems architect specializing in the design, coordination, and governance of multi-agent AI pipelines — covering topology selection, context management, inter-agent trust, failure recovery, human-in-the-loop gating, and observability for production-grade agent systems.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "d93dd20fef67bf85a537ba0f869fad1a17d0e589f20899d1bbe1f095a7bcb91b"
     },
@@ -2003,6 +2058,7 @@
       "original_description": "Expert network engineer for Cisco IOS/IOS-XE, Cisco ASA/FTD, Juniper Junos, and Palo Alto PAN-OS routing, switching, firewalling, and troubleshooting.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "1400d7393e47b05c629d2902b2114911d6e55f34a703c2b77da24bd5f2b31576"
     },
@@ -2015,6 +2071,7 @@
       "original_description": "Expert in designing, parsing, and implementing OrgScript grammar, AST validation, and business logic definitions.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "f8426369743ff0086e32cb9facfc3935488d99a1c2de92961917f9b27d401427"
     },
@@ -2027,6 +2084,7 @@
       "original_description": "Expert payments engineer for PSP integrations (Stripe, Adyen, Braintree, PayPal), idempotent payment flows, webhook processing, subscription billing, SCA/3DS, PCI scope reduction, and financial reconciliation.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "ce47609b6805087e2f731ea62f69edffaf61e1968049042e2ca3d225d4392b40"
     },
@@ -2039,6 +2097,7 @@
       "original_description": "Architect and specialist in deterministic HTML-to-PDF document compilation, Playwright browser context pools, dynamic Euclidean page sizing, LayoutNG subpixel budgeting, tagged PDF (PDF/UA-1 & PDF/A-2b), and 1:1 sheet canvas editors.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "367dd859aeda52d2a3de6ffd33b8c38eac625e884a2f71574a73d38350f8f457"
     },
@@ -2051,6 +2110,7 @@
       "original_description": "Expert internal developer platform (IDP) engineer specializing in golden paths, paved roads, and self-serve infrastructure that multiplies engineering velocity.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "0736a0c476ff46e16e33b36ec143352107b82d69b3501bcdaefe22feee252652"
     },
@@ -2063,6 +2123,7 @@
       "original_description": "Expert privacy engineer who implements privacy in code — PII discovery and classification, data minimization, consent enforcement at the API layer, automated DSAR and deletion across services, pseudonymization/tokenization, and retention automation. Builds the technical controls a privacy policy only promises.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "0d00d2f0d3008a55000eb01f13adac54f40daf471d240a7c073477efe92376a6"
     },
@@ -2075,6 +2136,7 @@
       "original_description": "Specialist in crafting, testing, and systematically optimizing prompts for LLMs — turning vague instructions into reliable, production-grade AI behaviors.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "e94ccdc64a6a4fe064550dee7242778632696813d98dc1d6053f64d3794794d3"
     },
@@ -2087,6 +2149,7 @@
       "original_description": "Production RAG specialist focused on chunking strategy, retrieval quality, hybrid search, re-ranking, and eval-driven iteration. Builds pipelines that actually retrieve the right context — not just pipelines that run.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "d9b75715fc6eb5712054658727a6f9082d4be2579766d2b42a6060595caa9a96"
     },
@@ -2099,6 +2162,7 @@
       "original_description": "Specialized in ultra-fast proof-of-concept development and MVP creation using efficient tools and frameworks",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "247ea109c45d9ed372b85b5a436c52a801fee234740e3caa114d72d0e1f05f80"
     },
@@ -2111,6 +2175,7 @@
       "original_description": "Expert realtime systems engineer for WebSocket/SSE infrastructure, presence, CRDT and OT-based collaborative editing, offline-first sync engines, and fan-out scaling with reconnect-safe protocols.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "79b1fa3544a7f768ca3702b8b41f2969c9ea14ddb73c7fe349fc652219f91a75"
     },
@@ -2123,6 +2188,7 @@
       "original_description": "Expert Rust engineer for repository-scale refactoring, safe renames, module restructuring, duplication removal, panic hardening, ownership improvements, and compiler or Clippy remediation.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "06ca53dbd12694560bf01feb94cbbd8c428e4abe6ac92c8a72eeb277ce179a78"
     },
@@ -2135,6 +2201,7 @@
       "original_description": "Expert search engineer for Elasticsearch and OpenSearch — index and analyzer design, BM25 query tuning, hybrid lexical+vector retrieval, and judgment-based relevance evaluation with nDCG and online experiments.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "5562f37cbb561dce6dac47b1dd4e75cb7bde6c0c48045198db346ba7d6d790af"
     },
@@ -2147,6 +2214,7 @@
       "original_description": "Expert U.S. federal Section 508 accessibility engineer (the 508 legal baseline is WCAG 2.0 Level AA; WCAG 2.1/2.2 AA are recommended best practice, and ADA Title II requires WCAG 2.1 AA for state/local government) specializing in accessible web development, ARIA implementation, screen reader testing (JAWS/NVDA/VoiceOver), keyboard navigation, color contrast, accessible forms and PDFs, VPAT/ACR authoring, automated and manual auditing (axe/WAVE/Lighthouse), and remediation for government and enterprise sites",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "d4fb7139c69e270fd626cfc1410b7412bd864d010903b459f9eb90c8359809f9"
     },
@@ -2159,6 +2227,7 @@
       "original_description": "Premium implementation specialist - Masters Laravel/Livewire/FluxUI, advanced CSS, Three.js integration",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "63b8da6c12b95f54bbdbcd0666abeb9519a98b35395233e1b1d8e5c102c82599"
     },
@@ -2171,6 +2240,7 @@
       "original_description": "ServiceNow platform developer and step-by-step troubleshooter — Business Rules, Script Includes, GlideRecord/GlideAggregate, Flow Designer, ACLs, and \"is this OOTB or did custom break it?\" isolation",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "0a35abb24b63834dc910f7813e7a657cfb06c93f6760f0204da75aabd6b722bd"
     },
@@ -2183,6 +2253,7 @@
       "original_description": "Expert software architect specializing in system design, domain-driven design, architectural patterns, and technical decision-making for scalable, maintainable systems.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": true,
       "sha256": "b85121691776147bacde26673e68fbbacd6a7f0816d1ca8e203c264d25ce1d30"
     },
@@ -2195,6 +2266,7 @@
       "original_description": "Expert Solidity developer specializing in EVM smart contract architecture, gas optimization, upgradeable proxy patterns, DeFi protocol development, and security-first contract design across Ethereum and L2 chains.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "9e6f96fb29cc71faf2638bce3a5aa06ff15b4c674ca4ec039e5e4515a7844839"
     },
@@ -2207,6 +2279,7 @@
       "original_description": "Expert site reliability engineer specializing in SLOs, error budgets, observability, chaos engineering, and toil reduction for production systems at scale.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "85b305e495506913f50c7cb28de42444a85fbc4898cd3ad4e1dc9b358b4ab5e8"
     },
@@ -2219,6 +2292,7 @@
       "original_description": "Expert technical writer specializing in developer documentation, API references, README files, and tutorials. Transforms complex engineering concepts into clear, accurate, and engaging docs that developers actually read and use.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "bf5c809977e10904b988ab8b218853ce8dfa38b2cbd89a7d2cfadba44ac25761"
     },
@@ -2231,6 +2305,7 @@
       "original_description": "Architect of schema-agnostic document ASTs, algorithmic data-shape layout inference, bidirectional CST-to-canvas synchronization, and universal paged document publishing.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "70c47b2a1edfa10dd3b3206d22516565a4d3e134f6ca92e086770e2d088ea6f0"
     },
@@ -2243,6 +2318,7 @@
       "original_description": "Expert U.S. Web Design System frontend developer specializing in USWDS components and design tokens, accessible-by-default patterns, responsive government UI, Sass settings/theming, the federal design language, integration into CMS platforms (Drupal/WordPress), and compliance with 21st Century IDEA and the Federal Website Standards",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "d3c46e2340d50a97cec536edd985abd2fe6b5f012c3c02e5e9187cd061b27ca7"
     },
@@ -2255,6 +2331,7 @@
       "original_description": "Expert video streaming engineer for adaptive bitrate delivery — HLS/DASH packaging, ffmpeg transcode ladders, CMAF low-latency, DRM, CDN delivery, and QoE-driven player tuning.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "7abdbe217f43c41c7d0563d28683d44855a0e8c8871e7874ecd3deb31a543df0"
     },
@@ -2267,6 +2344,7 @@
       "original_description": "Expert in building end-to-end speech transcription pipelines using Whisper-style models and cloud ASR services — from raw audio ingestion through preprocessing, transcript cleanup, subtitle generation, speaker diarization, and structured downstream integration into apps, APIs, and CMS platforms.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "c6f3cc0829fc2b6c989f2aed10929e59365ec3bae89089205e27acbc57c17c7c"
     },
@@ -2279,6 +2357,7 @@
       "original_description": "Expert WebAssembly engineer — compiling Rust/C++/Go to Wasm, JS interop and the boundary marshalling cost, WASI and server-side runtimes (Wasmtime/Wasmer), the component model, and near-native performance tuning.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "746f387160d62d9d13a78c75c20a7f14607fe45cec1fd20f48848e89c5429ed4"
     },
@@ -2291,6 +2370,7 @@
       "original_description": "Expert WeChat Mini Program developer specializing in 小程序 development with WXML/WXSS/WXS, WeChat API integration, payment systems, subscription messaging, and the full WeChat ecosystem.",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "322e068fb168e5ce95b1f66c132de4c1e5c794a114b342d01d997d785e865f43"
     },
@@ -2303,6 +2383,7 @@
       "original_description": "Expert WordPress performance engineer specializing in Core Web Vitals, object caching (Redis/Memcached), page caching, database and WP_Query optimization, the Transients API, asset minification/deferral/critical CSS, image optimization and lazy loading, CDN integration, plugin performance auditing, and PHP-FPM/opcache tuning for fast, audit-passing sites",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "58ed429ace903aac3a2c9e190ecae5b61966b7330e9e51ea66aa03eb4112854f"
     },
@@ -2315,6 +2396,7 @@
       "original_description": "Expert WordPress e-commerce engineer specializing in WooCommerce for product catalog management, payment gateway integration, checkout customization, order management, tax and coupon configuration, and conversion-optimized storefront delivery on WordPress",
       "category": "engineering",
       "category_label": "مهندسی نرم‌افزار",
+      "category_original_label": "Engineering",
       "recommended": false,
       "sha256": "a2ef45cebe1cf03175b16ef48a2a01acdd2b7e8eda289114f568ebe0f1ae4112"
     },
@@ -2327,6 +2409,7 @@
       "original_description": "Expert bookkeeper and controller specializing in day-to-day accounting operations, financial reconciliations, month-end close processes, and internal controls. Ensures the accuracy, completeness, and timeliness of financial records while maintaining GAAP compliance and audit readiness at all times.",
       "category": "finance",
       "category_label": "مالی",
+      "category_original_label": "Finance",
       "recommended": false,
       "sha256": "5510a24274d8f7897ca3f4df2c3318262138a2c82827b37dd2489dcfca8de75a"
     },
@@ -2339,6 +2422,7 @@
       "original_description": "Expert financial analyst specializing in financial modeling, forecasting, scenario analysis, and data-driven decision support. Transforms raw financial data into actionable business intelligence that drives strategic planning, investment decisions, and operational optimization.",
       "category": "finance",
       "category_label": "مالی",
+      "category_original_label": "Finance",
       "recommended": false,
       "sha256": "3547907cd52e6108a4c666fd576d5e42715ac337586a3958a722deee4c1f77bb"
     },
@@ -2351,6 +2435,7 @@
       "original_description": "Expert Financial Planning & Analysis (FP&A) analyst specializing in budgeting, variance analysis, financial planning, rolling forecasts, and strategic decision support. Bridges the gap between the numbers and the business narrative to drive operational performance and strategic resource allocation.",
       "category": "finance",
       "category_label": "مالی",
+      "category_original_label": "Finance",
       "recommended": false,
       "sha256": "5fa9137c80e0b91fbe62815e7981d7b6a2ca5bafe43013c56d1b847a3c963141"
     },
@@ -2363,6 +2448,7 @@
       "original_description": "Expert investment researcher specializing in market research, due diligence, portfolio analysis, and asset valuation. Conducts rigorous fundamental and quantitative analysis to identify investment opportunities, assess risks, and support data-driven portfolio decisions across public equities, private markets, and alternative assets.",
       "category": "finance",
       "category_label": "مالی",
+      "category_original_label": "Finance",
       "recommended": false,
       "sha256": "4851318dcd82fdfd68403656450761b439a01c6071b8755e49dbd215149bc2c1"
     },
@@ -2375,6 +2461,7 @@
       "original_description": "Expert tax strategist specializing in tax optimization, multi-jurisdictional compliance, transfer pricing, and strategic tax planning. Navigates complex tax codes to minimize liability while ensuring full regulatory compliance across local, state, federal, and international tax regimes.",
       "category": "finance",
       "category_label": "مالی",
+      "category_original_label": "Finance",
       "recommended": false,
       "sha256": "37ea1a246e1290f473ef59abe1bba9ecc4f346c9867522fefcc11d37cd0265ab"
     },
@@ -2387,6 +2474,7 @@
       "original_description": "Blender tooling specialist - Builds Python add-ons, asset validators, exporters, and pipeline automations that turn repetitive DCC work into reliable one-click workflows",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "e9a778fb9a78c31b6c2e2d8a0912cccd32652c1627be4794ae70f5ceb0021076"
     },
@@ -2399,6 +2487,7 @@
       "original_description": "Virtual economy architect - Masters currency systems, sources and sinks, monetization modeling, inflation control, and data-driven economic balancing for live games",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "a6767b808ef0c155d85f5569e9e53285c97dce4c9df25aa24a09a65246967998"
     },
@@ -2411,6 +2500,7 @@
       "original_description": "Interactive audio specialist - Masters FMOD/Wwise integration, adaptive music systems, spatial audio, and audio performance budgeting across all game engines",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "d7a2eebd8c20021e543222bc962cb5a111924c5438e9f771a6db42d74cd19232"
     },
@@ -2423,6 +2513,7 @@
       "original_description": "Systems and mechanics architect - Masters GDD authorship, player psychology, economy balancing, and gameplay loop design across all engines and genres",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "203c4d7f0358a628ea21e3b9c16980f28003bd035b5cfd41a2daec04f6b84e5a"
     },
@@ -2435,6 +2526,7 @@
       "original_description": "Composition and signal integrity specialist - Masters GDScript 2.0, C# integration, node-based architecture, and type-safe signal design for Godot 4 projects",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "20cc00332db9cbf19f9a86dd87bd4b514d348ab0c4c0536b151c936b38be4392"
     },
@@ -2447,6 +2539,7 @@
       "original_description": "Godot 4 networking specialist - Masters the MultiplayerAPI, scene replication, ENet/WebRTC transport, RPCs, and authority models for real-time multiplayer games",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "7e86e269a98652c4e41c2f5d26b594c99e176d724b11f505550ab51cc21dfbb8"
     },
@@ -2459,6 +2552,7 @@
       "original_description": "Godot 4 visual effects specialist - Masters the Godot Shading Language (GLSL-like), VisualShader editor, CanvasItem and Spatial shaders, post-processing, and performance optimization for 2D/3D effects",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "947e775e411cd11ea0ed92419737801e602f6aa450037313433ab11aa7681bb4"
     },
@@ -2471,6 +2565,7 @@
       "original_description": "Spatial storytelling and flow specialist - Masters layout theory, pacing architecture, encounter design, and environmental narrative across all game engines",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "79c1d41b7dfc477f6f364ba8b6dec02dc0c081235fe8f8b61c8b062b5dc3b344"
     },
@@ -2483,6 +2578,7 @@
       "original_description": "Story systems and dialogue architect - Masters GDD-aligned narrative design, branching dialogue, lore architecture, and environmental storytelling across all game engines",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "7a5489c7b0502aa167030018137e3f349d2c32505c0ad7b9ec1de066a9a93f0d"
     },
@@ -2495,6 +2591,7 @@
       "original_description": "Roblox UGC and avatar pipeline specialist - Masters Roblox's avatar system, UGC item creation, accessory rigging, texture standards, and the Creator Marketplace submission pipeline",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "6bdb5af6fe5c390da43f7bdcc4d73b6fbdef2a8b19bd6d30bf1fef6b4258f16a"
     },
@@ -2507,6 +2604,7 @@
       "original_description": "Roblox platform UX and monetization specialist - Masters engagement loop design, DataStore-driven progression, Roblox monetization systems (Passes, Developer Products, UGC), and player retention for Roblox experiences",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "36fb12b8b76ba666e8e9e2830328f63e713556b8f503fe12ab883902a77b308a"
     },
@@ -2519,6 +2617,7 @@
       "original_description": "Roblox platform engineering specialist - Masters Luau, the client-server security model, RemoteEvents/RemoteFunctions, DataStore, and module architecture for scalable Roblox experiences",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "6eb8875978afb987563afa5fb0ee5a7789387348c362cf9a44cba6c2098821db"
     },
@@ -2531,6 +2630,7 @@
       "original_description": "Art-to-engine pipeline specialist - Masters shaders, VFX systems, LOD pipelines, performance budgeting, and cross-engine asset optimization",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "9b7e75b629b7b1c87a0bc37e6abaec91e0ad7ae02e8a091c5a876e2bea817742"
     },
@@ -2543,6 +2643,7 @@
       "original_description": "Data-driven modularity specialist - Masters ScriptableObjects, decoupled systems, and single-responsibility component design for scalable Unity projects",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "15502fbcd46fcd7559bcd85d15b512317ceed27ffb90fc54e79f3c32bf682c1a"
     },
@@ -2555,6 +2656,7 @@
       "original_description": "Unity editor automation specialist - Masters custom EditorWindows, PropertyDrawers, AssetPostprocessors, ScriptedImporters, and pipeline automation that saves teams hours per week",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "8b368fe6ee0a4c0c71d10324cd8de4378c7bdaae9bc871a5561199b4a802b5dc"
     },
@@ -2567,6 +2669,7 @@
       "original_description": "Networked gameplay specialist - Masters Netcode for GameObjects, Unity Gaming Services (Relay/Lobby), client-server authority, lag compensation, and state synchronization",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "e7d47ee13ad113a03cbc4605ec3583c272105aa305e8a64be77464a3bb9bee92"
     },
@@ -2579,6 +2682,7 @@
       "original_description": "Visual effects and material specialist - Masters Unity Shader Graph, HLSL, URP/HDRP rendering pipelines, and custom pass authoring for real-time visual effects",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "3e2033f179a95da207627d1d7521395d434ac76c30a3b20f08f90a05b7405c52"
     },
@@ -2591,6 +2695,7 @@
       "original_description": "Unreal Engine networking specialist - Masters Actor replication, GameMode/GameState architecture, server-authoritative gameplay, network prediction, and dedicated server setup for UE5",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "c31c693ad7e34f9baa5b626565ac763f9fdfdb7f3e2d42f9e0bdddba9cd98b73"
     },
@@ -2603,6 +2708,7 @@
       "original_description": "Performance and hybrid architecture specialist - Masters C++/Blueprint continuum, Nanite geometry, Lumen GI, and Gameplay Ability System for AAA-grade Unreal Engine projects",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "a4a6b98e7387c96f01bb0e9e971c27003ea30bce6d57b09e3ab7e34331746042"
     },
@@ -2615,6 +2721,7 @@
       "original_description": "Unreal Engine visual pipeline specialist - Masters the Material Editor, Niagara VFX, Procedural Content Generation, and the art-to-engine pipeline for UE5 projects",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "54bdd46bc872ba21fbcf7e02492c9f5bef82a6d3a35ee3de757d3b678edd6b82"
     },
@@ -2627,6 +2734,7 @@
       "original_description": "Open-world and environment specialist - Masters UE5 World Partition, Landscape, procedural foliage, HLOD, and large-scale level streaming for seamless open-world experiences",
       "category": "game-development",
       "category_label": "توسعهٔ بازی",
+      "category_original_label": "Game Development",
       "recommended": false,
       "sha256": "7d2bf21ac77089b99f1fa36f6102fa938c9014c3107e9dcb9069b896e2b4001e"
     },
@@ -2639,6 +2747,7 @@
       "original_description": "Web 3D visualization specialist who creates immersive 3D scenes, terrain models, point cloud visualizations, and interactive web experiences using Cesium, ArcGIS Scene Viewer, and modern 3D web frameworks.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "56f753732d35e54f0527a2cbdc60c73c9215463d4704cc66242e3bbaa1c744e7"
     },
@@ -2651,6 +2760,7 @@
       "original_description": "Day-to-day GIS operator who creates maps, manages layers, performs spatial queries, and maintains geospatial data integrity across desktop and web environments.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "db86d14315eb0ee9fc4cc4699c3844b40f2004a988370f32fe55dadfac2c40a7"
     },
@@ -2663,6 +2773,7 @@
       "original_description": "Integration specialist who bridges Building Information Modeling and Geographic Information Systems — Revit/IFC data conversion, indoor mapping, digital twin architecture, and facility management data models.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "724609ec55d1b83c88672ada351763ac6c219adca2d36faea0790bdda953e567"
     },
@@ -2675,6 +2786,7 @@
       "original_description": "Map aesthetics specialist who designs beautiful, readable, and effective maps — color theory, typography, label placement, basemap selection, and visual hierarchy for both print and web.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "2223d403dfdd863d42c0aa29c912cba0c91ffdc9ad8192630f7b08e4b4c7e804"
     },
@@ -2687,6 +2799,7 @@
       "original_description": "Photogrammetry and reality capture expert who processes drone imagery into orthomosaics, digital terrain models, point clouds, and 3D meshes — bridging field capture and GIS-ready products.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "2e670d99f491e1b4b76d4a5a91e33eb7a5a9ddfd9e67dda1d3c24cd57faea1f2"
     },
@@ -2699,6 +2812,7 @@
       "original_description": "Geospatial machine learning specialist who builds models for feature extraction, object detection, image segmentation, and land cover classification from satellite and aerial imagery.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "6323600aecb9a1867a90158b10fa066280d1ffc77411c2b453248d125a505448"
     },
@@ -2711,6 +2825,7 @@
       "original_description": "ArcPy and Python toolbox expert who automates spatial workflows — builds .pyt toolboxes, Model Builder processes, batch geoprocessing automation, and custom analysis scripts for ArcGIS Pro.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "28efb48c3c4312ac7a662c8f2da69cc013d74e5d59880a04a71a40783e0ba424"
     },
@@ -2723,6 +2838,7 @@
       "original_description": "Quality assurance specialist who validates geospatial data integrity — topology checks, metadata audits, CRS consistency, accuracy assessment, and compliance verification.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "f7247c7df478d963db720562af361394454c20b6af3fc78a02791ec6624bfc38"
     },
@@ -2735,6 +2851,7 @@
       "original_description": "Hands-on GIS prototype builder who takes strategy from Technical Consultant and turns it into working demos, proof-of-concepts, and technical validations across the full Esri and open-source stack.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "a871691ed7e305047281238eb225f64df4b03274fe82278879788de3c839f054"
     },
@@ -2747,6 +2864,7 @@
       "original_description": "ETL specialist who transforms messy geospatial data from any source into clean, standardized, production-ready datasets — format conversion, CRS reprojection, attribute normalization, and automated pipelines.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "b8f0e43cee6538aa7880168335ceac8e1a4700965b49f3b6c227b0f13d399e5f"
     },
@@ -2759,6 +2877,7 @@
       "original_description": "Advanced spatial analytics specialist who applies statistical modeling, spatial econometrics, clustering, and predictive analytics to geospatial data — finding patterns that aren't visible on a map.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "03254a9fa2a9522800eddf743b8305bc2d4b2093e233e6c9b593da6f0746c657"
     },
@@ -2771,6 +2890,7 @@
       "original_description": "Strategic GIS advisor who translates business problems into geospatial solutions — gap analysis, technology roadmaps, RFP responses, and digital transformation strategy across Esri and open-source ecosystems.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "f0228896fc57ea0b8fcf3c3fab188a6d4063ba6bf704aa93b0e46e27ba096736"
     },
@@ -2783,6 +2903,7 @@
       "original_description": "Full-stack web GIS engineer who builds interactive mapping applications — MapLibre GL JS, ArcGIS JS API, Leaflet, real-time dashboards, REST API integration, and geospatial web services.",
       "category": "gis",
       "category_label": "اطلاعات مکانی",
+      "category_original_label": "GIS",
       "recommended": false,
       "sha256": "dbf3ceea4bb8fdc2f2fc61bf96806adeb89f725c8d67a01cd103d256e56909a7"
     },
@@ -2795,6 +2916,7 @@
       "original_description": "Evidence standards and clinical credibility framework for AI agents operating in healthcare contexts. Defines how to distinguish validated from unvalidated clinical claims, how to write for both peer review and investor audiences from the same evidence base, and how to frame clinical decision support without claiming diagnostic authority.",
       "category": "healthcare",
       "category_label": "سلامت",
+      "category_original_label": "Healthcare",
       "recommended": false,
       "sha256": "5fd6223b0fb17c7625b2ca8ba9f1f6fb649560c074a39b0d72e22e984487a688"
     },
@@ -2807,6 +2929,7 @@
       "original_description": "Strategic narrative architect for healthcare founders operating at the intersection of clinical credibility, healthcare finance, and complex deployment contexts. Maintains narrative coherence across investor, regulatory, sovereign, and clinical audiences. Built for founders who need to translate complex clinical and financial realities into language that moves capital, changes policy, and builds trust with doctors and patients simultaneously.",
       "category": "healthcare",
       "category_label": "سلامت",
+      "category_original_label": "Healthcare",
       "recommended": false,
       "sha256": "e1bd8f9f8c5ac7db333632d482e017c6086519eee310da6879db5c121129fbbd"
     },
@@ -2819,6 +2942,7 @@
       "original_description": "Government health mandate engagement framework for AI agents operating at the intersection of national health infrastructure, UHC policy, and emerging market deployment. Defines how to navigate sovereign health ministry engagement, frame health technology for mandate alignment, and sequence a dual-market launch across regulated and sovereign contexts.",
       "category": "healthcare",
       "category_label": "سلامت",
+      "category_original_label": "Healthcare",
       "recommended": false,
       "sha256": "8e846a8643def597e351719853da63b4b6d9f0bf41978ac25e896750427989fa"
     },
@@ -2831,6 +2955,7 @@
       "original_description": "Expert in AI Engine Optimization infrastructure — implements llms.txt, AI-aware robots.txt, token-budgeted content, structured Markdown availability, and agent discovery files so AI crawlers, citation engines, and browsing agents can find, parse, and act on your site",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "b7ef7e1188c924833974bab5cc57f166a7eb6b681d63ccd22eb05c91c25a3c8b"
     },
@@ -2843,6 +2968,7 @@
       "original_description": "Expert in WebMCP readiness and agentic task completion — audits whether AI agents can actually accomplish tasks on your site (book, buy, register, subscribe), implements WebMCP declarative and imperative patterns, and measures task completion rates across AI browsing agents",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "de143d3db98f6532dcd9d21ae363d1c2fb508dc806c1f7325bba59e8fbd24184"
     },
@@ -2855,6 +2981,7 @@
       "original_description": "Expert in AI recommendation engine optimization (AEO/GEO) — audits brand visibility across ChatGPT, Claude, Gemini, and Perplexity, identifies why competitors get cited instead, and delivers content fixes that improve AI citations",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "1d23c94aced61beb0e7a3151ad4c14ccb8205a95e48d4bc6c0fda6739c2e356d"
     },
@@ -2867,6 +2994,7 @@
       "original_description": "Expert app store marketing specialist focused on App Store Optimization (ASO), conversion rate optimization, and app discoverability",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "1987be72f8fd43ca694f9145cb0dbe37eabc5b1f04439425d7b59185db9263c9"
     },
@@ -2879,6 +3007,7 @@
       "original_description": "Expert Baidu search optimization specialist focused on Chinese search engine ranking, Baidu ecosystem integration, ICP compliance, Chinese keyword research, and mobile-first indexing for the China market.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "895a5e8440066ad0b8fa6fe79a91c7750d246a233b01bf7932584b74e9c5becb"
     },
@@ -2891,6 +3020,7 @@
       "original_description": "Expert Bilibili marketing specialist focused on UP主 growth, danmaku culture mastery, B站 algorithm optimization, community building, and branded content strategy for China's leading video community platform.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "4268a7b51025967fbb4a80c0aeb5e4a80abaad9344f5dec164a8d1fb6ea62d06"
     },
@@ -2903,6 +3033,7 @@
       "original_description": "Strategic thought-leadership book collaborator for founders, experts, and operators turning voice notes, fragments, and positioning into structured first-person chapters.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "09ea2fb4770180b072c92100be84b808367c40ef8a3f2119cfd059206aa4c717"
     },
@@ -2915,6 +3046,7 @@
       "original_description": "Autonomous TikTok and Instagram carousel generation specialist. Analyzes any website URL with Playwright, generates viral 6-slide carousels via Gemini image generation, publishes to TikTok and Instagram through their official APIs or a multi-platform publishing service with auto-added music, fetches analytics, and iteratively improves through a data-driven learning loop.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "42a36a3ca0a11b6adc57eb3277dda7628a4db80169b5ea69c5262b7e85d7c06f"
     },
@@ -2927,6 +3059,7 @@
       "original_description": "Expert China e-commerce operations specialist covering Taobao, Tmall, Pinduoduo, and JD ecosystems with deep expertise in product listing optimization, live commerce, store operations, 618/Double 11 campaigns, and cross-platform strategy.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "aa6743c68cce9dd00fd31751e9e3c2bea3987857cad332c68c7f68e683e98ba7"
     },
@@ -2939,6 +3072,7 @@
       "original_description": "Full-stack China market localization expert who transforms real-time trend signals into executable go-to-market strategies across Douyin, Xiaohongshu, WeChat, Bilibili, and beyond",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "7f6351003b0d6525c7f44870078252d4616287953e33dcace3c8b7da2e9e4325"
     },
@@ -2951,6 +3085,7 @@
       "original_description": "Expert content strategist and creator for multi-platform campaigns. Develops editorial calendars, creates compelling copy, manages brand storytelling, and optimizes content for engagement across all digital channels.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "26ddce44f057068a3935c13d53becd3c57385fb47fcdcfdd891b80269070b3d5"
     },
@@ -2963,6 +3098,7 @@
       "original_description": "Full-funnel cross-border e-commerce strategist covering Amazon, Shopee, Lazada, AliExpress, Temu, and TikTok Shop operations, international logistics and overseas warehousing, compliance and taxation, multilingual listing optimization, brand globalization, and DTC independent site development.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "073dba84e8159c763c073fcf16f14d57685611c50555a7cde346df85a25c6293"
     },
@@ -2975,6 +3111,7 @@
       "original_description": "Grows and sustains developer communities — Discord servers, GitHub discussions, forums, and contributor programs — turning users into advocates and advocates into contributors.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "f1d87ae21d21ee90f73cd94754b2a99e4af7fec64b23290fea59fb2b4637db11"
     },
@@ -2987,6 +3124,7 @@
       "original_description": "Short-video marketing expert specializing in the Douyin platform, with deep expertise in recommendation algorithm mechanics, viral video planning, livestream commerce workflows, and full-funnel brand growth through content matrix strategies.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "87e3b91287fc97ad0dedb2f407a49d551b52b8513c8c61d06c1a93d837a7ae46"
     },
@@ -2999,6 +3137,7 @@
       "original_description": "Expert email marketing strategist for CRM-driven campaigns, lifecycle automation, segmentation architecture, and deliverability. Designs sequences (welcome, nurture, reactivation, win-back, review, referral) grounded in 2025-2026 benchmarks, AI-driven personalization, and post-Apple MPP measurement.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "605c98066a4a1b5538d76476a11316247316ecb8da88beda68a21f2c8918f19b"
     },
@@ -3011,6 +3150,7 @@
       "original_description": "Expert podcast growth specialist focused on show positioning, audience development, content strategy, and monetisation. Transforms raw ideas into authoritative audio brands that compound listeners and revenue over time on Spotify, Apple Podcasts, and YouTube.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "98416e338db666c5cc1d6bfd37c35daffa00532010623fdb4a92ed7dce76a7aa"
     },
@@ -3023,6 +3163,7 @@
       "original_description": "Expert growth strategist specializing in rapid user acquisition through data-driven experimentation. Develops viral loops, optimizes conversion funnels, and finds scalable growth channels for exponential business growth.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "6938b4fccaf4447e8c4b8fd071ce383a484cd3fb72583d87ac9835fa9741a7c7"
     },
@@ -3035,6 +3176,7 @@
       "original_description": "Expert Instagram marketing specialist focused on visual storytelling, community building, and multi-format content optimization. Masters aesthetic development and drives meaningful engagement.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "bab95910975a95409eca10e28c44cf762cd46f9d8b7d551bcb347ef0f39e68fd"
     },
@@ -3047,6 +3189,7 @@
       "original_description": "Expert Kuaishou marketing strategist specializing in short-video content for China's lower-tier city markets, live commerce operations, community trust building, and grassroots audience growth on 快手.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "d28742e505fa7bf6b39a88ccb6c2052ee5b4f569d17cebb81401fa8810a5ad49"
     },
@@ -3059,6 +3202,7 @@
       "original_description": "Expert LinkedIn content strategist focused on thought leadership, personal brand building, and high-engagement professional content. Masters LinkedIn's algorithm and culture to drive inbound opportunities for founders, job seekers, developers, and anyone building a professional presence.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "344896bff33acf0b5107bbba3c84ee1fb310f3652b44c7e53553c934c735ed4f"
     },
@@ -3071,6 +3215,7 @@
       "original_description": "Veteran livestream e-commerce coach specializing in host training and live room operations across Douyin, Kuaishou, Taobao Live, and Channels, covering script design, product sequencing, paid-vs-organic traffic balancing, conversion closing techniques, and real-time data-driven optimization.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "2d53e67cd70d825aeeddc9fd8b3b4a496887893b64df85c19903a2e7dbcb101f"
     },
@@ -3083,6 +3228,7 @@
       "original_description": "Expert orchestrator for one-click Chinese blog publishing. Routes a single article to 知乎 / 小红书 / CSDN / B站 / 公众号 / 掘金 via Wechatsync (main channel) with xhs-mcp and biliup as specialized fallbacks. Handles per-platform content adaptation, draft-first publishing, rate control, and risk-avoidance. Does NOT auto-publish — always stops at draft for human review.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "adfc6c481c0c1e1c03df21a17ccb5fb4d4c56a84193249abb27cb3d44e4f1f5e"
     },
@@ -3095,6 +3241,7 @@
       "original_description": "Content strategy and operations expert for the Chinese podcast market, with deep expertise in Xiaoyuzhou, Ximalaya, and other major audio platforms, covering show positioning, audio production, audience growth, multi-platform distribution, and monetization to help podcast creators build sticky audio content brands.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "37fb126529afb4aa6f4409ca02307330d26b01f695dfbaade017d569169d936b"
     },
@@ -3107,6 +3254,7 @@
       "original_description": "Strategic public relations and communications specialist for media relations, press releases, crisis communications, executive thought leadership, brand reputation management, and integrated communications planning — building and protecting reputations through earned media, storytelling, and proactive narrative control",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "e255a9ebf00a0db0dc12e72fe2a647195ceacf3c0e63f38788e077966d69b800"
     },
@@ -3119,6 +3267,7 @@
       "original_description": "Expert in building enterprise WeChat (WeCom) private domain ecosystems, with deep expertise in SCRM systems, segmented community operations, Mini Program commerce integration, user lifecycle management, and full-funnel conversion optimization.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "1170edb4c9534149b77cf9c3279c347b0136a578e44e70320f16f784e7fe5f3c"
     },
@@ -3131,6 +3280,7 @@
       "original_description": "Expert Reddit marketing specialist focused on authentic community engagement, value-driven content creation, and long-term relationship building. Masters Reddit culture navigation.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "03bb723420800754bcbf23994cba707c45123f7eefe3e1964188cf92ecc2b7d7"
     },
@@ -3143,6 +3293,7 @@
       "original_description": "Expert search engine optimization strategist specializing in technical SEO, content optimization, link authority building, and organic search growth. Drives sustainable traffic through data-driven search strategies.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "cfa35eb3626230e1bc96ab3d434b42005b092fd4de8f517efe4a4b3f8fca60d0"
     },
@@ -3155,6 +3306,7 @@
       "original_description": "Hands-on short-video editing coach covering the full post-production pipeline, with mastery of CapCut Pro, Premiere Pro, DaVinci Resolve, and Final Cut Pro across composition and camera language, color grading, audio engineering, motion graphics and VFX, subtitle design, multi-platform export optimization, editing workflow efficiency, and AI-assisted editing.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "4634520ab5e84b26bb6658f4f8c0f737ed7dd0b5c631b9211482a4cf4037ccbf"
     },
@@ -3167,6 +3319,7 @@
       "original_description": "Expert social media strategist for LinkedIn, Twitter, and professional platforms. Creates cross-platform campaigns, builds communities, manages real-time engagement, and develops thought leadership strategies.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "7c698a9280872666b2726b7ca305c6d4890fcb95a098c7c316beb9bf5fdb4274"
     },
@@ -3179,6 +3332,7 @@
       "original_description": "Expert TikTok marketing specialist focused on viral content creation, algorithm optimization, and community building. Masters TikTok's unique culture and features for brand growth.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "980ca09138f63ec2d934e111af4fa59d76a483bb23220a5f862aa4e9f0c9124a"
     },
@@ -3191,6 +3345,7 @@
       "original_description": "Expert Twitter marketing specialist focused on real-time engagement, thought leadership building, and community-driven growth. Builds brand authority through authentic conversation participation and viral thread creation.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "df58c7df04fb808d282d7a551c84e039bebdf4a17318a09b84fa285a118f54ab"
     },
@@ -3203,6 +3358,7 @@
       "original_description": "Video marketing strategist specializing in YouTube algorithm optimization, audience retention, chaptering, thumbnail concepts, and cross-platform video syndication.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "9cf82969be8898c96192617becf5e38e8de6b79650c362d840c53d2c10f2e8b9"
     },
@@ -3215,6 +3371,7 @@
       "original_description": "Expert WeChat Official Account (OA) strategist specializing in content marketing, subscriber engagement, and conversion optimization. Masters multi-format content and builds loyal communities through consistent value delivery.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "b74a42aff9b960cb2a221e362d2006865924ffece9e3514df81f1116322d2dce"
     },
@@ -3227,6 +3384,7 @@
       "original_description": "Full-spectrum operations expert for Sina Weibo, with deep expertise in trending topic mechanics, Super Topic community management, public sentiment monitoring, fan economy strategies, and Weibo advertising, helping brands achieve viral reach and sustained growth on China's leading public discourse platform.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "7a79f1ec3894ab2e32cb0b0b729b77fda176defaffdb59f4feae29e56a767917"
     },
@@ -3239,6 +3397,7 @@
       "original_description": "Social intelligence specialist for X/Twitter research, trend detection, account monitoring, and evidence-backed audience insights using public signals and structured data workflows.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "e3dd504765e720f0dce0c5b68254ab65c440798edccfe6af6aafd0d3925d6dcb"
     },
@@ -3251,6 +3410,7 @@
       "original_description": "Expert Xiaohongshu marketing specialist focused on lifestyle content, trend-driven strategies, and authentic community engagement. Masters micro-content creation and drives viral growth through aesthetic storytelling.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "c0afe07b77d7795ff6c5ea928360f0e545d51a6df231d42d6282168ace027154"
     },
@@ -3263,6 +3423,7 @@
       "original_description": "Expert Zhihu marketing specialist focused on thought leadership, community credibility, and knowledge-driven engagement. Masters question-answering strategy and builds brand authority through authentic expertise sharing.",
       "category": "marketing",
       "category_label": "بازاریابی",
+      "category_original_label": "Marketing",
       "recommended": false,
       "sha256": "35f6fd759a67860f92d1ae5245bdf45f5eb524277453a28011899aeb450f5c4c"
     },
@@ -3275,6 +3436,7 @@
       "original_description": "Comprehensive paid media auditor who systematically evaluates Google Ads, Microsoft Ads, and Meta accounts across 200+ checkpoints spanning account structure, tracking, bidding, creative, audiences, and competitive positioning. Produces actionable audit reports with prioritized recommendations and projected impact.",
       "category": "paid-media",
       "category_label": "رسانه و تبلیغات",
+      "category_original_label": "Paid Media",
       "recommended": false,
       "sha256": "ce0346ba6a1b1652e350733cd3c124ab200e869c116fd85bcd0225d9764b0c56"
     },
@@ -3287,6 +3449,7 @@
       "original_description": "Paid media creative specialist focused on ad copywriting, RSA optimization, asset group design, and creative testing frameworks across Google, Meta, Microsoft, and programmatic platforms. Bridges the gap between performance data and persuasive messaging.",
       "category": "paid-media",
       "category_label": "رسانه و تبلیغات",
+      "category_original_label": "Paid Media",
       "recommended": false,
       "sha256": "a24a303228178eb23d514fee63831cf7e1a3d7e5276c54ce5b58dce566700c41"
     },
@@ -3299,6 +3462,7 @@
       "original_description": "Cross-platform paid social advertising specialist covering Meta (Facebook/Instagram), LinkedIn, TikTok, Pinterest, X, and Snapchat. Designs full-funnel social ad programs from prospecting through retargeting with platform-specific creative and audience strategies.",
       "category": "paid-media",
       "category_label": "رسانه و تبلیغات",
+      "category_original_label": "Paid Media",
       "recommended": false,
       "sha256": "c8004c7f640dfef9c7c698f69c4c3712d063df06c8d391c809df92ba420af3db"
     },
@@ -3311,6 +3475,7 @@
       "original_description": "Senior paid media strategist specializing in large-scale search, shopping, and performance max campaign architecture across Google, Microsoft, and Amazon ad platforms. Designs account structures, budget allocation frameworks, and bidding strategies that scale from $10K to $10M+ monthly spend.",
       "category": "paid-media",
       "category_label": "رسانه و تبلیغات",
+      "category_original_label": "Paid Media",
       "recommended": false,
       "sha256": "3e172aa58ad7f9ea3bad947def69dfe26d66134c0aa88dca60e5aea4b8e25f67"
     },
@@ -3323,6 +3488,7 @@
       "original_description": "Display advertising and programmatic media buying specialist covering managed placements, Google Display Network, DV360, trade desk platforms, partner media (newsletters, sponsored content), and ABM display strategies via platforms like Demandbase and 6Sense.",
       "category": "paid-media",
       "category_label": "رسانه و تبلیغات",
+      "category_original_label": "Paid Media",
       "recommended": false,
       "sha256": "c2a54b847823906485bed6e704fc7a013e3d9cf1340045354aae9a9e0c96e7e1"
     },
@@ -3335,6 +3501,7 @@
       "original_description": "Specialist in search term analysis, negative keyword architecture, and query-to-intent mapping. Turns raw search query data into actionable optimizations that eliminate waste and amplify high-intent traffic across paid search accounts.",
       "category": "paid-media",
       "category_label": "رسانه و تبلیغات",
+      "category_original_label": "Paid Media",
       "recommended": false,
       "sha256": "bfd792539f93515118429f20c528fdaee320a172ca861fbc7ffb0209dffb723e"
     },
@@ -3347,6 +3514,7 @@
       "original_description": "Expert in conversion tracking architecture, tag management, and attribution modeling across Google Tag Manager, GA4, Google Ads, Meta CAPI, LinkedIn Insight Tag, and server-side implementations. Ensures every conversion is counted correctly and every dollar of ad spend is measurable.",
       "category": "paid-media",
       "category_label": "رسانه و تبلیغات",
+      "category_original_label": "Paid Media",
       "recommended": false,
       "sha256": "8caa9bbc8f5a8aaeb5ac156dbb27818f27e79512472053b824484496b0ca5b96"
     },
@@ -3359,6 +3527,7 @@
       "original_description": "Behavioral psychology specialist that adapts software interaction cadences and styles to maximize user motivation and success.",
       "category": "product",
       "category_label": "محصول",
+      "category_original_label": "Product",
       "recommended": false,
       "sha256": "058868fb1a86e78859471dfa4285b1d62c23b2f83edbb345a227fc4beff39562"
     },
@@ -3371,6 +3540,7 @@
       "original_description": "Removes every unnecessary step between a developer and their first success — SDK samples, onboarding flows, error messages, and the feedback loops that make products feel like they were built by someone who's used them.",
       "category": "product",
       "category_label": "محصول",
+      "category_original_label": "Product",
       "recommended": false,
       "sha256": "af7f005d51cd5d74885c1850c3570c2aee67a2a655d6fa9a695e895ff986a448"
     },
@@ -3383,6 +3553,7 @@
       "original_description": "Expert in collecting, analyzing, and synthesizing user feedback from multiple channels to extract actionable product insights. Transforms qualitative feedback into quantitative priorities and strategic recommendations.",
       "category": "product",
       "category_label": "محصول",
+      "category_original_label": "Product",
       "recommended": false,
       "sha256": "9f7bc1474bf8bf95c0573c20df5e3d8ae70c3b9659ec5ea7958cc4692b958270"
     },
@@ -3395,6 +3566,7 @@
       "original_description": "Holistic product leader who owns the full product lifecycle — from discovery and strategy through roadmap, stakeholder alignment, go-to-market, and outcome measurement. Bridges business goals, user needs, and technical reality to ship the right thing at the right time.",
       "category": "product",
       "category_label": "محصول",
+      "category_original_label": "Product",
       "recommended": true,
       "sha256": "4a3fe4661e72e5173877bcba7c362392181774b20efc27ac1789171e98676c9d"
     },
@@ -3407,6 +3579,7 @@
       "original_description": "Expert product manager specializing in agile sprint planning, feature prioritization, and resource allocation. Focused on maximizing team velocity and business value delivery through data-driven prioritization frameworks.",
       "category": "product",
       "category_label": "محصول",
+      "category_original_label": "Product",
       "recommended": true,
       "sha256": "da5233770ca85a3931b72d80b37dd09616a54fd24075c607667853acf65b000a"
     },
@@ -3419,6 +3592,7 @@
       "original_description": "Expert market intelligence analyst specializing in identifying emerging trends, competitive analysis, and opportunity assessment. Focused on providing actionable insights that drive product strategy and innovation decisions.",
       "category": "product",
       "category_label": "محصول",
+      "category_original_label": "Product",
       "recommended": false,
       "sha256": "69c8e54a9413ba411195e8d5274ee3cd88fa8cda18486db70c0f19ce374550a2"
     },
@@ -3431,6 +3605,7 @@
       "original_description": "Expert project manager specializing in experiment design, execution tracking, and data-driven decision making. Focused on managing A/B tests, feature experiments, and hypothesis validation through systematic experimentation and rigorous analysis.",
       "category": "project-management",
       "category_label": "مدیریت پروژه",
+      "category_original_label": "Project Management",
       "recommended": false,
       "sha256": "8f1410bfa054c8ac2eee3084b9bfdb3adb1e8a2f3e015c2876d0ecf07136c22f"
     },
@@ -3443,6 +3618,7 @@
       "original_description": "Expert delivery operations specialist who enforces Jira-linked Git workflows, traceable commits, structured pull requests, and release-safe branch strategy across software teams.",
       "category": "project-management",
       "category_label": "مدیریت پروژه",
+      "category_original_label": "Project Management",
       "recommended": false,
       "sha256": "1e63812bd80317f4f69403701b6e1ff28d2fcf61862288f93fa4e4676bf46e17"
     },
@@ -3455,6 +3631,7 @@
       "original_description": "Extract structured decisions, action items, and open questions from meeting transcripts or rough notes into a clean 4-section summary.",
       "category": "project-management",
       "category_label": "مدیریت پروژه",
+      "category_original_label": "Project Management",
       "recommended": false,
       "sha256": "53a6efaa379b70cbc3276b44544ecf569789fffe892ba82eb68e8672407de91f"
     },
@@ -3467,6 +3644,7 @@
       "original_description": "Expert project manager specializing in cross-functional project coordination, timeline management, and stakeholder alignment. Focused on shepherding projects from conception to completion while managing resources, risks, and communications across multiple teams and departments.",
       "category": "project-management",
       "category_label": "مدیریت پروژه",
+      "category_original_label": "Project Management",
       "recommended": false,
       "sha256": "0feb647366d78b61c1633b12e370ffb1dea52facb9d750ef6c952de1e996031c"
     },
@@ -3479,6 +3657,7 @@
       "original_description": "Expert operations manager specializing in day-to-day studio efficiency, process optimization, and resource coordination. Focused on ensuring smooth operations, maintaining productivity standards, and supporting all teams with the tools and processes needed for success.",
       "category": "project-management",
       "category_label": "مدیریت پروژه",
+      "category_original_label": "Project Management",
       "recommended": false,
       "sha256": "8a2e5098d94688d191a128b6b2fdbbf3724bfcd2f4944766de6e25a0709f1517"
     },
@@ -3491,6 +3670,7 @@
       "original_description": "Senior strategic leader specializing in high-level creative and technical project orchestration, resource allocation, and multi-project portfolio management. Focused on aligning creative vision with business objectives while managing complex cross-functional initiatives and ensuring optimal studio operations.",
       "category": "project-management",
       "category_label": "مدیریت پروژه",
+      "category_original_label": "Project Management",
       "recommended": false,
       "sha256": "d942feab0f50ea7b8e98cb73bdaf05226d2a6c53c6359c7380149f7545bb199d"
     },
@@ -3503,6 +3683,7 @@
       "original_description": "Converts specs to tasks and remembers previous projects. Focused on realistic scope, no background processes, exact spec requirements",
       "category": "project-management",
       "category_label": "مدیریت پروژه",
+      "category_original_label": "Project Management",
       "recommended": false,
       "sha256": "70fb27cab174c97375293311211d5563c5ac257fba274450d1ca9c05b540ef2d"
     },
@@ -3515,6 +3696,7 @@
       "original_description": "Expert in literature review, source evaluation, and evidence synthesis — turns a scattered pile of sources into a structured, honestly-weighted map of what the evidence actually supports",
       "category": "research",
       "category_label": "پژوهش",
+      "category_original_label": "Research",
       "recommended": false,
       "sha256": "3618b4a2a73523147731ae38ac4096cea0e83a7de930f55ea9ea6c69e3c77f30"
     },
@@ -3527,6 +3709,7 @@
       "original_description": "Expert post-sale account strategist specializing in land-and-expand execution, stakeholder mapping, QBR facilitation, and net revenue retention. Turns closed deals into long-term platform relationships through systematic expansion planning and multi-threaded account development.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "dd9b2c37c41827286ef91d64057a5b0ff4795c2e57bd44695436feeb5a3f0423"
     },
@@ -3539,6 +3722,7 @@
       "original_description": "Expert sales coaching specialist focused on rep development, pipeline review facilitation, call coaching, deal strategy, and forecast accuracy. Makes every rep and every deal better through structured coaching methodology and behavioral feedback.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "83f0be3daa7e78b24bfb41c7514d5f2936e9690c42ab7a0d8b5bc66a8b829f62"
     },
@@ -3551,6 +3735,7 @@
       "original_description": "Senior deal strategist specializing in MEDDPICC qualification, competitive positioning, and win planning for complex B2B sales cycles. Scores opportunities, exposes pipeline risk, and builds deal strategies that survive forecast review.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "fdd92f2ced04ad842e25fd9ebcc341372ce2630d4ec152a29c53f7b8535b855e"
     },
@@ -3563,6 +3748,7 @@
       "original_description": "Coaches sales teams on elite discovery methodology — question design, current-state mapping, gap quantification, and call structure that surfaces real buying motivation.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "8244a25e5b8785058b19ef92dca9e543a2c990e4dde1166d194f14514e3ae278"
     },
@@ -3575,6 +3761,7 @@
       "original_description": "Senior pre-sales engineer specializing in technical discovery, demo engineering, POC scoping, competitive battlecards, and bridging product capabilities to business outcomes. Wins the technical decision so the deal can close.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "355014b3ecf52aaa1209a5d7b089e5e65c3aad7874eef513e60b6da79fec572e"
     },
@@ -3587,6 +3774,7 @@
       "original_description": "Top-of-funnel architect who designs irresistible offers and lead magnets that attract qualified buyers at scale. Specializes in value-equation offer construction, lead magnet typology, multi-channel lead generation, and compounding reach through customers, employees, agencies, and affiliates.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "75a12987fb2a205ac029c2ebf43d1ae1a1502d1707ab4921923928489ff3778c"
     },
@@ -3599,6 +3787,7 @@
       "original_description": "Signal-based outbound specialist who designs multi-channel prospecting sequences, defines ICPs, and builds pipeline through research-driven personalization — not volume.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "4f6c8abf9c936fbe5f4b66fc8044096e3dd5199f8f8ae9d0309ad92bc0653174"
     },
@@ -3611,6 +3800,7 @@
       "original_description": "Revenue operations analyst specializing in pipeline health diagnostics, deal velocity analysis, forecast accuracy, and data-driven sales coaching. Turns CRM data into actionable pipeline intelligence that surfaces risks before they become missed quarters.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "d105ed717423298d754e58300566003ef464d79268183a43b5853cf67d11f61c"
     },
@@ -3623,6 +3813,7 @@
       "original_description": "Strategic proposal architect who transforms RFPs and sales opportunities into compelling win narratives. Specializes in win theme development, competitive positioning, executive summary craft, and building proposals that persuade rather than merely comply.",
       "category": "sales",
       "category_label": "فروش",
+      "category_original_label": "Sales",
       "recommended": false,
       "sha256": "84c42e0ae7e11e6b239b7f921bdb0c33398102f94998c2eaa41114a3a46dc4c9"
     },
@@ -3635,6 +3826,7 @@
       "original_description": "Security reviewer for AI-generated and vibe-coded apps — hunts the hardcoded secrets, broken row-level security, and prompt-injection sinks that coding assistants ship by default, then drives a scan, fix, and rescan loop with honest, CWE-mapped findings.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "ac2196a914bfb00dddfef93edb9eef1860f924f9582d814cd303ab45e4fc71bc"
     },
@@ -3647,6 +3839,7 @@
       "original_description": "AppSec specialist who secures the software development lifecycle through threat modeling, secure code review, SAST/DAST integration, and developer security education that makes secure code the default.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "a19f0bda46f4adca5737365dbc3c7ed93e9d93b71349536d92ff055dcf4e3b83"
     },
@@ -3659,6 +3852,7 @@
       "original_description": "Expert security architect specializing in threat modeling, secure-by-design architecture, trust-boundary analysis, defense-in-depth, and risk-based security reviews across web, API, cloud-native, and distributed systems. Designs the security model; hands code-level SAST/DAST and SDLC work to the AppSec Engineer.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "0f7cd89d723764da98f399a71378ec3dd26e2245f095f43421137db8267b8d93"
     },
@@ -3671,6 +3865,7 @@
       "original_description": "Expert smart contract security auditor specializing in vulnerability detection, formal verification, exploit analysis, and comprehensive audit report writing for DeFi protocols and blockchain applications.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "35bcc88d3b4b2016d0057cfc5f823d9c2326db2f412e89c2fc3796c4f226210b"
     },
@@ -3683,6 +3878,7 @@
       "original_description": "Cloud-native security specialist designing zero trust architectures, implementing defense-in-depth across AWS, Azure, and GCP, and securing infrastructure-as-code pipelines from day one.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "fa18b1e1ed59534c1126f4b44ef06419f3975d98675b37d54ee11a9e3f970d1b"
     },
@@ -3695,6 +3891,7 @@
       "original_description": "Expert technical compliance auditor specializing in SOC 2, ISO 27001, HIPAA, and PCI-DSS audits — from readiness assessment through evidence collection to certification.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "ebb550ceef8011be23fe5a6fab0a7b3f77c2433f4d6aa22617a7eb87db97274f"
     },
@@ -3707,6 +3904,7 @@
       "original_description": "Digital forensics and incident response specialist who leads breach investigations, contains active threats, coordinates crisis response, and writes post-mortems that prevent recurrence.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "be8d0eedd37ddc79767e8fcff518b1d7c565a4e388624a7d62c099270bc0b9e3"
     },
@@ -3719,6 +3917,7 @@
       "original_description": "Offensive security specialist conducting authorized penetration tests, red team operations, and vulnerability assessments across networks, web applications, and cloud infrastructure.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "f52c2524309fb048250b412daa6a2ad0a906b5daff01f64f195052d024b9e1a0"
     },
@@ -3731,6 +3930,7 @@
       "original_description": "Owns the full lifecycle of secrets and credentials — detection, prevention, vaulting, rotation, and leak response — so an application runs on short-lived, least-privilege credentials that are never in the code and are already rotated by the time a leak is found.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "356c73f5feb867b3e0d3c58d463a98f5f1b241709ff9dc9e64a5bd6d91457484"
     },
@@ -3743,6 +3943,7 @@
       "original_description": "Defensive application security specialist who scans every code submission for secrets and sensitive data exposure before anything else, then implements or audits security controls following the organization's security standard — covering authentication, authorization, tokens, cookies, HTTP headers, CORS, rate limiting, CSP, secrets management, input validation, and secure logging.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "80f83d40f631134ab458247433b616e8fbdfdc0c7bdc568e356d4e6902385359"
     },
@@ -3755,6 +3956,7 @@
       "original_description": "Expert detection engineer specializing in SIEM rule development, MITRE ATT&CK coverage mapping, threat hunting, alert tuning, and detection-as-code pipelines for security operations teams.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "b15c0d8be90232a64471d0947dd30cfcd9efeeb2dab2579bb415ca8beb7db7f1"
     },
@@ -3767,6 +3969,7 @@
       "original_description": "Cyber threat intelligence specialist who tracks adversary groups, maps attack campaigns to MITRE ATT&CK, produces actionable intelligence reports, and builds detection rules that catch real threats.",
       "category": "security",
       "category_label": "امنیت",
+      "category_original_label": "Security",
       "recommended": false,
       "sha256": "9298ca898264ab38d3f9d57adf743e7e168a8c5fb47af5abc81d57a1f66d73c2"
     },
@@ -3779,6 +3982,7 @@
       "original_description": "Native Swift and Metal specialist building high-performance 3D rendering systems and spatial computing experiences for macOS and Vision Pro",
       "category": "spatial-computing",
       "category_label": "رایانش فضایی",
+      "category_original_label": "Spatial Computing",
       "recommended": false,
       "sha256": "b0bdd78da0cdbd1ee0055401ddaba4d7cb750e3107d219b6f12794c1a023e69f"
     },
@@ -3791,6 +3995,7 @@
       "original_description": "Terminal emulation, text rendering optimization, and SwiftTerm integration for modern Swift applications",
       "category": "spatial-computing",
       "category_label": "رایانش فضایی",
+      "category_original_label": "Spatial Computing",
       "recommended": false,
       "sha256": "3082737f766821cf1c5372b9067ff67c873916de8c30b173478fe8bbc9a10087"
     },
@@ -3803,6 +4008,7 @@
       "original_description": "Native visionOS spatial computing, SwiftUI volumetric interfaces, and Liquid Glass design implementation",
       "category": "spatial-computing",
       "category_label": "رایانش فضایی",
+      "category_original_label": "Spatial Computing",
       "recommended": false,
       "sha256": "8d154bb42d6952056b0eb3fd0d030e6e22a638f11c16c04b59326973ee08b20d"
     },
@@ -3815,6 +4021,7 @@
       "original_description": "Specialist in designing and developing immersive cockpit-based control systems for XR environments",
       "category": "spatial-computing",
       "category_label": "رایانش فضایی",
+      "category_original_label": "Spatial Computing",
       "recommended": false,
       "sha256": "c8473bd555ad22da7d4978e94a3aec07ae9519b2080572b409639deb9a8e7110"
     },
@@ -3827,6 +4034,7 @@
       "original_description": "Expert WebXR and immersive technology developer with specialization in browser-based AR/VR/XR applications",
       "category": "spatial-computing",
       "category_label": "رایانش فضایی",
+      "category_original_label": "Spatial Computing",
       "recommended": false,
       "sha256": "a9aa13187bfb774f3eb734ae9869ef249ec3290674f0bb3c1368b69bfa25a2b0"
     },
@@ -3839,6 +4047,7 @@
       "original_description": "Spatial interaction designer and interface strategist for immersive AR/VR/XR environments",
       "category": "spatial-computing",
       "category_label": "رایانش فضایی",
+      "category_original_label": "Spatial Computing",
       "recommended": false,
       "sha256": "995b459992ab42162269a3bc607131371206742df9c55a4ef614e0171f34e92b"
     },
@@ -3851,6 +4060,7 @@
       "original_description": "Autonomous payment processing specialist that executes vendor payments, contractor invoices, and recurring bills across any payment rail — crypto, fiat, stablecoins. Integrates with AI agent workflows via tool calls.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "f0f401daf0b61441eedb41a077e4bef13e0ff626483652d3c8a6eaae08b09a6e"
     },
@@ -3863,6 +4073,7 @@
       "original_description": "Designs identity, authentication, and trust verification systems for autonomous AI agents operating in multi-agent environments. Ensures agents can prove who they are, what they're authorized to do, and what they actually did.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "99d79e4d57e55d44151b770d89efea4ea3bc6647af27bfd4a6b256ebc5a1a63e"
     },
@@ -3875,6 +4086,7 @@
       "original_description": "Autonomous pipeline manager that orchestrates the entire development workflow. You are the leader of this process.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "3f900ee286eba5a809388ecc22ad860c4a3ef9ed7ff25488e80eac18f3a0f317"
     },
@@ -3887,6 +4099,7 @@
       "original_description": "Governance-first architect for business automations (n8n-first) who audits value, risk, and maintainability before implementation.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "8aab89104fec352f1f601ec5e6db11c9628d0b2072e6324484fd7e4c8462f55e"
     },
@@ -3899,6 +4112,7 @@
       "original_description": "Senior management consulting specialist for competitive analysis, market entry strategy, business model design, growth planning, organizational strategy, and strategic decision-making — translating complex market dynamics into clear, actionable strategies that create sustainable competitive advantage",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "9314906805d8dee81c3e2d10cb93513a391731d9fceb2e4c936257005a144b92"
     },
@@ -3911,6 +4125,7 @@
       "original_description": "Expert change management specialist using ADKAR, Kotter, and Prosci frameworks to guide organizations through technology implementations, restructuring, culture transformation, and M&A integration — managing resistance, building adoption, and ensuring changes stick long after go-live",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "1feb05dfd0bb4d0942a24a8abb409090ffbc252623e15daa09f5bc8c838b0e5a"
     },
@@ -3923,6 +4138,7 @@
       "original_description": "Strategic finance executive who governs capital allocation, treasury operations, financial planning, M&A finance, investor relations, and board reporting — translating financial complexity into clear decisions that drive business performance and stakeholder confidence.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "05efa4015fc7feac9bb41942fa6e9eb2b79e2219bf1280b290c754fd16e15a08"
     },
@@ -3935,6 +4151,7 @@
       "original_description": "Expert in enterprise training system design and curriculum development — proficient in training needs analysis, instructional design methodology, blended learning program design, internal trainer development, leadership programs, and training effectiveness evaluation and continuous optimization.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "e70733229e87dde01bd404f502d2f5b491821f681d7230b314b18d98111b898c"
     },
@@ -3947,6 +4164,7 @@
       "original_description": "Friendly, professional customer service specialist for any industry — handling inquiries, complaints, account support, FAQs, and seamless escalation with warmth, efficiency, and a genuine commitment to customer satisfaction",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "71d5b8ccd6fb6c5861230169a708ec5d8c0af628de44fc293ae256181573424f"
     },
@@ -3959,6 +4177,7 @@
       "original_description": "Strategic customer success specialist for onboarding, health scoring, QBR facilitation, churn prevention, expansion identification, and renewal management — driving net revenue retention by turning customers into long-term partners who achieve measurable outcomes",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "2fc5ebc10734a621d65d1bfe0a253158f0a7418ee39b7c93a18efe6b26661cfe"
     },
@@ -3971,6 +4190,7 @@
       "original_description": "AI agent that consolidates extracted sales data into live reporting dashboards with territory, rep, and pipeline summaries",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "7e7de097ff27e3aa2732a9f1ab0bd7acaaef73dabf53fc7be6c90c8ab6afab11"
     },
@@ -3983,6 +4203,7 @@
       "original_description": "Corporate data privacy specialist and DPO who builds GDPR, CCPA, and global privacy compliance programs — covering data mapping, privacy impact assessments, consent management, breach response, vendor due diligence, and regulatory engagement.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "77e495853a6ef839c8a2f87dae1c8de7b41e11d5e187828fa42c1d9a1e1ae00f"
     },
@@ -3995,6 +4216,7 @@
       "original_description": "Corporate sustainability strategist and ESG reporting specialist who builds environmental, social, and governance programs, manages disclosures, drives decarbonization initiatives, and aligns business strategy with stakeholder and regulatory expectations.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "a8feee4c7b9687ee89ec5ea0879ff98b4cc4451431052369bf00f90d9382b7dd"
     },
@@ -4007,6 +4229,7 @@
       "original_description": "Presales expert for China's government digital transformation market (ToG), proficient in policy interpretation, solution design, bid document preparation, POC validation, compliance requirements (classified protection/cryptographic assessment/Xinchuang domestic IT), and stakeholder management — helping technical teams efficiently win government IT projects.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "0676fd83a462828901c64df516034b0912468c85abb751d3e484038d3288b848"
     },
@@ -4019,6 +4242,7 @@
       "original_description": "Expert grant writing specialist for nonprofits, research institutions, and social enterprises — covering prospect research, letter of inquiry writing, full proposal development, budget narratives, federal and foundation grants, and post-award reporting to maximize funding success",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "6be5a68dc7628c8292253b60a2bfbc7f76053e9c32aae4d40ff341594534e67b"
     },
@@ -4031,6 +4255,7 @@
       "original_description": "Compassionate, HIPAA-aligned care coordination and decision-support agent for family caregivers managing an aging parent's appointments, medications, care team communication, and their own caregiver wellbeing",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "fca0725bc30a447d6666df5060333eac2a4f81083cc02670118045678c79a035"
     },
@@ -4043,6 +4268,7 @@
       "original_description": "Empathetic healthcare customer service specialist for patient support, billing inquiries, appointment management, insurance questions, complaint resolution, and seamless escalation to clinical or administrative staff",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "b2e4117a8b449a94409235f74315b52909716985dd94b82b87413a54ca471d73"
     },
@@ -4055,6 +4281,7 @@
       "original_description": "Expert in healthcare marketing compliance in China, proficient in the Advertising Law, Medical Advertisement Management Measures, Drug Administration Law, and related regulations — covering pharmaceuticals, medical devices, medical aesthetics, health supplements, and internet healthcare across content review, risk control, platform rule interpretation, and patient privacy protection, helping enterprises conduct effective health marketing within legal boundaries.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "942cc3b43da5f0e6103b7e5087941df4247c602228b2c4b0c6487140e89b176e"
     },
@@ -4067,6 +4294,7 @@
       "original_description": "Comprehensive hospitality guest services specialist for hotels, resorts, restaurants, and event venues — covering reservations, check-in/check-out, concierge services, guest complaint resolution, loyalty program management, and post-stay follow-up to deliver exceptional guest experiences that drive loyalty and revenue",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "1c5819c560d3902eca44a4fb372bae9e882e5b9e8455e51aa3e8d9662a5d184a"
     },
@@ -4079,6 +4307,7 @@
       "original_description": "Comprehensive HR onboarding specialist for employee orientation, documentation management, compliance tracking, benefits enrollment, culture integration, and new hire support — delivering a seamless first-day-to-first-year experience that drives retention and productivity",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "28a52c26f27ab24d7fe11f5e48cfe712f6d27da142ec97911683b4a3ad92332c"
     },
@@ -4091,6 +4320,7 @@
       "original_description": "Operates a shared identity graph that multiple AI agents resolve against. Ensures every agent in a multi-agent system gets the same canonical answer for \"who is this entity?\" - deterministically, even under concurrent writes.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "52226261212716d28d0c50771f0293bb42f3ccbf25fb15323c3e45fa36ac0594"
     },
@@ -4103,6 +4333,7 @@
       "original_description": "Real-time Spanish ↔ English translation specialist with cultural context, regional dialect awareness, travel phrase guidance, and tone-appropriate communication for everyday, business, and emergency situations",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "afd1e4b5fb1bb8fa9b8b5770774e0d7b003722681f664147ce7b9dddbcd52a4c"
     },
@@ -4115,6 +4346,7 @@
       "original_description": "Comprehensive legal billing and time tracking specialist for accurate time capture, invoice generation, billing narrative writing, collections management, trust account compliance, and billing analysis — maximizing revenue recovery while maintaining client relationships and ethical compliance across any firm size or billing model",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "27f84055643150459f4de3102ba05c17696e5967a0efc64426fb600ab3c5d12c"
     },
@@ -4127,6 +4359,7 @@
       "original_description": "Comprehensive legal client intake specialist for qualifying prospects, collecting case information, scheduling consultations, managing conflict checks, and delivering attorney-ready intake summaries across any practice area and firm size",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "b0b1cce8a30f08ada6d630b010b1af99f765f5eca667436af6592545667f4c79"
     },
@@ -4139,6 +4372,7 @@
       "original_description": "Comprehensive legal document review specialist for contracts, litigation documents, and real estate agreements — summarizing documents, flagging risk clauses, comparing contract versions, and checking compliance across any law firm size or practice area",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "02bf51dbc9d8ffc93a8b053a09ec61ee2a3a9905e395fbd24389a532d20d1dba"
     },
@@ -4151,6 +4385,7 @@
       "original_description": "Comprehensive loan officer assistant for mortgage and lending professionals — covering borrower intake, pre-qualification, document collection, pipeline management, compliance tracking, rate quoting, and closing coordination across residential, commercial, and consumer lending",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "3d6bfdb598187fb19fba6ab4b50ff357870cda04ea846aa975649d04788df84b"
     },
@@ -4163,6 +4398,7 @@
       "original_description": "Language Server Protocol specialist building unified code intelligence systems through LSP client orchestration and semantic indexing",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "305f647acd4f666b8ad44a253ae9dba74891a50725bd13a55e16c652c5200613"
     },
@@ -4175,6 +4411,7 @@
       "original_description": "Mergers and acquisitions integration specialist who designs and executes post-merger integration programs — covering Day 1 readiness, 100-day planning, synergy tracking, cultural integration, functional workstream coordination, and transition service agreement management.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "007dcfaee61d45e852a95c37a4529b1d162a178551f1a7f963ee558f1ace6fb5"
     },
@@ -4187,6 +4424,7 @@
       "original_description": "Expert medical billing and coding specialist for ICD-10-CM/PCS, CPT, and HCPCS coding, claim submission, denial management, revenue cycle optimization, compliance auditing, and payer contract analysis — maximizing clean claim rates and revenue recovery for healthcare providers of all sizes",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "e9f597ef3a214d886a2b861347183c3674b6e24278c9308ed998a02972e7007c"
     },
@@ -4199,6 +4437,7 @@
       "original_description": "Business operations specialist who applies Lean, Six Sigma, and systems thinking to process mapping, capacity planning, KPI governance, vendor management, and organizational efficiency — turning operational complexity into repeatable, measurable performance.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "3c133a31ae1542922444d77d7c8f9964127704ba94638dde12e37a9ad0fd35bd"
     },
@@ -4211,6 +4450,7 @@
       "original_description": "Applied organizational psychologist who diagnoses team dynamics, psychological safety, burnout risk, and culture health — using evidence-based frameworks to help leaders build high-performing, resilient, and psychologically safe organizations.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "b7e523e1557ef9e98d5a0b515809996c6bbc0de6a49b1dc355d803e3bae09be2"
     },
@@ -4223,6 +4463,7 @@
       "original_description": "Cross-domain personal development mentor for goal clarity, habit design, strategic decisions, and accountability without motivational fluff.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "623c1ef061d98fedbb941245a39fa5b8c5236ef94194724bfe5c54b8050143d4"
     },
@@ -4235,6 +4476,7 @@
       "original_description": "Comprehensive real estate agent assistant for buyer representation, seller representation, listing management, offer negotiation, transaction coordination, and closing support — delivering a world-class client experience from first showing to final closing across residential and investment real estate",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "00e2f54e76be38c85c4eb406135a0944a3f610d287e6747fbfac37a12c82920a"
     },
@@ -4247,6 +4489,7 @@
       "original_description": "Expert recruitment operations and talent acquisition specialist — skilled in China's major hiring platforms, talent assessment frameworks, and labor law compliance. Helps companies efficiently attract, screen, and retain top talent while building a competitive employer brand.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "cf3d73aae046a12538f64bd67bc5def7946de070485c388ce467251ac8d1e892"
     },
@@ -4259,6 +4502,7 @@
       "original_description": "AI agent that automates distribution of consolidated sales reports to representatives based on territorial parameters",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "f5796b3cb693123e6c59f7058c100fe817b744f819d3e281442964714f72bac5"
     },
@@ -4271,6 +4515,7 @@
       "original_description": "Candidate-side resume optimization specialist who analyzes job descriptions, maps real experience to role requirements, improves ATS keyword alignment, and rewrites bullets without fabricating qualifications.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "be3d173ce4807d49671c7956f107029a4cb4061651882a0a3ea8c4f20738273f"
     },
@@ -4283,6 +4528,7 @@
       "original_description": "Comprehensive retail customer returns specialist for processing returns, exchanges, and refunds across in-store, online, and omnichannel retail — handling policy enforcement, fraud prevention, customer retention, vendor returns, and returns analytics to maximize recovery while preserving customer loyalty",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "5cd60860a6ea57a95ec6d14246d6b0032e0e13ba0220ec4a79527fdc0ccd0f9c"
     },
@@ -4295,6 +4541,7 @@
       "original_description": "AI agent specialized in monitoring Excel files and extracting key sales metrics (MTD, YTD, Year End) for internal live reporting",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "202a6f04df452385fd1185a6bb23a0c9a47e624088eac14179bed4975f0b268a"
     },
@@ -4307,6 +4554,7 @@
       "original_description": "Consultative B2B sales outreach specialist for cold prospecting, lead follow-up, objection handling, proposal writing, and pipeline management — combining data-driven targeting with genuine relationship-building to open doors and close deals",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "84d4ca90d4bed4649904c8f239f8e13f373274c8bceb6fd7eb2479e6f9e28c90"
     },
@@ -4319,6 +4567,7 @@
       "original_description": "Master coordinator for founders and executives — filters noise, owns processes, enforces consistency, routes decisions, and positions outputs for impact so the boss can think clearly.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "c0d053f19f32d369b6e9a4ded3a3b93efd792648b88b28f0ecd37a899b91b7b3"
     },
@@ -4331,6 +4580,7 @@
       "original_description": "Expert civil and structural engineer with global standards coverage — Eurocode, DIN, ACI, AISC, ASCE, AS/NZS, CSA, GB, IS, AIJ, and more. Specializes in structural analysis, geotechnical design, construction documentation, building code compliance, and multi-standard international projects.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "37c9c37511345799235dcb41a4bd92c5577614c392b9a1fa3a1afee112e5de3b"
     },
@@ -4343,6 +4593,7 @@
       "original_description": "Multi-session, multi-tool drift detection specialist who audits codebases touched by several AI coding tools (Claude, Cursor, Copilot, Windsurf, etc.) over time, finding silent logic mismatches, dead code, and doc-vs-code divergence that no single session would ever notice on its own.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "c1b2c22711cb6e74dd834f831d6a8b3f10c93cd462722073b01acae9d0a40700"
     },
@@ -4355,6 +4606,7 @@
       "original_description": "CQ specialist that detects invisible exclusion, researches global context, and ensures software resonates authentically across intersectional identities.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "91f1d2ef19bcf05f8d3b2758049d2dee909939a18ec2d086f192358179455abc"
     },
@@ -4367,6 +4619,7 @@
       "original_description": "Expert developer advocate specializing in building developer communities, creating compelling technical content, optimizing developer experience (DX), and driving platform adoption through authentic engineering engagement. Bridges product and engineering teams with external developers.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "106d007f1dfa3ccc10e327b8fd1b74723fa01da1e444c61d1499cb8ac214d528"
     },
@@ -4379,6 +4632,7 @@
       "original_description": "Expert document creation specialist who generates professional PDF, PPTX, DOCX, and XLSX files using code-based approaches with proper formatting, charts, and data visualization.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "cd2ca961e0f7baa18942aaaa315e333ea4315604bbb6a182d7daa31b76dfc3a3"
     },
@@ -4391,6 +4645,7 @@
       "original_description": "Expert FedRAMP and NIST Risk Management Framework compliance engineer specializing in both FedRAMP authorization pathways — the traditional Rev5 path (NIST 800-53 Rev 5 control implementation, System Security Plans, 3PAO assessment, agency authorization) and the modernized FedRAMP 20x path (Key Security Indicators, automated machine-readable validation, compliance-as-code) — plus the ATO process, continuous monitoring (ConMon), POA&M management, FIPS 199 categorization, authorization boundary diagrams, OSCAL machine-readable packages, and cloud security compliance for government and regulated industries",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "3269ca423abba6405b074ddff80da26ff1d73ae01787cc34bc7a1d45732936b0"
     },
@@ -4403,6 +4658,7 @@
       "original_description": "Instrumental focus music specialist and neuroacoustic prompt engineer — crafts high-yield prompts, soundscape architectures, BPM curves, and binaural layers for deep cognitive flow and generative audio models.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "9dd1e29f12a4a8acd8872aa263e01f40a766a3b2752517916fe0273fd265bd27"
     },
@@ -4415,6 +4671,7 @@
       "original_description": "Navigate the French ESN/SI freelance ecosystem — margin models, platform mechanics (Malt, collective.work), portage salarial, rate positioning, and payment cycle realities",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "68ebd164a0b3e0493d8deec43f4122e24b293c0a8f77786b2c3a4c8f3924c045"
     },
@@ -4427,6 +4684,7 @@
       "original_description": "Korean business culture for foreign professionals — 품의 decision process, nunchi reading, KakaoTalk business etiquette, hierarchy navigation, and relationship-first deal mechanics",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "71eb41ef3705fe155eee87d99e0ec7a52a237af442dd66e3421e225b76580f21"
     },
@@ -4439,6 +4697,7 @@
       "original_description": "Master planning architect, technical educator, and ruthless plan critic who specializes in deep architectural teaching, Red Teaming / risk critique, and crafting comprehensive Implementation Plans in Markdown with ZERO code execution.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "0a9187c15055d76e5867d930eae43daccacd67fa213963ebdc91302044fc354d"
     },
@@ -4451,6 +4710,7 @@
       "original_description": "Expert Model Context Protocol developer who designs, builds, and tests MCP servers that extend AI agent capabilities with custom tools, resources, and prompts.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "f1a9bbde3c5672408a5e0d71d3d888fd635e517ad8b1c5db210aa87e62c39dd4"
     },
@@ -4463,6 +4723,7 @@
       "original_description": "Independent model QA expert who audits ML and statistical models end-to-end - from documentation review and data reconstruction to replication, calibration testing, interpretability analysis, performance monitoring, and audit-grade reporting.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "effef0d607e8955ff846e1c264237d6d14dd573bcfd02c191e126868c3cbffde"
     },
@@ -4475,6 +4736,7 @@
       "original_description": "Specialized pricing analyst who develops optimal pricing models through market research, competitor analysis, cost structure evaluation, and margin optimization — turning pricing from guesswork into a data-driven competitive advantage.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "fb8a63681615666bb2efe45b7fd2d9ad8a072ab9066efae6b61d454a58039f85"
     },
@@ -4487,6 +4749,7 @@
       "original_description": "Solution architecture for Salesforce platform — multi-cloud design, integration patterns, governor limits, deployment strategy, and data model governance for enterprise-scale orgs",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "756fd2dc09f76422dfecb8104e2334f8876f8b95cb6734f8f044c36c641b22e1"
     },
@@ -4499,6 +4762,7 @@
       "original_description": "Conducts live strategy duels using game theory and the 36 Chinese stratagems",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "3012369325bd06ec6e73f980d4e28947fe1f3dd0121e8ccd5ffb5834b50f3911"
     },
@@ -4511,6 +4775,7 @@
       "original_description": "Workflow design specialist who maps complete workflow trees for every system, user journey, and agent interaction — covering happy paths, all branch conditions, failure modes, recovery paths, handoff contracts, and observable states to produce build-ready specs that agents can implement against and QA can test against.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "a7a73de5d9d3d748f4b30a2d632511304a97d42feb9fbf2a3e7cac27e7386e52"
     },
@@ -4523,6 +4788,7 @@
       "original_description": "Full-spectrum study abroad planning expert covering the US, UK, Canada, Australia, Europe, Hong Kong, and Singapore — proficient in undergraduate, master's, and PhD application strategy, school selection, essay coaching, profile enhancement, standardized test planning, visa preparation, and overseas life adaptation, helping Chinese students craft personalized end-to-end study abroad plans.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "afd4b1033e76671b4d7a17a74329d7d81f491351004c77876a2615137140b84f"
     },
@@ -4535,6 +4801,7 @@
       "original_description": "Expert supply chain management and procurement strategy specialist — skilled in supplier development, strategic sourcing, quality control, and supply chain digitalization. Grounded in China's manufacturing ecosystem, helps companies build efficient, resilient, and sustainable supply chains.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "aa6c0f0e7bfc7948a9ac5c76d3a0c140c54a59393eac54bdf15b12a9555662da"
     },
@@ -4547,6 +4814,7 @@
       "original_description": "Knowledge-base steward in the spirit of Niklas Luhmann's Zettelkasten. Default perspective: Luhmann; switches to domain experts (Feynman, Munger, Ogilvy, etc.) by task. Enforces atomic notes, connectivity, and validation loops. Use for knowledge-base building, note linking, complex task breakdown, and cross-domain decision support.",
       "category": "specialized",
       "category_label": "تخصصی",
+      "category_original_label": "Specialized",
       "recommended": false,
       "sha256": "01fdb11cc8df0ada78aa31007c1565a3d118d64e9e97ff86b8dd838782a44082"
     },
@@ -4559,6 +4827,7 @@
       "original_description": "Expert data analyst transforming raw data into actionable business insights. Creates dashboards, performs statistical analysis, tracks KPIs, and provides strategic decision support through data visualization and reporting.",
       "category": "support",
       "category_label": "پشتیبانی",
+      "category_original_label": "Support",
       "recommended": false,
       "sha256": "eec3a4afdb04cc6617c452e3c67fbfc8eea070e96055b6a39dae62be5c07a452"
     },
@@ -4571,6 +4840,7 @@
       "original_description": "Consultant-grade AI specialist trained to think and communicate like a senior strategy consultant. Transforms complex business inputs into concise, actionable executive summaries using McKinsey SCQA, BCG Pyramid Principle, and Bain frameworks for C-suite decision-makers.",
       "category": "support",
       "category_label": "پشتیبانی",
+      "category_original_label": "Support",
       "recommended": false,
       "sha256": "298891fcf297de5d9b343e9ab9b63864317de63256b15c0c72e6cec172f8f0ff"
     },
@@ -4583,6 +4853,7 @@
       "original_description": "Expert financial analyst and controller specializing in financial planning, budget management, and business performance analysis. Maintains financial health, optimizes cash flow, and provides strategic financial insights for business growth.",
       "category": "support",
       "category_label": "پشتیبانی",
+      "category_original_label": "Support",
       "recommended": false,
       "sha256": "3a024aff6e2f348fbe48d5b59b4d2128596c9372867f322274f27e8112464b64"
     },
@@ -4595,6 +4866,7 @@
       "original_description": "Expert infrastructure specialist focused on system reliability, performance optimization, and technical operations management. Maintains robust, scalable infrastructure supporting business operations with security, performance, and cost efficiency.",
       "category": "support",
       "category_label": "پشتیبانی",
+      "category_original_label": "Support",
       "recommended": false,
       "sha256": "982365c821220e6b47f08d54013af20d0ff2b58fc8d38a7639e2eb8b18d0872b"
     },
@@ -4607,6 +4879,7 @@
       "original_description": "Expert legal and compliance specialist ensuring business operations, data handling, and content creation comply with relevant laws, regulations, and industry standards across multiple jurisdictions.",
       "category": "support",
       "category_label": "پشتیبانی",
+      "category_original_label": "Support",
       "recommended": false,
       "sha256": "08d938c5666e41b3cf197c2f7b37070d7f39aca62b7147d157200eb6dbeeced6"
     },
@@ -4619,6 +4892,7 @@
       "original_description": "Expert customer support specialist delivering exceptional customer service, issue resolution, and user experience optimization. Specializes in multi-channel support, proactive customer care, and turning support interactions into positive brand experiences.",
       "category": "support",
       "category_label": "پشتیبانی",
+      "category_original_label": "Support",
       "recommended": false,
       "sha256": "26b4c8706d88ea30358254dd5ac1a2886766015918300130dff070230e05794b"
     },
@@ -4631,6 +4905,7 @@
       "original_description": "Expert accessibility specialist who audits interfaces against WCAG standards, tests with assistive technologies, and ensures inclusive design. Defaults to finding barriers — if it's not tested with a screen reader, it's not accessible.",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": false,
       "sha256": "362935907af23839775b9c6162f38c0c5a740542ab4350cb5c5b5a0d9f9a4268"
     },
@@ -4643,6 +4918,7 @@
       "original_description": "Expert API testing specialist focused on comprehensive API validation, performance testing, and quality assurance across all systems and third-party integrations",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": true,
       "sha256": "c9e0f993e32242e564900bc7fbf7eb994d18295a92c499762459a15bbec59cb3"
     },
@@ -4655,6 +4931,7 @@
       "original_description": "Screenshot-obsessed, fantasy-allergic QA specialist - Reports reproducible issues with evidence and marks untested scope honestly",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": false,
       "sha256": "ff1868ae89f3be62f6f0da1fc8693582f18578c77751b8a65a53169ef15ececd"
     },
@@ -4667,6 +4944,7 @@
       "original_description": "Expert performance testing and optimization specialist focused on measuring, analyzing, and improving system performance across all applications and infrastructure",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": false,
       "sha256": "736fd1538678af699220803c0f6a84e1626eaf9346c5af88a2290c075cd55fd5"
     },
@@ -4679,6 +4957,7 @@
       "original_description": "Stops fantasy approvals, evidence-based certification - Default to \"NEEDS WORK\", requires overwhelming proof for production readiness",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": true,
       "sha256": "6d32fcdb114233e13902ec6372d50293b120e85d490b5e81d372c29808f988a1"
     },
@@ -4691,6 +4970,7 @@
       "original_description": "Expert end-to-end test automation engineer for Playwright and Cypress — resilient selectors, flake elimination, isolated test data, CI parallelization, and trace-driven failure debugging.",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": true,
       "sha256": "4299d038e88387546d645ccbe767b1dfdb7de10da55eba1ab103149972cd2b9b"
     },
@@ -4703,6 +4983,7 @@
       "original_description": "Expert test analysis specialist focused on comprehensive test result evaluation, quality metrics analysis, and actionable insight generation from testing activities",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": false,
       "sha256": "d33114b519ba657fc9f29db12495d3c31097a8282d170cfd57cbcb029f61f2de"
     },
@@ -4715,6 +4996,7 @@
       "original_description": "Expert technology assessment specialist focused on evaluating, testing, and recommending tools, software, and platforms for business use and productivity optimization",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": false,
       "sha256": "01c8aecd0121dd7dde2696282a288aeb7b14c5381b1f8087db540312ed6ea684"
     },
@@ -4727,6 +5009,7 @@
       "original_description": "Expert process improvement specialist focused on analyzing, optimizing, and automating workflows across all business functions for maximum productivity and efficiency",
       "category": "testing",
       "category_label": "آزمون و کیفیت",
+      "category_original_label": "Testing",
       "recommended": false,
       "sha256": "f0e4558147a6114fdcd1b523153b02212b4e2cc6900b6197d19db78e9be3d375"
     }

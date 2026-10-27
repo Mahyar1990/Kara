@@ -67,6 +67,7 @@ def generate(archive, commit):
         entries.append(dict(id=identity, path=path, name=name[:120], original_name=original_name,
             description=description[:2000], original_description=frontmatter['description'].strip(),
             category=category, category_label=CATEGORIES.get(category, divisions[category]['label']),
+            category_original_label=divisions[category]['label'],
             recommended=path in RECOMMENDED, sha256=hashlib.sha256(raw).hexdigest()))
     if not entries or set(RECOMMENDED) - {entry['path'] for entry in entries}:
         raise ValueError('Recommended catalog entries missing')
