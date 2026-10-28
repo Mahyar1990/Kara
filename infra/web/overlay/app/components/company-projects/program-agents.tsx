@@ -1,4 +1,6 @@
 'use client'
+
+import { useProgramDialogState } from './program-dialog-state'
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState } from 'react'
@@ -10,15 +12,17 @@ import { programAgentApi } from '@/service/company-program-agents'
 import { ProjectPage } from './project-page'
 import { directoryButton as button, directoryField as field, directoryPanel as panel } from './team-directory'
 
-function Composer({ project }: { project: string }) {
+export function ProgramAgentComposer({ project, appId, onDefinitionChanged }: { project: string; appId?: string; onDefinitionChanged?: () => void }) {
+  const { change } = useProgramDialogState()
   const params = useSearchParams()
   const workspace = useAtomValue(currentWorkspaceIdAtom)
   const { data: { profile } } = useSuspenseQuery(userProfileQueryOptions())
   const cache = useQueryClient()
   const key = ['program-roles', profile.id, workspace, project]
   const catalog = useQuery({ queryKey: key, queryFn: () => programAgentApi.catalog(project) })
-  const [mode, setMode] = useState(params.get('program') ? 'attach' : 'create')
-  const [program, setProgram] = useState(params.get('program') || '')
+  const [mode, setMode] = useState(appId || params.get('program') ? 'attach' : 'create')
+  const [selectedProgram, setProgram] = useState(params.get('program') || '')
+  const program = appId || selectedProgram
   const [source, setSource] = useState(params.get('agent') || '')
   const [target, setTarget] = useState('')
   const [name, setName] = useState('')
@@ -42,14 +46,14 @@ function Composer({ project }: { project: string }) {
     if (busy) return
     const body = JSON.stringify(payload)
     if (operation.current?.body !== body) operation.current = { body, key: crypto.randomUUID() }
-    setBusy(true); setError(''); setSaved(false)
-    try { await action(operation.current.key); operation.current = null; await cache.invalidateQueries({ queryKey: key }); setReviewed(false); setSaved(true) }
+    setBusy(true); change(1); setError(''); setSaved(false)
+    try { await action(operation.current.key); onDefinitionChanged?.(); operation.current = null; await cache.invalidateQueries({ queryKey: key }); setReviewed(false); setSaved(true) }
     catch (cause) {
       let message = 'ذخیره انجام نشد؛ دسترسی، نسخهٔ پیش‌نویس و نگاشت ورودی‌ها را بررسی کنید و اطلاعات را تازه کنید.'
       if (cause instanceof Response) { try { const value = await cause.clone().json(); if (typeof value.message === 'string') message = value.message } catch {} }
       setError(message)
     }
-    finally { setBusy(false) }
+    finally { setBusy(false); change(-1) }
   }
   const ready = !!preview.data && !preview.isFetching && !preview.isError && !!selected?.snapshot_id && !selected.reason
   const submit = () => {
@@ -67,12 +71,12 @@ function Composer({ project }: { project: string }) {
   if (catalog.isPending) return <p role="status">در حال دریافت ایجنت‌ها و برنامه‌های پروژه…</p>
   if (catalog.isError) return <section role="alert" className={panel}><p>دریافت اطلاعات انجام نشد؛ مدیریت اتصال به مجوز ساخت/ویرایش برنامه و مدیریت پروژه نیاز دارد.</p><button className={`${button} mt-3`} onClick={() => void catalog.refetch()}>تلاش دوباره</button></section>
   return <div className="space-y-5">
-    <p className="text-sm leading-7 text-text-secondary">ایجنت کتابخانه را به یک برنامهٔ تازه یا مرحلهٔ LLM پیش‌نویس برنامه اضافه کنید. دستورالعمل، مهارت و دانشِ نسخهٔ انتخابی به برنامه متصل می‌شود. در هر اجرا، کاربر مدل شخصی خودش را انتخاب می‌کند.</p>
-    <nav className="flex flex-wrap gap-3" aria-label="روش استفاده از ایجنت">{[['create', 'برنامهٔ تازه از ایجنت'], ['attach', 'استفاده در برنامهٔ موجود']].map(([id, title]) => <button key={id} disabled={busy} className={`${button} ${mode === id ? 'bg-background-section font-semibold text-text-accent ring-1 ring-text-accent' : ''}`} aria-pressed={mode === id} onClick={() => setMode(id)}>{title}</button>)}</nav>
+    {!appId && <p className="text-sm leading-7 text-text-secondary">ایجنت کتابخانه را به یک برنامهٔ تازه یا مرحلهٔ LLM پیش‌نویس برنامه اضافه کنید. دستورالعمل، مهارت و دانشِ نسخهٔ انتخابی به برنامه متصل می‌شود. در هر اجرا، کاربر مدل شخصی خودش را انتخاب می‌کند.</p>}
+    {!appId && <nav className="flex flex-wrap gap-3" aria-label="روش استفاده از ایجنت">{([['create', 'برنامهٔ تازه از ایجنت'], ['attach', 'استفاده در برنامهٔ موجود']] as const).map(([id, title]) => <button key={id} disabled={busy} className={`${button} ${mode === id ? 'bg-background-section font-semibold text-text-accent ring-1 ring-text-accent' : ''}`} aria-pressed={mode === id} onClick={() => setMode(id)}>{title}</button>)}</nav>}
     <form className={`${panel} space-y-5`} onSubmit={e => { e.preventDefault(); submit() }}>
       <fieldset disabled={busy} className="space-y-5">
         {mode === 'create' ? <label className="block text-sm">نام برنامه<input required maxLength={120} className={field} value={name} onChange={e => { setName(e.target.value); setReviewed(false) }} placeholder="برنامهٔ تحلیل درخواست" /></label> : <>
-          <label className="block text-sm">برنامه<select required className={field} value={program} onChange={e => { setProgram(e.target.value); setTarget(''); setReviewed(false) }}><option value="">انتخاب کنید</option>{catalog.data.programs.map(a => <option value={a.id} key={a.id}>{a.name}</option>)}</select></label>
+          {!appId && <label className="block text-sm">برنامه<select required className={field} value={program} onChange={e => { setProgram(e.target.value); setTarget(''); setReviewed(false) }}><option value="">انتخاب کنید</option>{catalog.data.programs.map(a => <option value={a.id} key={a.id}>{a.name}</option>)}</select></label>}
           <p className="text-xs leading-6 text-text-secondary">ابتدا تغییرات طراح را ذخیره کنید. این اقدام فقط پیش‌نویس را تغییر می‌دهد؛ نسخه‌های منتشرشده و فلوهای فعلی ثابت می‌مانند. مدل همهٔ مراحل LLM این برنامه از اجراکننده دریافت خواهد شد.</p>
           {program && (detail.isPending ? <p role="status">در حال دریافت مراحل…</p> : detail.isError ? <p role="alert">دریافت پیش‌نویس انجام نشد؛ برنامه را در طراح باز و ذخیره کنید، سپس <button type="button" className={button} onClick={() => void detail.refetch()}>تازه‌سازی</button></p> : <label className="block text-sm">مرحلهٔ LLM<select className={field} required value={node?.id || ''} onChange={e => { setTarget(e.target.value); setReviewed(false) }}><option value="">انتخاب کنید</option>{detail.data?.nodes.map(n => <option key={n.id} value={n.id}>{n.name}{n.role ? ` · ${n.role.name}` : ''}</option>)}</select>{!detail.data?.nodes.length && <span className="mt-2 block text-xs">ابتدا یک مرحلهٔ LLM مستقل در طراح برنامه اضافه کنید.</span>}</label>)}
           {node?.role && <section className="space-y-3 rounded-xl border border-divider-regular p-4 text-sm"><p>این مرحله به «{node.role.name}» نسخهٔ {node.role.snapshot_version} متصل است. برای تغییر نقش یا ویرایش آزاد دستورالعمل، ابتدا اتصال را جدا کنید.</p><button type="button" className={button} onClick={() => setDetaching(!detaching)}>جداکردن اتصال</button>{detaching && <><p>در مرحلهٔ موجود، تعریف پیش از اتصال برمی‌گردد؛ در برنامهٔ ساخته‌شده از ایجنت، متن و دانش باقی می‌مانند و مستقل می‌شوند. نسخهٔ منتشرشده تغییر نمی‌کند.</p><button type="button" className={button} onClick={() => { const hash = detail.data!.hash; void act({ detach: program, node: node.id, hash }, async key => { await programAgentApi.detach(project, program, node.id, hash, key); setDetaching(false) }) }}>تأیید جداکردن</button></>}</section>}
@@ -92,10 +96,10 @@ function Composer({ project }: { project: string }) {
       {error && <p role="alert" className="text-sm leading-7">{error}</p>}{saved && <p role="status" className="text-sm">پیش‌نویس ذخیره شد. برنامه را در طراح بازبینی و سپس منتشر کنید.</p>}
     </form>
     {created && <section className={`${panel} space-y-3`} role="status"><p>پیش‌نویس «{created.name}» ساخته شد.</p><Link className={button} href={`/app/${created.app_id}/workflow`}>بازکردن طراح برنامه</Link><button className={`${button} ms-3`} onClick={() => { setProgram(created.app_id); setMode('attach'); setTarget('') }}>مدیریت ایجنت‌های همین برنامه</button></section>}
-    <div className="flex flex-wrap gap-3"><Link className={button} href={mode === 'attach' && program ? `/app/${program}/workflow` : '/apps'}>{mode === 'attach' && program ? 'بازکردن طراح برنامه' : 'فهرست برنامه‌ها'}</Link><Link className={button} href="/agents">کتابخانهٔ ایجنت‌ها</Link><button className={button} disabled={busy} onClick={() => { setReviewed(false); void cache.invalidateQueries({ queryKey: key }) }}>تازه‌سازی اطلاعات</button></div>
+    {!appId && <div className="flex flex-wrap gap-3"><Link className={button} href={mode === 'attach' && program ? `/app/${program}/workflow` : '/apps'}>{mode === 'attach' && program ? 'بازکردن طراح برنامه' : 'فهرست برنامه‌ها'}</Link><Link className={button} href="/agents">کتابخانهٔ ایجنت‌ها</Link><button className={button} disabled={busy} onClick={() => { setReviewed(false); void cache.invalidateQueries({ queryKey: key }) }}>تازه‌سازی اطلاعات</button></div>}
   </div>
 }
 
 export default function ProgramAgents({ projectId }: { projectId: string }) {
-  return <ProjectPage projectId={projectId} title="ایجنت‌های برنامه">{() => <Composer project={projectId} />}</ProjectPage>
+  return <ProjectPage projectId={projectId} title="ایجنت‌های برنامه">{() => <ProgramAgentComposer project={projectId} />}</ProjectPage>
 }

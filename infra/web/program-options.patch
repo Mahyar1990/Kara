@@ -1,0 +1,72 @@
+--- a/web/app/components/app-sidebar/app-info/app-info-trigger.tsx
++++ b/web/app/components/app-sidebar/app-info/app-info-trigger.tsx
+@@ -3,2 +3,3 @@
+ import type { App, AppSSO } from '@/types/app'
++import { useProgramOptions } from '@/app/components/company-projects/program-options'
+ import { cn } from '@langgenius/dify-ui/cn'
+@@ -31,2 +32,3 @@
+ }: AppInfoTriggerProps) => {
++  const programOptions = useProgramOptions(appDetail)
+   const { t } = useTranslation()
+@@ -46,2 +48,3 @@
+   const mainOperations: Operation[] = [
++    ...programOptions.operations,
+     ...(appACLCapabilities.canEdit
+@@ -116,2 +119,3 @@
+   return (
++    <>
+     <div
+@@ -154,2 +158,4 @@
+     </div>
++    {programOptions.dialogs}
++    </>
+   )
+--- a/web/app/components/apps/app-card/interactions.tsx
++++ b/web/app/components/apps/app-card/interactions.tsx
+@@ -7,2 +7,3 @@
+ import type { FormEventHandler, MouseEvent, ReactElement } from 'react'
++import type { ProgramOption } from '@/app/components/company-projects/program-options'
+ import type { DuplicateAppModalProps } from '@/app/components/app/duplicate-modal'
+@@ -47,2 +48,3 @@
+ import StarIcon from '@/app/components/base/icons/src/vender/Star'
++import { useProgramOptions } from '@/app/components/company-projects/program-options'
+ import { buildInstalledAppPath } from '@/app/components/explore/installed-app/routes'
+@@ -96,2 +98,3 @@
+   kind: 'context' | 'dropdown'
++  programOperations: ProgramOption[]
+   shouldShowEditOption: boolean
+@@ -114,2 +117,3 @@
+   kind,
++  programOperations,
+   shouldShowEditOption,
+@@ -142,3 +146,3 @@
+       (!isGettingUserCanAccessApp && Boolean(userCanAccessApp?.result)))
+-  const hasEditGroup = shouldShowEditOption
++  const hasEditGroup = shouldShowEditOption || programOperations.length > 0
+   const hasCreateExportGroup = shouldShowDuplicateOption || shouldShowExportOption
+@@ -185,2 +189,3 @@
+     <>
++      {programOperations.map(operation => <MenuItem key={operation.id} className="gap-2 px-3" onClick={event => handleMenuAction(event, operation.onClick)}><span aria-hidden className={`${operation.icon} size-4 text-text-tertiary`} /><span className="system-sm-regular text-text-secondary">{operation.title}</span></MenuItem>)}
+       {shouldShowEditOption && (
+@@ -298,2 +303,4 @@
+   })
++  const programOptions = useProgramOptions(app)
++  const [isProgramContextMenuOpen, setIsProgramContextMenuOpen] = useState(false)
+   const isOperationsMenuOpen = operationsMenu.open
+@@ -527,2 +534,3 @@
+   const shouldShowOperationsMenu =
++    programOptions.operations.length > 0 ||
+     shouldShowEditOption ||
+@@ -537,2 +545,3 @@
+     app,
++    programOperations: programOptions.operations.map(operation => ({ ...operation, onClick: () => { setIsOperationsMenuOpen(false); setIsProgramContextMenuOpen(false); operation.onClick() } })),
+     shouldShowEditOption,
+@@ -555,3 +564,3 @@
+       {shouldShowOperationsMenu ? (
+-        <ContextMenu>
++        <ContextMenu open={isProgramContextMenuOpen} onOpenChange={setIsProgramContextMenuOpen}>
+           <ContextMenuTrigger render={children} />
+@@ -652,2 +661,3 @@
+       </div>
++      {programOptions.dialogs}
+       {activeDialog === 'edit' && (

@@ -11,11 +11,12 @@ import { agentApi } from '@/service/company-agents'
 import { programTeamApi } from '@/service/company-program-team'
 import { projectApi } from '@/service/company-projects'
 import FormDialog, { FieldHelp } from './form-dialog'
+import { useProgramDialogState } from './program-dialog-state'
 import { ProgramSettingsCard, useTeamAction } from './team-agents'
 import { DirectoryPage, DirectoryNotice, DirectoryToolbar, DirectoryPagination, DirectoryEmpty, directoryButton, directoryField, matchesSearch, resultPage, number } from './team-directory'
 
-function RegisterSettings({ project, program, refresh }: { project: string; program: TeamProgram; refresh: () => Promise<unknown> }) {
-  const [open, setOpen] = useState(false)
+function RegisterSettings({ project, program, refresh, inline = false, onCreated }: { project: string; program: TeamProgram; refresh: () => Promise<unknown>; inline?: boolean; onCreated?: (id: string) => void }) {
+  const [open, setOpen] = useState(inline)
   const sources = useQuery({ queryKey: ['team-agent-sources', project], queryFn: () => agentApi.sources(project), enabled: open })
   const versions = sources.data?.data.filter(value => value.app_id === program.id) || []
   const [workflowId, setWorkflowId] = useState('')
@@ -28,12 +29,9 @@ function RegisterSettings({ project, program, refresh }: { project: string; prog
   const save = () => {
     if (!ready || !reviewed) return
     const body = { app_id: program.id, workflow_id: source.workflow_id, name, description, expected_revision: 1 }
-    void action.run(body, async key => { await agentApi.register(project, body, key); await refresh(); setOpen(false); setWorkflowId(''); setReviewed(false) })
+    void action.run(body, async key => { const created = await agentApi.register(project, body, key); await refresh(); onCreated?.(created.id); setOpen(false); setWorkflowId(''); setReviewed(false) })
   }
-  return <>
-    <button className={directoryButton} onClick={() => setOpen(true)}>{program.profiles.length ? 'افزودن تنظیم مستقل' : 'فعال‌کردن استفادهٔ تیمی'}</button>
-    <FormDialog open={open} title={`تنظیمات تیمی ${program.name}`} description="نسخهٔ برنامه را مشخص کنید؛ سپس دسترسی اعضا و روش‌های مجاز اجرا را در همین برنامه تنظیم کنید." busy={action.busy} close={() => setOpen(false)}>
-      <form className="space-y-4" onSubmit={event => { event.preventDefault(); save() }}>
+  const form = <form className="space-y-4" onSubmit={event => { event.preventDefault(); save() }}>
         <fieldset disabled={action.busy} className="space-y-4">
           {sources.isError && <p role="alert">دریافت نسخه‌ها انجام نشد. <button type="button" onClick={() => { setReviewed(false); void sources.refetch() }}>تلاش دوباره</button></p>}
           {sources.isPending && <p role="status">در حال دریافت نسخه‌ها…</p>}
@@ -45,9 +43,12 @@ function RegisterSettings({ project, program, refresh }: { project: string; prog
           <label className="flex items-start gap-2 text-sm leading-7"><input type="checkbox" className="mt-2" checked={reviewed} disabled={!ready} onChange={event => setReviewed(event.target.checked)} /><span>نسخه و قرارداد اجرا را بررسی کردم و دسترسی اعضا را پس از ثبت مشخص می‌کنم.<FieldHelp>اجرای برنامه از مسیر کنترل‌شدهٔ تیمی انجام می‌شود. ویرایش و انتشار منبع مشترک به مجوز مربوط در همهٔ تنظیم‌های فعال نیاز دارد. موفقیت اجرا جای نهایی‌سازی انسانی را نمی‌گیرد.</FieldHelp></span></label>
         </fieldset>
         {action.error && <p role="alert">{action.error}</p>}
-        <div className="flex gap-3"><button type="submit" className={directoryButton} disabled={action.busy || !ready || !reviewed || !name.trim()}>ذخیرهٔ تنظیم تیمی</button><button type="button" className={directoryButton} disabled={action.busy} onClick={() => setOpen(false)}>انصراف</button></div>
+        <div className="flex gap-3"><button type="submit" className={directoryButton} disabled={action.busy || !ready || !reviewed || !name.trim()}>ذخیرهٔ تنظیم تیمی</button>{!inline && <button type="button" className={directoryButton} disabled={action.busy} onClick={() => setOpen(false)}>انصراف</button>}</div>
       </form>
-    </FormDialog>
+  if (inline) return form
+  return <>
+    <button className={directoryButton} onClick={() => setOpen(true)}>{program.profiles.length ? 'افزودن تنظیم مستقل' : 'فعال‌کردن استفادهٔ تیمی'}</button>
+    <FormDialog open={open} title={`تنظیمات تیمی ${program.name}`} description="نسخهٔ برنامه را مشخص کنید؛ سپس دسترسی اعضا و روش‌های مجاز اجرا را در همین برنامه تنظیم کنید." busy={action.busy} close={() => setOpen(false)}>{form}</FormDialog>
   </>
 }
 
@@ -67,6 +68,37 @@ function ProgramCard({ project, program, canManage, focused, refresh }: { projec
       {program.profiles.map(profile => <ProgramSettingsCard key={profile.id} project={project} agent={profile} canManage={canManage} refresh={refresh} />)}
     </div>
   </details>
+}
+
+// Embedded editor: its app is supplied by the native menu, never chosen again here.
+export function ProgramTeamEditor({ projectId, appId }: { projectId: string; appId: string }) {
+  const workspace = useAtomValue(currentWorkspaceIdAtom)
+  const cache = useQueryClient()
+  const { busy } = useProgramDialogState()
+  const context = useQuery({ queryKey: ['company-context', workspace], queryFn: projectApi.context, enabled: !!workspace })
+  const entered = context.data?.current_project?.id === projectId
+  const query = useQuery({ queryKey: ['program-team', workspace, projectId], queryFn: () => programTeamApi.list(projectId), enabled: entered })
+  const [selected, setSelected] = useState('')
+  const [adding, setAdding] = useState(false)
+  const program = query.data?.programs.find(value => value.id === appId)
+  const profile = program?.profiles.find(value => value.id === selected) || program?.profiles.find(value => !value.archived) || program?.profiles[0]
+  const refresh = async () => {
+    const value = await query.refetch()
+    await Promise.all([cache.invalidateQueries({ queryKey: ['team-flow-options'] }), cache.invalidateQueries({ queryKey: ['company-projects', workspace, projectId, 'overview'] })])
+    return value
+  }
+  if (context.isPending || (entered && query.isPending)) return <p role="status">در حال دریافت تنظیمات برنامه…</p>
+  if (!entered) return <p role="alert">فضای فعال پروژه تغییر کرده است. دیالوگ را ببندید و از برنامهٔ همان پروژه دوباره باز کنید.</p>
+  if (query.isError) return <p role="alert">دریافت تنظیمات انجام نشد. <button className={directoryButton} onClick={() => void refresh()}>تلاش دوباره</button></p>
+  if (!program) return <p role="alert">این برنامه یا تنظیمات تیمی آن در دسترس شما نیست.</p>
+  const created = (id: string) => { setSelected(id); setAdding(false) }
+  return <div className="space-y-4">
+    {!program.available && <p role="status">منبع برنامه اکنون برای اجرا در دسترس نیست؛ تنظیم‌های قبلی قابل بررسی‌اند.</p>}
+    {program.library_adapter && <p className="text-sm leading-7">این اتصال کتابخانه طراحی ثابت دارد؛ دسترسی‌ها و روش اجرای آن قابل مدیریت است.</p>}
+    {program.profiles.length > 1 && <label className="block text-sm">نسخه و تنظیم اجرای تیمی<select className={directoryField} disabled={busy} value={profile?.id || ''} onChange={event => setSelected(event.target.value)}>{program.profiles.map(value => <option key={value.id} value={value.id}>{value.name} · {value.workflow_version || value.workflow_id}{value.archived ? ' · بایگانی‌شده' : ''}</option>)}</select></label>}
+    {profile ? <ProgramSettingsCard key={profile.id} compact project={projectId} agent={profile} canManage={!!query.data?.can_manage} refresh={refresh} /> : query.data?.can_manage && program.available && !program.library_adapter ? <RegisterSettings inline project={projectId} program={program} refresh={refresh} onCreated={created} /> : <p>استفادهٔ تیمی این برنامه هنوز توسط مدیر پروژه تنظیم نشده است.</p>}
+    {!!profile && query.data?.can_manage && program.available && !program.library_adapter && <section className="border-t border-divider-regular pt-4"><button className="text-sm text-text-secondary" disabled={busy} aria-expanded={adding} onClick={() => setAdding(!adding)}>{adding ? 'بستن تنظیم پیشرفته' : 'تنظیم پیشرفته: نسخه یا دسترسی مستقل'}</button>{adding && <div className="mt-4"><RegisterSettings inline project={projectId} program={program} refresh={refresh} onCreated={created} /></div>}</section>}
+  </div>
 }
 
 export default function ProgramTeamSettings({ projectId }: { projectId: string }) {
