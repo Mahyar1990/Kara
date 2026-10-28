@@ -186,3 +186,49 @@ class StageConfigTests(StageFixture):
         identities = [value['workflow_id'] for value in options['programs']]
         self.assertIn(self.workflow.id, identities)
         self.assertNotIn(invalid.id, identities)
+
+    def test_stage_only_program_dispatch_claim_and_result_use_runner_authority(self):
+        from company_projects import local_execution as local
+        pair = source.pair(self.session, dict(code=source.pairing(self.session, self.editor.id, dict(name='Stage protocol device'))['code']))
+        runner = source.authenticate(self.session, pair['secret'])
+        local.register(self.session, runner, dict(protocol=2, capabilities=['workflow-v2']))
+        local.set_binding(self.session, self.a['id'], self.workspace_a.id, self.editor.id,
+            dict(device_id=runner['id'], source_job_id=None, expected_revision=1))
+        row = self.act(self.get(), 'run')
+        identity = row['active_attempt_id']
+        job = local.dispatch_team(self.session, identity)
+        self.assertEqual(job['team_attempt_id'], identity)
+        claimed = local.claim(self.session, runner)['job']
+        self.assertEqual(claimed['id'], identity)
+        local.heartbeat(self.session, runner, identity)
+        body = dict(state='succeeded', outputs={'answer': self.req['current']['content']}, error=None,
+            total_steps=2, total_tokens=0, snapshot_digest=claimed['snapshot_digest'])
+        self.assertTrue(local.complete(self.session, runner, identity, body)['recorded'])
+        self.assertTrue(local.complete(self.session, runner, identity, body)['recorded'])
+        result = self.get()
+        self.assertEqual(result['state'], 'awaiting_feedback')
+        self.assertEqual(result['artifacts'][0]['kind'], 'workflow')
+        self.assertIsNone(result['selected_artifact_id'])
+        self.assertEqual(self.get(self.second)['state'], 'blocked')
+
+    def test_stage_only_managed_harness_claim_and_result_preserve_human_decision(self):
+        spec = dict(self.new_stage, execution=dict(program_enabled=False, enabled=True, instructions='Managed stage mission', requires_source=False))
+        self.flow = self.publish(self.save(stages=[spec, dict(self.new_stage, key='review', title='Review')]))
+        self.req = self.decision(self.request()); self.inst = self.create_instance(); self.first, self.second = self.inst['stages']
+        pair = source.pair(self.session, dict(code=source.pairing(self.session, self.editor.id, dict(name='Stage managed device'))['code']))
+        runner = source.authenticate(self.session, pair['secret'])
+        harness.register(self.session, runner, dict(profiles=[dict(key='synthetic', name='Synthetic adapter', kind='custom', version='test', digest='a' * 64)]))
+        selection = dict(method='harness', mode='managed', device_id=str(runner['id']), source_job_id=None, profile_key='synthetic')
+        row = self.act(self.get(), 'run', execution=selection)
+        job = harness.claim(self.session, runner)['job']
+        self.assertEqual(job['id'], row['active_attempt_id'])
+        self.assertEqual(job['instructions'], 'Managed stage mission')
+        harness.prepared(self.session, runner, job['id'], dict(snapshot_digest=job['snapshot_digest']))
+        body = dict(snapshot_digest=job['snapshot_digest'], outputs={'answer': 'Synthetic managed output'}, evidence=EVIDENCE, session_id=None)
+        self.assertTrue(harness.complete(self.session, runner, job['id'], body)['recorded'])
+        self.assertTrue(harness.complete(self.session, runner, job['id'], body)['recorded'])
+        result = self.get()
+        self.assertEqual(result['harness']['result']['origin'], 'managed_harness')
+        self.assertEqual(result['state'], 'awaiting_feedback')
+        self.assertIsNone(result['selected_artifact_id'])
+        self.assertEqual(self.get(self.second)['state'], 'blocked')
