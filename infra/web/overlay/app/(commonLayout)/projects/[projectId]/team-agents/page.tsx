@@ -1,8 +1,13 @@
-import TeamAgents from '@/app/components/company-projects/team-agents'
+import { redirect } from '@/next/navigation'
 
-export const metadata = { title: 'ایجنت‌های تیم' }
-
-export default async function TeamAgentsPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default async function Page({ params, searchParams }: {
+  params: Promise<{ projectId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { projectId } = await params
-  return <TeamAgents projectId={projectId} />
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) query.append(key, item)
+  }
+  redirect(`/projects/${projectId}/program-settings${query.size ? `?${query}` : ''}`)
 }

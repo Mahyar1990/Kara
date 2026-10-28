@@ -7,11 +7,11 @@ import { flowApi } from '@/service/company-flows'
 import { jiraError } from '@/service/company-jira'
 import FormDialog, { FieldHelp } from './form-dialog'
 
-export default function DeleteTeamEntity({ project, kind, value, close, deleted }: {
-  project: string; kind: 'agent' | 'flow'; value: { id: string; name: string; revision: number }
+export default function DeleteTeamEntity({ project, kind, value, close, deleted, label: customLabel }: {
+  project: string; kind: 'agent' | 'flow'; label?: string; value: { id: string; name: string; revision: number }
   close: () => void; deleted: () => Promise<unknown>
 }) {
-  const label = kind === 'agent' ? 'ایجنت' : 'فلو'
+  const label = customLabel || (kind === 'agent' ? 'تنظیم تیمی' : 'فلو')
   const [confirmation, setConfirmation] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
