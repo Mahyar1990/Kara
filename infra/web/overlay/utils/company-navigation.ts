@@ -31,14 +31,14 @@ export function productNavigation(isOwner: boolean): MainNavItem[] {
 export function projectNavigation(projectId: string, nativeItems: MainNavItem[]): MainNavItem[] {
   const base = `/projects/${projectId}`
   const native = (href: string) => nativeItems.filter(entry => entry.href === href)
-    .map(entry => href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها', active: (path: string) => entry.active(path) || path === `${base}/program-settings` || path === `${base}/program-agents` || path === `${base}/team-agents` } : href === '/agents' ? { ...entry, label: 'کتابخانهٔ ایجنت‌ها' } : entry)
+    .map(entry => href === '/apps' ? { ...entry, label: 'برنامه‌ها و فرایندها', active: (path: string) => entry.active(path) || path === `${base}/program-settings` || path === `${base}/program-agents` || path === `${base}/team-agents` } : href === '/agents' ? { ...entry, label: 'ایجنت‌ها' } : entry)
   const group = (entries: MainNavItem[]) => entries.map((entry, index) => index === 0 ? { ...entry, separatorBefore: true } : entry)
   return [
     item(base, 'نمای کلی پروژه', 'i-ri-folder-line', path => path === base),
     ...group([
       item(`${base}/requests`, 'درخواست‌های پروژه', 'i-ri-file-list-3-line', path => path === `${base}/requests`),
-      ...native('/apps'),
       ...native('/agents'),
+      ...native('/apps'),
       item(`${base}/team-flows`, 'فلوهای تیم', 'i-ri-route-line', path => path === `${base}/team-flows`),
     ]),
     ...group([
