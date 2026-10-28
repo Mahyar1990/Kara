@@ -179,7 +179,8 @@ def options(session, project_id, workspace_id, actor_id):
             continue
         try:
             inputs, outputs = agents.contracts(workflow)
-        except UnprocessableEntity:
+        except (BadRequest, UnprocessableEntity):
+            # One invalid imported/legacy definition must not hide valid choices.
             continue
         reason = harness.compatible(session, dict(workflow_id=workflow.id, workflow_digest=agents.fingerprint(workflow)))
         programs.append(dict(app_id=app.id, app_name=app.name, workflow_id=workflow.id,

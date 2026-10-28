@@ -173,3 +173,16 @@ class StageConfigTests(StageFixture):
         self.assertEqual(people[self.project_owner.id]['actions'], ['view'])
         self.assertIn(self.admin.id, legacy['runners'])
         self.assertLessEqual(len(reads), len(options['agents']) + 1)
+
+    def test_invalid_runtime_model_candidate_does_not_hide_valid_programs(self):
+        from company_projects.runtime_models import INPUT
+        graph = feedback_graph()
+        graph['nodes'][0]['data']['variables'].append(dict(variable=INPUT, type='text-input', label='Invalid legacy input'))
+        invalid = Workflow.new(tenant_id=self.workspace_a.id, app_id=self.source_app.id, type='workflow', version='invalid-legacy-candidate',
+            graph=json.dumps(graph), features='{}', created_by=self.editor.id,
+            environment_variables=[], conversation_variables=[], rag_pipeline_variables=[])
+        self.session.add(invalid); self.session.flush()
+        options = flows.options(self.session, self.a['id'], self.workspace_a.id, self.editor.id)
+        identities = [value['workflow_id'] for value in options['programs']]
+        self.assertIn(self.workflow.id, identities)
+        self.assertNotIn(invalid.id, identities)
