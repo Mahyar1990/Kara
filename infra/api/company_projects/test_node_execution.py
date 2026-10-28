@@ -122,3 +122,21 @@ class NodeExecutionTests(RuntimeModelTests):
             self.assertEqual(set(client.post(base+'rpc/'+child+'/credentials',headers=remote).json['models']),{'second'})
             result=dict(state='succeeded',value=dict(output={'text':'synthetic'},branch=None,total_tokens=0),error=None)
             self.assertEqual(client.post(base+'rpc/'+child+'/complete',json=result,headers=remote).status_code,200)
+
+    def test_overlapping_coordinators_wait_without_blocking_remote_node_delivery(self):
+        choice, _, _, devices = self.choices()
+        first=local.enqueue(self.session,self.app_model,self.workflow,self.editor,{runtime.INPUT:json.dumps(choice)})
+        reverse=deepcopy(choice)
+        reverse['runners']['llm']['device_id']=devices[1]['id']
+        reverse['runners']['second']['device_id']=devices[0]['id']
+        second=local.enqueue(self.session,self.app_model,self.workflow,self.editor,{runtime.INPUT:json.dumps(reverse)})
+        self.assertEqual(local.claim(self.session,devices[0])['job']['id'],first['id'])
+        self.assertIsNone(local.claim(self.session,devices[1])['job'])
+        local.set_binding(self.session,self.a['id'],self.workspace_a.id,self.editor.id,dict(device_id=devices[1]['id'],source_job_id=None,expected_revision=1))
+        for _ in range(21):local_rpc.enqueue(self.session,self.workspace_a.id,self.editor.id,'invoke_llm',{})
+        self.assertIsNone(local_rpc.claim(self.session,devices[1])['job'])
+        child=node_routing.request(self.session,devices[0],first['id'],dict(node_id='second',pool={}))
+        self.assertEqual(local_rpc.claim(self.session,devices[1])['job']['id'],child['id'])
+        local_rpc.complete(self.session,devices[1],child['id'],dict(state='succeeded',value=dict(output={'text':'synthetic'},branch=None,total_tokens=0),error=None))
+        local.cancel(self.session,self.a['id'],self.workspace_a.id,self.editor.id,first['id'])
+        self.assertEqual(local.claim(self.session,devices[1])['job']['id'],second['id'])

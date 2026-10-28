@@ -279,6 +279,8 @@ def expire(s,project=None):
         except ServiceUnavailable:continue  # Another transaction owns this stage; a later read retries cleanup.
 
 def claim(s,runner):
+    local.admission_lock(s,runner['account_id'])
+    if str(runner['id']) in local.reserved_devices(s,runner['account_id']):return dict(job=None)
     expire(s);t=table(s)
     for name in ('local_executions','local_rpc'):
         q=local.table(s,name)

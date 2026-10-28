@@ -18,6 +18,16 @@ PROTOCOL=2
 def table(s,name): return agents.reflected(s,'company_'+name)
 def utc_naive(value): return value.astimezone(timezone.utc).replace(tzinfo=None) if value else None
 
+def admission_lock(s,actor):
+    s.execute(sa.text('SELECT pg_advisory_xact_lock(hashtextextended(:key,0))'),{'key':'kara-coordinator:'+str(actor)})
+
+def reserved_devices(s,actor):
+    t=table(s,'local_executions'); occupied=set()
+    for active in s.execute(sa.select(t.c.device_id,t.c.snapshot).where(t.c.account_id==str(actor),t.c.state=='running')).mappings():
+        occupied.add(str(active['device_id']))
+        occupied.update(route['device_id'] for route in active['snapshot'].get('routes',{}).values())
+    return occupied
+
 def execution(s,identity,runner=None,actor=None,lock=False):
     t=table(s,'local_executions'); q=sa.select(t).where(t.c.id==source.uid(identity))
     if runner: q=q.where(t.c.device_id==str(runner['id']),t.c.account_id==str(runner['account_id']))
@@ -235,15 +245,26 @@ def expire(s):
 def claim(s,runner):
     from company_projects.harness import busy
     if busy(s,runner['id']):return dict(job=None)
+    # Serialize coordinator admission per account, without taking account/device
+    # row locks in a different order from pairing/revocation. Otherwise two
+    # coordinators can each hold a device needed by the other's remote node.
+    admission_lock(s,runner['account_id'])
     expire(s); cap=table(s,'runner_capabilities'); capabilities=s.execute(sa.select(cap).where(cap.c.device_id==str(runner['id']))).mappings().first()
     if not capabilities or capabilities['protocol']!=PROTOCOL: return dict(job=None)
     t=table(s,'local_executions')
     rpc=table(s,'local_rpc')
     if s.scalar(sa.select(rpc.c.id).where(rpc.c.device_id==str(runner['id']),rpc.c.state=='running').limit(1)):return dict(job=None)
     if s.scalar(sa.select(t.c.id).where(t.c.device_id==str(runner['id']),t.c.state=='running').limit(1)): return dict(job=None)
+    occupied=reserved_devices(s,runner['account_id'])
+    occupied.update(str(device) for device in s.scalars(sa.select(rpc.c.device_id).where(rpc.c.account_id==str(runner['account_id']),rpc.c.state=='running')))
+    from company_projects import harness
+    for active_table in (source.table(s,'jobs'),harness.table(s)):
+        occupied.update(str(device) for device in s.scalars(sa.select(active_table.c.device_id).where(active_table.c.account_id==str(runner['account_id']),active_table.c.state=='running')))
     rows=s.execute(sa.select(t).where(t.c.device_id==str(runner['id']),t.c.account_id==str(runner['account_id']),t.c.state=='pending').order_by(t.c.created_at).with_for_update(skip_locked=True).limit(20)).mappings().all()
     for original in rows:
         job=dict(original)
+        devices={str(job['device_id'])}|{route['device_id'] for route in job['snapshot'].get('routes',{}).values()}
+        if devices & occupied: continue
         if set(job['snapshot']['requirements'])-set(capabilities['capabilities']): continue
         try: validate_access(s,job)
         except (BadRequest,Forbidden,NotFound,Conflict):

@@ -186,8 +186,14 @@ def cancel(s,project,workspace,actor,job_id):
 
 def claim(s,runner):
     from company_projects.harness import busy
+    from company_projects import local_execution as local
+    local.admission_lock(s,runner['account_id'])
     if busy(s,runner['id']):return dict(job=None)
+    if str(runner['id']) in local.reserved_devices(s,runner['account_id']):return dict(job=None)
+    rpc=local.table(s,'local_rpc')
+    if s.scalar(sa.select(rpc.c.id).where(rpc.c.device_id==str(runner['id']),rpc.c.state=='running').limit(1)):return dict(job=None)
     expire(s); t=table(s,'jobs')
+    if s.scalar(sa.select(t.c.id).where(t.c.device_id==str(runner['id']),t.c.state=='running').limit(1)):return dict(job=None)
     candidates=s.execute(sa.select(t).where(t.c.device_id==runner['id'],t.c.account_id==runner['account_id'],t.c.state=='pending').order_by(t.c.created_at).with_for_update(skip_locked=True).limit(1)).mappings().first()
     if not candidates: return dict(job=None)
     job=dict(candidates)

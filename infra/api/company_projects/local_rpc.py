@@ -107,6 +107,7 @@ def expire(s):
 
 def claim(s,runner):
     from company_projects.harness import busy
+    local.admission_lock(s,runner['account_id'])
     if busy(s,runner['id']):return dict(job=None)
     expire(s);cap=local.table(s,'runner_capabilities');current=s.execute(sa.select(cap).where(cap.c.device_id==str(runner['id']))).mappings().first()
     if not current or current['protocol']!=2:return dict(job=None)
@@ -114,9 +115,15 @@ def claim(s,runner):
     jobs=local.table(s,'local_executions')
     if s.scalar(sa.select(jobs.c.id).where(jobs.c.device_id==str(runner['id']),jobs.c.state=='running').limit(1)):return dict(job=None)
     if s.scalar(sa.select(t.c.id).where(t.c.device_id==str(runner['id']),t.c.state=='running').limit(1)):return dict(job=None)
-    rows=s.execute(sa.select(t).where(t.c.device_id==str(runner['id']),t.c.account_id==str(runner['account_id']),t.c.state=='pending').order_by(t.c.created_at).with_for_update(skip_locked=True).limit(20)).mappings().all()
+    reserved=str(runner['id']) in local.reserved_devices(s,runner['account_id'])
+    sources=source.table(s,'jobs')
+    if s.scalar(sa.select(sources.c.id).where(sources.c.device_id==str(runner['id']),sources.c.state=='running').limit(1)):return dict(job=None)
+    queue=sa.select(t).where(t.c.device_id==str(runner['id']),t.c.account_id==str(runner['account_id']),t.c.state=='pending')
+    if reserved:queue=queue.where(t.c.method=='workflow-node')
+    rows=s.execute(queue.order_by(t.c.created_at).with_for_update(skip_locked=True).limit(20)).mappings().all()
     for original in rows:
         row=dict(original)
+        if reserved and row['method']!='workflow-node':continue
         if row['method']=='workflow-node' and 'node-routing-v1' not in current['capabilities']:continue
         if row['method']=='raw-code' and row['payload']['language'] not in current['capabilities']:continue
         try:access(s,row)
