@@ -55,9 +55,8 @@ def source(session, scope, actor, stage):
     filters = visible_filters(session, scope['workspace_id'], str(actor))
     if not filters or not session.scalar(sa.select(App.id).where(App.id == app.id, *filters)):
         raise Forbidden('مجوز استفاده از برنامهٔ مرحله لازم است.')
-    # Preserve any pre-existing program-level source restrictions.
-    from company_projects.agent_execution import native_permission
-    native_permission(session, app.id, actor, 'publish_definition')
+    # Reusing a published version does not edit or publish its source program.
+    # Flow authoring, source visibility and native release checks live in flows.
     inputs, outputs = agents.contracts(workflow)
     row = dict(id=str(uuid4()), **scope, app_id=app.id, workflow_id=workflow.id, name=app.name[:120],
         description='', input_contract=inputs, output_contract=outputs, workflow_digest=agents.fingerprint(workflow),

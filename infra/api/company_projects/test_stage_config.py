@@ -132,3 +132,19 @@ class StageConfigTests(StageFixture):
         self.assertEqual(published['published']['stage_bindings'][0]['participants'], [])
         foreign = dict(self.new_stage, app_id=str(uuid4()))
         with self.assertRaises(UnprocessableEntity): self.publish(self.save(stages=[foreign]))
+
+    def test_publishing_a_stage_reuses_a_published_program_without_editing_it(self):
+        scope = dict(project_id=self.a['id'], workspace_id=self.workspace_a.id)
+        legacy = agents.load(self.session, scope, self.agent_ids[0])
+        workflow = self.session.get(Workflow, legacy['workflow_id'])
+        before = agents.fingerprint(workflow)
+        for action in ('edit_definition', 'publish_definition'):
+            with self.assertRaises(Forbidden):
+                agent_execution.native_permission(self.session, legacy['app_id'], self.editor.id, action)
+        spec = dict(self.new_stage, app_id=legacy['app_id'], workflow_id=legacy['workflow_id'])
+        published = self.publish(self.save(stages=[spec]))
+        self.assertEqual(published['published']['stage_bindings'][0]['workflow_id'], legacy['workflow_id'])
+        self.assertEqual(agents.fingerprint(workflow), before)
+        for action in ('edit_definition', 'publish_definition'):
+            with self.assertRaises(Forbidden):
+                agent_execution.native_permission(self.session, legacy['app_id'], self.editor.id, action)
