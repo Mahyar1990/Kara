@@ -36,7 +36,7 @@ def deny_native(app_id, *, session=None):
         with Session(db.engine) as own:
             return deny_native(app_id, session=own)
     if managed(session, app_id):
-        raise Forbidden('این برنامه تنظیمات تیمی دارد؛ از بخش تنظیمات تیمی همان برنامه اجرا کنید.')
+        raise Forbidden('این برنامه ایجنت تیمی است؛ از صفحهٔ ایجنت‌های تیم اجرا کنید.')
     from company_projects.personal_agent_sources import metadata
     app = session.get(App, str(app_id)) if app_id else None
     if app and app.workflow_id and metadata(session.get(Workflow, app.workflow_id)) is not None:
@@ -87,14 +87,14 @@ def native_permission(session, app_id, actor_id, action='edit_definition'):
         return
     active = [agent for agent in linked if not agent['archived']]
     if not active:
-        raise Forbidden('همهٔ تنظیم‌های تیمی این برنامه بایگانی شده‌اند.')
+        raise Forbidden('همهٔ ایجنت‌های این برنامه بایگانی شده‌اند.')
     # Editing the shared source affects every active binding, so one agent's
     # grant must not bypass another agent's definition restrictions.
     for agent in active:
         try:
             agents.require(session, agent, actor_id, action)
         except Forbidden:
-            raise Forbidden('برای تغییر برنامهٔ مشترک، مجوز مربوط در همهٔ تنظیم‌های تیمی فعال متصل لازم است.') from None
+            raise Forbidden('برای تغییر برنامهٔ مشترک، مجوز مربوط در همهٔ ایجنت‌های فعال متصل لازم است.') from None
     agent = active[0]
     # These grants supplement native permissions; they cannot promote a reader.
     from configs import dify_config
@@ -115,7 +115,7 @@ def protect_source(session, app_id=None, workflow_id=None):
     query = sa.select(table.c.id)
     query = query.where(table.c.app_id == str(app_id)) if app_id else query.where(table.c.workflow_id == str(workflow_id))
     if session.scalar(query.limit(1)):
-        raise Conflict('این برنامه در تنظیمات تیمی و سوابق استفاده شده و قابل حذف نیست؛ برای توقف اجرا، تنظیم‌های تیمی را بایگانی کنید.')
+        raise Conflict('این منبع در سابقهٔ ایجنت تیمی استفاده شده است و قابل حذف نیست؛ ایجنت را بایگانی کنید.')
 
 
 def install_http_guard(app):
@@ -129,7 +129,7 @@ def install_http_guard(app):
             from company_projects.personal_agent_sources import metadata
             source_app = session.get(App, str(app_id))
             if source_app and source_app.workflow_id and metadata(session.get(Workflow, source_app.workflow_id)) is not None:
-                raise Forbidden('اتصال ایجنت کتابخانه نسخهٔ ثابت است؛ آن را از بخش تنظیمات تیمی برنامه مدیریت کنید.')
+                raise Forbidden('اتصال ایجنت کتابخانه نسخهٔ ثابت است؛ آن را از صفحهٔ ایجنت‌های تیم مدیریت کنید.')
             agent = managed(session, app_id)
             if agent is None:
                 return
@@ -141,7 +141,7 @@ def install_http_guard(app):
             team.scope(session, agent['project_id'], workspace_id, actor.id)
             segments = set(request.path.split('/'))
             if segments & {'run', 'run-all', 'stop', 'resume', 'trigger', 'triggers'} or request.method == 'DELETE':
-                raise Forbidden('برای اجرای تیمی برنامه از بخش تنظیمات تیمی برنامه استفاده کنید؛ حذف منبع مجاز نیست.')
+                raise Forbidden('برای اجرای ایجنت تیمی از صفحهٔ ایجنت‌های تیم استفاده کنید؛ حذف منبع مجاز نیست.')
             action = 'publish_definition' if request.method != 'GET' and segments & {'publish', 'published'} else 'edit_definition'
             native_permission(session, app_id, actor.id, action)
 

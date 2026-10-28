@@ -99,7 +99,6 @@ make down
 - [کتابخانهٔ قالب‌ها](docs/template-library.md)
 - [کتابخانهٔ Agency Agents و دسته‌بندی تخصص‌ها](docs/agency-agent-library.md)
 - [استفاده از ایجنت‌های کتابخانه در برنامه‌ها](docs/program-agent-composition.md)
-- [تنظیمات تیمی داخل برنامه‌ها و انتخاب برنامه در فلو](docs/program-team-settings.md)
 - [کارتابل اجراها و تأییدها](docs/project-inbox.md)
 - [اتوماسیون‌های پروژه](docs/project-automations.md)
 - [سورس کد، worktree چندمخزنی و Runner محلی](docs/source-code-runner.md)

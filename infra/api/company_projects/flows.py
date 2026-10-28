@@ -133,7 +133,7 @@ def options(session, project_id, workspace_id, actor_id):
         if value['archived']:
             continue
         agent = agents.load(session, dict(project_id=str(project_id), workspace_id=str(workspace_id)), value['id'])
-        result.append({k: value[k] for k in ('id', 'name', 'app_id', 'app_name', 'workflow_id', 'workflow_version', 'input_contract', 'output_contract')} | {
+        result.append({k: value[k] for k in ('id', 'name', 'workflow_id', 'input_contract', 'output_contract')} | {
             'runners': [m['account_id'] for m in members if 'run' in agents.permissions(session, agent, m['account_id'])],
             'finalizers': [m['account_id'] for m in members if 'finalize' in agents.permissions(session, agent, m['account_id'])]})
     return dict(agents=result, members=members)
@@ -264,7 +264,6 @@ def compile_stages(session, scoped, actor_id, stages):
         validate_bindings(agent['input_contract'], stage['inputs'], compiled)
         compiled.append(dict(key=stage['key'], title=stage['title'], agent_id=agent['id'], agent_name=agent['name'],
             agent_revision=agent['revision'], workflow_id=workflow.id, workflow_digest=agent['workflow_digest'],
-            app_id=app.id, app_name=app.name, workflow_version=workflow.marked_name or workflow.version,
             input_contract=agent['input_contract'], output_contract=agent['output_contract'], contract_version=1,
             executor=people['executor'], finalizer=people['finalizer'], decision_role=stage['decision_role'],
             inputs=stage['inputs'], depends_on=[compiled[-1]['key']] if compiled else []))

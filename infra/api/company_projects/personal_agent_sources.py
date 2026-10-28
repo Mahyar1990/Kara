@@ -426,7 +426,7 @@ def register(s, project, workspace, actor, data, key):
         raise Conflict('تنظیمات منبع یا نسخهٔ مهارت‌ها پس از بررسی تغییر کرده‌اند؛ پیش‌نمایش را تازه کنید.')
     # One transaction with the team definition: no AppService commits/signals/orphan programs.
     app = App(tenant_id=str(workspace), name=('برنامهٔ اتصال ' + data['name'].strip())[:255], mode='workflow',
-        description='اتصال ثابت ایجنت کتابخانه به اجرای تیمی؛ مدیریت از تنظیمات تیمی برنامه.', status='normal',
+        description='اتصال ثابت ایجنت کتابخانه به اجرای تیمی؛ مدیریت از صفحهٔ ایجنت‌های تیم.', status='normal',
         created_by=str(actor), maintainer=str(actor), enable_site=False, enable_api=False, max_active_requests=0)
     s.add(app); s.flush()
     workflow = Workflow.new(tenant_id=str(workspace), app_id=app.id, type='workflow', version='personal-agent-' + snapshot.id,
