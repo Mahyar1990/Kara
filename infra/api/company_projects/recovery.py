@@ -225,7 +225,8 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
                 people[field] = dict(account_id=person, membership_id=membership, name=account.name)
                 candidate = dict(row, binding=dict(row['binding'], **people))
                 stages.require(session, scope, candidate, person, permission)
-            if all(people[k] == row['binding'][k] for k in people):
+            if all((people[k]['account_id'], people[k]['membership_id']) ==
+                    (row['binding'][k]['account_id'], row['binding'][k]['membership_id']) for k in people):
                 raise Conflict('مسئول‌ها تغییری نکرده‌اند.')
             session.execute(entity.update().where(entity.c.id == row['id']).values(assignment=people))
             change.update(before={k: row['binding'][k] for k in people}, after=people)

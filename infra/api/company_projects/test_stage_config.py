@@ -244,3 +244,21 @@ class StageConfigTests(StageFixture):
         self.assertEqual(current['description'], 'Saved by another editor')
         self.assertEqual(current['draft_stages'][0]['title'], 'Newer stage configuration')
         self.assertEqual(current['published'], base['published'])
+
+    def test_display_name_change_is_not_a_reassignment_and_does_not_interrupt_work(self):
+        from company_projects import recovery
+        row = self.act(self.get(), 'run')
+        self.editor.name = 'Renamed executor'; self.session.flush()
+        body = dict(expected_revision=row['revision'], reason='Same people selected',
+            executor_id=row['binding']['executor']['account_id'], executor_membership_id=row['binding']['executor']['membership_id'],
+            finalizer_id=row['binding']['finalizer']['account_id'], finalizer_membership_id=row['binding']['finalizer']['membership_id'])
+        with self.assertRaises(Conflict):
+            recovery.mutate(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id,
+                self.inst['id'], row['id'], 'reassign', body, str(uuid4()))
+        current = self.get()
+        self.assertEqual(current['revision'], row['revision'])
+        self.assertEqual(current['round'], row['round'])
+        self.assertEqual(current['active_attempt_id'], row['active_attempt_id'])
+        self.assertEqual(current['state'], 'running')
+        attempts = agents.tables(self.session)[2]
+        self.assertEqual(self.session.scalar(sa.select(attempts.c.status).where(attempts.c.id == row['active_attempt_id'])), 'pending')
