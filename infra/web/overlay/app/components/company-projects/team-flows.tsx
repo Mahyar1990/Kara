@@ -116,7 +116,7 @@ function StageEditor({ stage, index, stages, options, change, move, remove }: { 
   </details>
 }
 
-function FlowEditor({ project, value, options, saved, cancel, refreshOptions, updatingOptions, optionsFailed }: { project: string; value: TeamFlow | null; options: FlowOptions; saved: (value: TeamFlow) => Promise<unknown>; cancel: () => void; refreshOptions: () => unknown; updatingOptions: boolean; optionsFailed: boolean }) {
+function FlowEditor({ project, value, options, saved, cancel, refreshOptions, updatingOptions, optionsFailed, remoteChanged }: { project: string; value: TeamFlow | null; options: FlowOptions; saved: (value: TeamFlow) => Promise<unknown>; cancel: () => void; refreshOptions: () => unknown; updatingOptions: boolean; optionsFailed: boolean; remoteChanged: boolean }) {
   const [name, setName] = useState(value?.name || '')
   const [description, setDescription] = useState(value?.description || '')
   const [stages, setStages] = useState<FlowStage[]>(() => (value?.draft_stages || []).map(stage => upgradeStage(stage, options)))
@@ -129,6 +129,7 @@ function FlowEditor({ project, value, options, saved, cancel, refreshOptions, up
   const move = (index: number, offset: number) => { const current = stages[index]; const other = stages[index + offset]; if (!current || !other) return; const result = [...stages]; result[index] = other; result[index + offset] = current; setStages(result) }
   return <FormDialog open wide title={value ? `ویرایش فلو: ${value.name}` : 'ساخت فلو'} description="فلو، ترتیب همکاری اعضا و برنامه‌ها را مشخص می‌کند. مراحل، مسئولان و ورودی‌ها را تنظیم و پیش‌نویس را ذخیره کنید؛ پس از تکمیل، نسخه‌ای منتشر کنید. انتشار، اجرای خودکار آغاز نمی‌کند و نسخه‌های قبلی را تغییر نمی‌دهد." busy={action.busy} close={cancel}>
     <form aria-label="ویرایش پیش‌نویس فلو" className="space-y-4" onSubmit={event => { event.preventDefault(); save() }}>
+    {remoteChanged && <p role="alert" className="rounded-lg border border-divider-regular p-3 text-sm leading-7">این فلو پس از بازشدن ویرایشگر تغییر کرده یا از فهرست خارج شده است. تغییرات ذخیره‌نشدهٔ شما حفظ شده‌اند و روی نسخهٔ تازه نوشته نمی‌شوند. پیش از بستن، تغییرات لازم را کپی کنید و سپس ویرایشگر را برای دریافت نسخهٔ تازه دوباره باز کنید.</p>}
     <fieldset disabled={action.busy || value?.archived} className="space-y-4">
       <label className="block text-sm">نام فلو<input required maxLength={120} className={field} value={name} onChange={event => setName(event.target.value)} /><FieldHelp>نامی یکتا در همین پروژه، متناسب با مسیر رسیدگی یا همکاری تیم انتخاب کنید.</FieldHelp></label>
       <label className="block text-sm">توضیح فلو<textarea maxLength={2000} className={field} value={description} onChange={event => setDescription(event.target.value)} /><FieldHelp>مشخص کنید این مسیر برای چه درخواست‌هایی است و پس از طی مراحل چه نتیجه‌ای باید آماده شود.</FieldHelp></label>
@@ -181,7 +182,7 @@ export default function TeamFlows({ projectId }: { projectId: string }) {
   const context = useQuery({ queryKey: ['company-context', workspace], queryFn: projectApi.context, enabled: !!workspace })
   const entered = context.data?.current_project?.id === projectId
   const list = useQuery({ queryKey: ['team-flows', workspace, projectId], queryFn: () => flowApi.list(projectId), enabled: entered })
-  const [selected, setSelected] = useState<string | null>(null)
+  const [editingValue, setEditingValue] = useState<TeamFlow | null>(null)
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState<TeamFlow | null>(null)
   const [query, setQuery] = useState('')
@@ -189,17 +190,20 @@ export default function TeamFlows({ projectId }: { projectId: string }) {
   const [sort, setSort] = useState('registered')
   const [page, setPage] = useState(1)
   const options = useQuery({ queryKey: ['team-flow-options', workspace, projectId], queryFn: () => flowApi.options(projectId), enabled: entered && !!list.data?.can_edit && editing })
-  useEffect(() => { setSelected(null); setEditing(false); setDeleting(null); setQuery(''); setStatus('active'); setSort('registered'); setPage(1) }, [workspace, projectId])
-  const value = list.data?.data.find(flow => flow.id === selected) || null
+  useEffect(() => { setEditingValue(null); setEditing(false); setDeleting(null); setQuery(''); setStatus('active'); setSort('registered'); setPage(1) }, [workspace, projectId])
+  // Keep the form and its CAS revision independent from background catalog refreshes.
+  const value = editingValue
+  const selected = value?.id || null
+  const remoteChanged = !!value && list.isSuccess && list.data.data.find(flow => flow.id === value.id)?.revision !== value.revision
   const refresh = async () => { const result = await list.refetch(); void cache.invalidateQueries({ queryKey: ['company-projects', workspace, projectId, 'overview'] }); return result }
-  const saved = async (flow: TeamFlow) => { const fresh = await refresh(); if (!fresh.isSuccess) throw new Error('Refresh failed'); setSelected(flow.id); setEditing(!flow.archived); setQuery(''); setStatus(flow.archived ? 'all' : 'active'); setSort('registered'); const index = fresh.data.data.filter(item => flow.archived || !item.archived).findIndex(item => item.id === flow.id); setPage(Math.floor(Math.max(0, index) / 8) + 1) }
+  const saved = async (flow: TeamFlow) => { const fresh = await refresh(); if (!fresh.isSuccess) throw new Error('Refresh failed'); setEditingValue(flow); setEditing(!flow.archived); setQuery(''); setStatus(flow.archived ? 'all' : 'active'); setSort('registered'); const index = fresh.data.data.filter(item => flow.archived || !item.archived).findIndex(item => item.id === flow.id); setPage(Math.floor(Math.max(0, index) / 8) + 1) }
   const values = list.data?.data || []
   const ordered = sort === 'name' ? [...values].sort((a, b) => a.name.localeCompare(b.name, 'fa')) : values
   const filtered = ordered.filter(flow => matchesSearch(query, flow.name, flow.description) && (status === 'all' || (status === 'archived' ? flow.archived : !flow.archived && (status === 'active' || (status === 'published' ? !!flow.current_version_id : !flow.current_version_id)))))
   const results = resultPage(filtered, page)
   const hasFilters = !!query.trim() || status !== 'all' || sort !== 'registered'
   const reset = () => { setQuery(''); setStatus('all'); setSort('registered'); setPage(1) }
-  return <DirectoryPage project={projectId} title="فلوهای تیم" description="مسیر همکاری تیم را پیدا کنید؛ مراحل و مسئولان نسخهٔ منتشرشده را ببینید یا پیش‌نویس را برای انتشار بعدی ویرایش کنید." actions={<><button className={directoryButton} disabled={!entered || list.isFetching} onClick={() => void refresh()}>{list.isFetching ? 'در حال تازه‌سازی…' : 'تازه‌سازی'}</button>{entered && list.data?.can_edit && <button className={primary} onClick={() => { setSelected(null); setEditing(true) }}>ساخت فلو</button>}</>}>
+  return <DirectoryPage project={projectId} title="فلوهای تیم" description="مسیر همکاری تیم را پیدا کنید؛ مراحل و مسئولان نسخهٔ منتشرشده را ببینید یا پیش‌نویس را برای انتشار بعدی ویرایش کنید." actions={<><button className={directoryButton} disabled={!entered || list.isFetching} onClick={() => void refresh()}>{list.isFetching ? 'در حال تازه‌سازی…' : 'تازه‌سازی'}</button>{entered && list.data?.can_edit && <button className={primary} onClick={() => { setEditingValue(null); setEditing(true) }}>ساخت فلو</button>}</>}>
     <DirectoryNotice project={projectId} entered={!!entered} loading={context.isPending || (!!entered && list.isPending)} error={context.isError || (!!entered && list.isError)} retry={() => context.isError ? context.refetch() : refresh()} />
     {entered && list.data && <>
       {list.isError && <p role="status" className="text-sm leading-7 text-text-secondary">آخرین فهرست دریافت‌شده نمایش داده می‌شود؛ تازه‌سازی موفق نبوده است.</p>}
@@ -208,12 +212,12 @@ export default function TeamFlows({ projectId }: { projectId: string }) {
         <label className="min-w-0 flex-1 basis-48 text-sm">وضعیت فلو<select className={directoryField} value={status} onChange={event => { setStatus(event.target.value); setPage(1) }}><option value="active">همهٔ غیربایگانی‌ها</option><option value="published">منتشرشده</option><option value="draft">فقط پیش‌نویس</option><option value="archived">بایگانی‌شده</option><option value="all">همهٔ فلوها</option></select></label>
         <label className="min-w-0 flex-1 basis-36 text-sm">ترتیب نمایش<select className={directoryField} value={sort} onChange={event => { setSort(event.target.value); setPage(1) }}><option value="registered">ترتیب ثبت</option><option value="name">نام فلو</option></select></label>
       </DirectoryToolbar>
-      {editing && list.data.can_edit && (selected && !value ? <FormDialog open title="فلو در دسترس نیست" description="فلوی انتخاب‌شده دیگر در فهرست در دسترس نیست. فهرست را تازه کنید و دوباره انتخاب کنید." close={() => setEditing(false)}><button className={button} onClick={() => setEditing(false)}>بستن</button></FormDialog> : options.data ? <FlowEditor key={`${workspace}:${value?.id || 'new'}:${value?.revision || 1}`} project={projectId} value={value} options={options.data} saved={saved} cancel={() => setEditing(false)} refreshOptions={() => options.refetch()} updatingOptions={options.isFetching} optionsFailed={options.isError} /> : <FormDialog open title={selected ? 'ویرایش فلو' : 'ساخت فلو'} description="برنامه‌های منتشرشده و اعضای پروژه برای تنظیم مراحل دریافت می‌شوند." close={() => setEditing(false)}><p role={options.isError ? 'alert' : 'status'}>{options.isError ? 'دریافت برنامه‌ها و اعضا انجام نشد.' : 'در حال دریافت مسئولان…'}</p>{options.isError && <button className={button} onClick={() => options.refetch()}>تلاش دوباره</button>}</FormDialog>)}
-      {!results.items.length ? <DirectoryEmpty filtered={hasFilters && !!values.length} title="فلویی برای نمایش وجود ندارد" reset={reset}>فلو بسازید و در هر مرحله برنامه، مسئولان و روش اجرا را مشخص کنید.</DirectoryEmpty> : <ul aria-label="فهرست فلوهای تیم" className="m-0 list-none space-y-4 p-0">{results.items.map(flow => <li key={`${workspace}:${flow.id}:${flow.revision}`} className="min-w-0"><FlowCard project={projectId} flow={flow} canEdit={list.data.can_edit} edit={() => { setSelected(flow.id); setEditing(true) }} remove={() => setDeleting(flow)} /></li>)}</ul>}
+      {editing && list.data.can_edit && (options.data ? <FlowEditor key={`${workspace}:${value?.id || 'new'}:${value?.revision || 1}`} project={projectId} value={value} options={options.data} saved={saved} cancel={() => setEditing(false)} refreshOptions={() => options.refetch()} updatingOptions={options.isFetching} optionsFailed={options.isError} remoteChanged={remoteChanged} /> : <FormDialog open title={selected ? 'ویرایش فلو' : 'ساخت فلو'} description="برنامه‌های منتشرشده و اعضای پروژه برای تنظیم مراحل دریافت می‌شوند." close={() => setEditing(false)}><p role={options.isError ? 'alert' : 'status'}>{options.isError ? 'دریافت برنامه‌ها و اعضا انجام نشد.' : 'در حال دریافت مسئولان…'}</p>{options.isError && <button className={button} onClick={() => options.refetch()}>تلاش دوباره</button>}</FormDialog>)}
+      {!results.items.length ? <DirectoryEmpty filtered={hasFilters && !!values.length} title="فلویی برای نمایش وجود ندارد" reset={reset}>فلو بسازید و در هر مرحله برنامه، مسئولان و روش اجرا را مشخص کنید.</DirectoryEmpty> : <ul aria-label="فهرست فلوهای تیم" className="m-0 list-none space-y-4 p-0">{results.items.map(flow => <li key={`${workspace}:${flow.id}:${flow.revision}`} className="min-w-0"><FlowCard project={projectId} flow={flow} canEdit={list.data.can_edit} edit={() => { setEditingValue(flow); setEditing(true) }} remove={() => setDeleting(flow)} /></li>)}</ul>}
       <DirectoryPagination value={results} change={setPage} />
       <div className="flex flex-wrap gap-4 border-t border-divider-regular pt-5 text-sm text-text-accent"><Link href="/apps">برنامه‌ها و فرایندها ←</Link><Link href={`/projects/${projectId}/team-runs`}>اجرای تیمی و پیشرفت درخواست‌ها ←</Link></div>
       <p className="text-xs leading-6 text-text-tertiary">ساخت یا انتشار فلو، اجرا را شروع نمی‌کند. شروع رسیدگی از درخواست پذیرفته‌شده و ادامهٔ مراحل با تصمیم مسئول تعیین‌شده انجام می‌شود.</p>
     </>}
-    {deleting && list.data?.can_edit && <DeleteTeamEntity project={projectId} kind="flow" value={deleting} close={() => setDeleting(null)} deleted={async () => { await refresh(); setEditing(false); setSelected(null) }} />}
+    {deleting && list.data?.can_edit && <DeleteTeamEntity project={projectId} kind="flow" value={deleting} close={() => setDeleting(null)} deleted={async () => { await refresh(); setEditing(false); setEditingValue(null) }} />}
   </DirectoryPage>
 }

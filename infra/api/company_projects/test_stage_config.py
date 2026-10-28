@@ -232,3 +232,15 @@ class StageConfigTests(StageFixture):
         self.assertEqual(result['state'], 'awaiting_feedback')
         self.assertIsNone(result['selected_artifact_id'])
         self.assertEqual(self.get(self.second)['state'], 'blocked')
+
+    def test_concurrent_drafts_reject_old_revision_without_overwriting_newer_configuration(self):
+        base = copy.deepcopy(self.flow)
+        newer = self.save(base, description='Saved by another editor',
+            stages=[dict(self.new_stage, title='Newer stage configuration')])
+        with self.assertRaises(Conflict):
+            self.save(base, description='Unsaved local text', stages=[self.new_stage])
+        current = flows.get_flow(self.session, self.a['id'], self.workspace_a.id, self.editor.id, base['id'])
+        self.assertEqual(current['revision'], newer['revision'])
+        self.assertEqual(current['description'], 'Saved by another editor')
+        self.assertEqual(current['draft_stages'][0]['title'], 'Newer stage configuration')
+        self.assertEqual(current['published'], base['published'])
