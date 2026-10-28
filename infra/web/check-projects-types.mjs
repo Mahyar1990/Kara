@@ -27,6 +27,8 @@ const files = [
   'app/(commonLayout)/projects/[projectId]/requests/page.tsx',
   'service/company-requests.ts',
   'app/components/company-projects/team-flows.tsx',
+  'app/components/company-projects/flow-stage-editor.tsx',
+  'app/components/company-projects/form-dialog.tsx',
   'app/(commonLayout)/projects/[projectId]/team-flows/page.tsx',
   'service/company-flows.ts',
   'app/components/company-projects/team-agents.tsx',

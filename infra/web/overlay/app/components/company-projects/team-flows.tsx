@@ -1,10 +1,9 @@
 'use client'
 
-import type { AgentInput } from '@/service/company-agents'
-import type { FlowInput, FlowOptions, FlowStage, FlowVersion, TeamFlow } from '@/service/company-flows'
+import type { FlowOptions, FlowStage, FlowVersion, TeamFlow } from '@/service/company-flows'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { currentWorkspaceIdAtom } from '@/context/workspace-state'
 import Link from '@/next/link'
 import { flowApi } from '@/service/company-flows'
@@ -12,6 +11,7 @@ import { projectApi } from '@/service/company-projects'
 import { sourceError } from '@/service/company-source'
 import DeleteTeamEntity from './delete-team-entity'
 import FormDialog, { FieldHelp } from './form-dialog'
+import FlowStageEditor, { defaultStageExecution, FlowStageRow, upgradeStage } from './flow-stage-editor'
 import { DirectoryPage, DirectoryNotice, DirectorySummary, DirectoryToolbar, DirectoryPagination, DirectoryEmpty, directoryButton, directoryField, matchesSearch, resultPage } from './team-directory'
 
 const panel = 'min-w-0 space-y-4 [overflow-wrap:anywhere] rounded-2xl border border-divider-regular bg-background-default p-5'
@@ -36,112 +36,52 @@ function useAction() {
   return { busy, error, run }
 }
 
-const defaultExecution = () => ({ program_enabled: true, enabled: false, instructions: '', requires_source: true })
-const stageProgram = (options: FlowOptions, stage: FlowStage) => options.programs.find(value => value.workflow_id === stage.workflow_id && value.app_id === stage.app_id)
-function upgradeStage(stage: FlowStage, options: FlowOptions): FlowStage {
-  if (stage.execution) return stage
-  const legacy = options.agents.find(value => value.id === stage.agent_id)
-  // Preserve unavailable drafts until the author explicitly chooses a replacement.
-  if (!legacy || !options.programs.some(value => value.app_id === legacy.app_id && value.workflow_id === legacy.workflow_id)) return stage
-  return { ...stage, agent_id: null, app_id: legacy.app_id, workflow_id: legacy.workflow_id,
-    execution: legacy.execution || defaultExecution(), participants: (legacy.participants || []).filter(person => ![stage.executor_id, stage.finalizer_id].includes(person.account_id)) }
-}
-
-function InputBinding({ item, value, previous, options, change }: { item: AgentInput; value?: FlowInput; previous: FlowStage[]; options: FlowOptions; change: (value?: FlowInput) => void }) {
-  const selected = value?.source === 'stage' ? JSON.stringify({ source: 'stage', stage_key: value.stage_key, output: value.output }) : value?.source || ''
-  const choose = (text: string) => {
-    if (!text) change()
-    else if (text === 'request') change({ source: 'request' })
-    else if (text === 'constant') change({ source: 'constant', value: item.type === 'number' ? 0 : item.type === 'checkbox' ? false : '' })
-    else change(JSON.parse(text) as FlowInput)
-  }
-  return <div className="space-y-2 rounded-lg border border-divider-regular p-3">
-    <label className="block text-sm">منبع {item.label}{item.required && ' *'}<select className={field} value={selected} onChange={event => choose(event.target.value)}>
-      <option value="">بدون اتصال</option>
-      {['text-input', 'paragraph'].includes(item.type) && <option value="request">متن درخواست</option>}
-      <option value="constant">مقدار ثابت</option>
-      {previous.flatMap(stage => (stageProgram(options, stage)?.output_contract || options.agents.find(agent => agent.id === stage.agent_id)?.output_contract || []).map(output => <option key={`${stage.key}:${output}`} value={JSON.stringify({ source: 'stage', stage_key: stage.key, output })}>خروجی «{stage.title}»: {output}</option>))}
-    </select><FieldHelp>متن درخواست: شرح همان درخواست. مقدار ثابت: دادهٔ مشترک همهٔ اجراهای این نسخهٔ فلو. خروجی مرحلهٔ قبل: نتیجهٔ منتخب و نهایی‌شدهٔ آن مرحله. ورودی الزامی را بدون اتصال نگذارید.</FieldHelp></label>
-    {value?.source === 'constant' && <label className="block text-sm">مقدار {item.label}
-      {item.type === 'checkbox' ? <input className="ms-3" type="checkbox" checked={Boolean(value.value)} onChange={event => change({ source: 'constant', value: event.target.checked })} />
-        : item.type === 'select' ? <select className={field} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: event.target.value })}><option value="">انتخاب کنید</option>{item.options.map(option => <option key={option}>{option}</option>)}</select>
-          : <textarea className={field} maxLength={item.max_length || undefined} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: item.type === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value })} />}
-    <FieldHelp>این مقدار در همهٔ اجراهای همین نسخه استفاده می‌شود؛ اطلاعات متغیر هر درخواست و رمز را اینجا وارد نکنید.</FieldHelp></label>}
-  </div>
-}
-
-function StageEditor({ stage, index, stages, options, change, move, remove }: { stage: FlowStage; index: number; stages: FlowStage[]; options: FlowOptions; change: (value: FlowStage) => void; move: (offset: number) => void; remove: () => void }) {
-  const [expanded, setExpanded] = useState(index === 0 || !stage.workflow_id)
-  const source = stageProgram(options, stage)
-  const programs = [...new Map(options.programs.map(value => [value.app_id, value.app_name])).entries()]
-  const versions = options.programs.filter(value => value.app_id === stage.app_id)
-  const cfg = stage.execution || defaultExecution()
-  const configure = (next: Partial<typeof cfg>) => change({ ...stage, execution: { ...cfg, ...next } })
-  const setPerson = (prefix: 'executor' | 'finalizer', id: string) => change({ ...stage, [`${prefix}_id`]: id || null, [`${prefix}_membership_id`]: options.members.find(member => member.account_id === id)?.membership_id || null, participants: stage.participants?.filter(person => person.account_id !== id) })
-  const participants = stage.participants || []
-  const executorCurrent = options.members.some(member => member.account_id === stage.executor_id && member.membership_id === stage.executor_membership_id)
-  const finalizerCurrent = options.members.some(member => member.account_id === stage.finalizer_id && member.membership_id === stage.finalizer_membership_id && (!stage.decision_role || member.roles.includes(stage.decision_role)))
-  const staleParticipants = participants.filter(person => !options.members.some(member => member.account_id === person.account_id && member.membership_id === person.membership_id))
-  return <details open={expanded} onToggle={event => setExpanded(event.currentTarget.open)} onInvalidCapture={event => { event.currentTarget.open = true; setExpanded(true) }} className="min-w-0 rounded-xl border border-divider-regular p-4 [overflow-wrap:anywhere]">
-    <summary className="cursor-pointer leading-7"><span className="font-semibold">{number(index + 1)}. {stage.title || 'مرحلهٔ بدون عنوان'}</span><span className="mt-1 block text-xs leading-6 text-text-tertiary">{source ? `${source.app_name} · ${source.version}` : 'برنامه و نسخه انتخاب نشده'} · {executorCurrent ? options.members.find(member => member.account_id === stage.executor_id)?.name : stage.executor_id ? 'مجری نیازمند بازبینی' : 'مجری انتخاب نشده'} · {finalizerCurrent ? options.members.find(member => member.account_id === stage.finalizer_id)?.name : stage.finalizer_id ? 'نهایی‌کننده نیازمند بازبینی' : 'نهایی‌کننده انتخاب نشده'}</span></summary>
-    <div className="mt-4 space-y-4">
-      <div className="flex flex-wrap justify-end gap-2"><button type="button" className={button} disabled={index === 0} onClick={() => move(-1)}>بالا</button><button type="button" className={button} disabled={index === stages.length - 1} onClick={() => move(1)}>پایین</button><button type="button" className={button} onClick={remove}>حذف مرحله</button></div>
-      <label className="block text-sm">عنوان مرحله<input className={field} required maxLength={120} value={stage.title} onChange={event => change({ ...stage, title: event.target.value })} /><FieldHelp>کاری که باید در این گام انجام و بررسی شود.</FieldHelp></label>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="block text-sm">برنامهٔ مرحله<select className={field} value={stage.app_id || ''} onChange={event => { const appId = event.target.value; const available = options.programs.filter(value => value.app_id === appId); change({ ...stage, agent_id: null, app_id: appId || null, workflow_id: available[0]?.workflow_id || null, inputs: {}, execution: cfg, participants }) }}><option value="">انتخاب کنید</option>{programs.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select><FieldHelp>از برنامه‌های منتشرشدهٔ پروژه انتخاب کنید.</FieldHelp></label>
-        <label className="block text-sm">نسخهٔ برنامه<select className={field} value={stage.workflow_id || ''} onChange={event => change({ ...stage, workflow_id: event.target.value || null, inputs: {} })}><option value="">انتخاب کنید</option>{versions.map(value => <option key={value.workflow_id} value={value.workflow_id}>{value.version}</option>)}</select><FieldHelp>انتشار نسخهٔ تازهٔ برنامه، این انتخاب را تغییر نمی‌دهد.</FieldHelp></label>
-        <label className="block text-sm">مسئول اجرا<select className={field} value={executorCurrent ? stage.executor_id || '' : ''} onChange={event => setPerson('executor', event.target.value)}><option value="">انتخاب کنید</option>{options.members.map(member => <option key={member.membership_id} value={member.account_id}>{member.name}</option>)}</select><FieldHelp>این عضو می‌تواند همین مرحله را اجرا کند، بازخورد بدهد و خروجی را آمادهٔ تصمیم کند.</FieldHelp></label>
-        <label className="block text-sm">نهایی‌کننده<select className={field} value={finalizerCurrent ? stage.finalizer_id || '' : ''} onChange={event => setPerson('finalizer', event.target.value)}><option value="">انتخاب کنید</option>{options.members.filter(member => !stage.decision_role || member.roles.includes(stage.decision_role)).map(member => <option key={member.membership_id} value={member.account_id}>{member.name}</option>)}</select><FieldHelp>این عضو خروجی را بررسی، بازخورد می‌دهد و با تصمیم صریح مرحله را نهایی می‌کند.</FieldHelp></label>
-      </div>
-      {stage.executor_id && !executorCurrent && <p role="alert" className="text-sm leading-7">عضویت مسئول اجرا تغییر کرده یا دیگر فعال نیست؛ مسئول اجرا را دوباره انتخاب کنید.</p>}
-      {stage.finalizer_id && !finalizerCurrent && <p role="alert" className="text-sm leading-7">عضویت یا نقش نهایی‌کننده تغییر کرده است؛ نهایی‌کنندهٔ واجد شرایط را دوباره انتخاب کنید.</p>}
-      {(stage.workflow_id || stage.agent_id) && !source && <p role="alert" className="text-sm">نسخهٔ قبلی در دسترس نیست؛ برنامه و نسخه را دوباره انتخاب کنید. نسخه‌های منتشرشده و اجراهای قبلی حفظ می‌شوند.</p>}
-      {stage.execution && <label className="block text-sm">شرح کار و معیار پذیرش<textarea className={field} maxLength={32000} value={cfg.instructions} onChange={event => configure({ instructions: event.target.value })} /><FieldHelp>خروجی مورد انتظار و معیار بررسی را بنویسید. مسئولان این متن را هنگام اجرا می‌بینند؛ در ابزار شخصی، همراه بستهٔ مأموریت تحویل می‌شود.</FieldHelp></label>}
-      {source && <section className="space-y-3"><h4 className="text-sm font-semibold">ورودی‌ها و خروجی‌ها</h4>{source.input_contract.length ? source.input_contract.map(item => <InputBinding key={item.variable} item={item} value={stage.inputs[item.variable]} previous={stages.slice(0, index)} options={options} change={value => { const inputs = { ...stage.inputs }; if (value) inputs[item.variable] = value; else delete inputs[item.variable]; change({ ...stage, inputs }) }} />) : <p className="text-xs text-text-tertiary">این برنامه ورودی قابل تنظیم ندارد.</p>}<p className="text-xs leading-6">خروجی‌های قابل تحویل: {source.output_contract.join('، ')}</p></section>}
-      {stage.execution && <><details className="space-y-3 rounded-lg bg-background-section p-3"><summary className="cursor-pointer text-sm font-medium">روش‌های مجاز اجرا · {cfg.program_enabled ? 'اجرای برنامه' : ''}{cfg.program_enabled && cfg.enabled ? ' و ' : ''}{cfg.enabled ? 'ابزار شخصی' : ''}</summary>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={cfg.program_enabled} onChange={event => configure({ program_enabled: event.target.checked })} />اجرای مراحل برنامه</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={cfg.enabled} disabled={!!source && !source.harness_compatible && !cfg.enabled} onChange={event => configure({ enabled: event.target.checked })} />انجام کار با ابزار شخصی</label>
-        {source && !source.harness_compatible && <p className="text-xs leading-6">{source.harness_reason}</p>}
-        {cfg.enabled && <><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={cfg.requires_source} onChange={event => configure({ requires_source: event.target.checked })} />سورس آماده‌شده برای ابزار شخصی الزامی است</label><p className="text-xs leading-6">برای ابزار شخصی، شرح کار و معیار پذیرش لازم است. مجری هنگام اجرا دستگاه، ابزار و سورس خودش را انتخاب می‌کند.</p></>}
-        {!cfg.program_enabled && !cfg.enabled && <p role="alert" className="text-sm">حداقل یک روش اجرا را فعال کنید.</p>}
-      </details>
-      <details className="space-y-3 rounded-lg bg-background-section p-3"><summary className="cursor-pointer text-sm font-medium">دسترسی همکاران و نقش تصمیم{staleParticipants.length > 0 && ` · ${number(staleParticipants.length)} دسترسی نیازمند بررسی`}</summary>
-        <label className="block text-sm">نقش لازم برای نهایی‌سازی<select className={field} value={stage.decision_role || ''} onChange={event => change({ ...stage, decision_role: event.target.value as FlowStage['decision_role'] || null, finalizer_id: null, finalizer_membership_id: null })}><option value="">همان نهایی‌کنندهٔ منتخب</option><option value="po">مالک محصول (PO)</option><option value="tl">راهبر فنی (TL)</option></select></label>
-        <p className="text-xs leading-6">مسئول اجرا و نهایی‌کننده دسترسی لازم را دارند. دسترسی سایر اعضا فقط برای مشاهده یا بازخورد همین مرحله است.</p>
-        {staleParticipants.length > 0 && <div role="alert" className="space-y-3 rounded-lg border border-divider-regular p-3 text-sm leading-7"><p>عضویت این همکاران تغییر کرده یا دیگر فعال نیست. دسترسی قبلی را حذف کنید؛ برای عضو فعال، دسترسی تازه را از فهرست پایین انتخاب کنید.</p>{staleParticipants.map((person, i) => <div key={person.account_id} className="flex flex-wrap items-center justify-between gap-2"><span>{options.members.find(member => member.account_id === person.account_id)?.name || `همکار قبلی ${number(i + 1)}`}</span><button type="button" className={button} onClick={() => change({ ...stage, participants: participants.filter(value => value.account_id !== person.account_id) })}>حذف دسترسی قبلی</button></div>)}</div>}
-        {options.members.filter(member => ![stage.executor_id, stage.finalizer_id].includes(member.account_id)).map(member => { const person = participants.find(p => p.account_id === member.account_id && p.membership_id === member.membership_id); return <label key={member.membership_id} className="flex flex-wrap items-center justify-between gap-2 text-sm">{member.name}<select className={field} value={person?.actions.includes('feedback') ? 'feedback' : person ? 'view' : ''} onChange={event => change({ ...stage, participants: [...participants.filter(p => p.account_id !== member.account_id), ...(event.target.value ? [{ account_id: member.account_id, membership_id: member.membership_id, actions: event.target.value === 'feedback' ? ['view', 'feedback'] as ('view' | 'feedback')[] : ['view'] as 'view'[] }] : [])] })}><option value="">بدون دسترسی</option><option value="view">مشاهده</option><option value="feedback">مشاهده و بازخورد</option></select></label> })}
-      </details></>}
-      <p className="text-xs leading-6 text-text-tertiary">این تنظیمات فقط برای همین مرحله و نسخهٔ فلو هستند. مجوز طراحی یا انتشار برنامه از اعضای پروژه تعیین می‌شود.</p>
-    </div>
-  </details>
-}
 
 function FlowEditor({ project, value, options, saved, cancel, refreshOptions, updatingOptions, optionsFailed, remoteChanged }: { project: string; value: TeamFlow | null; options: FlowOptions; saved: (value: TeamFlow) => Promise<unknown>; cancel: () => void; refreshOptions: () => unknown; updatingOptions: boolean; optionsFailed: boolean; remoteChanged: boolean }) {
   const [name, setName] = useState(value?.name || '')
   const [description, setDescription] = useState(value?.description || '')
   const [stages, setStages] = useState<FlowStage[]>(() => (value?.draft_stages || []).map(stage => upgradeStage(stage, options)))
+  const [editingStage, setEditingStage] = useState<FlowStage | null>(null)
   const [archiving, setArchiving] = useState(false)
+  const formId = useId()
   const action = useAction()
+  const locked = action.busy || !!editingStage
   const changed = !value || name !== value.name || description !== value.description || JSON.stringify(stages) !== JSON.stringify(value.draft_stages)
   const save = () => { const body = { name, description, stages, expected_revision: value?.revision || 1 }; void action.run({ id: value?.id, body }, async key => saved(await flowApi.save(project, value?.id || null, body, key))) }
   const publish = () => { if (value) void action.run({ publish: value.id, revision: value.revision }, async key => saved(await flowApi.publish(project, value.id, value.revision, key))) }
-  const add = () => setStages([...stages, { key: `step_${crypto.randomUUID().slice(0, 8)}`, title: `مرحلهٔ ${number(stages.length + 1)}`, agent_id: null, app_id: null, workflow_id: null, execution: defaultExecution(), participants: [], executor_id: null, executor_membership_id: null, finalizer_id: null, finalizer_membership_id: null, decision_role: null, inputs: {} }])
+  const add = () => setEditingStage({ key: `step_${crypto.randomUUID().slice(0, 8)}`, title: `مرحلهٔ ${number(stages.length + 1)}`, agent_id: null, app_id: null, workflow_id: null, execution: defaultStageExecution(), participants: [], executor_id: null, executor_membership_id: null, finalizer_id: null, finalizer_membership_id: null, decision_role: null, inputs: {} })
+  const applyStage = (next: FlowStage) => {
+    setStages(current => current.some(stage => stage.key === next.key) ? current.map(stage => stage.key === next.key ? next : stage) : [...current, next])
+    setEditingStage(null)
+  }
   const move = (index: number, offset: number) => { const current = stages[index]; const other = stages[index + offset]; if (!current || !other) return; const result = [...stages]; result[index] = other; result[index + offset] = current; setStages(result) }
-  return <FormDialog open wide title={value ? `ویرایش فلو: ${value.name}` : 'ساخت فلو'} description="فلو، ترتیب همکاری اعضا و برنامه‌ها را مشخص می‌کند. مراحل، مسئولان و ورودی‌ها را تنظیم و پیش‌نویس را ذخیره کنید؛ پس از تکمیل، نسخه‌ای منتشر کنید. انتشار، اجرای خودکار آغاز نمی‌کند و نسخه‌های قبلی را تغییر نمی‌دهد." busy={action.busy} close={cancel}>
-    <form aria-label="ویرایش پیش‌نویس فلو" className="space-y-4" onSubmit={event => { event.preventDefault(); save() }}>
-    {remoteChanged && <p role="alert" className="rounded-lg border border-divider-regular p-3 text-sm leading-7">این فلو پس از بازشدن ویرایشگر تغییر کرده یا از فهرست خارج شده است. تغییرات ذخیره‌نشدهٔ شما حفظ شده‌اند و روی نسخهٔ تازه نوشته نمی‌شوند. پیش از بستن، تغییرات لازم را کپی کنید و سپس ویرایشگر را برای دریافت نسخهٔ تازه دوباره باز کنید.</p>}
-    <fieldset disabled={action.busy || value?.archived} className="space-y-4">
-      <label className="block text-sm">نام فلو<input required maxLength={120} className={field} value={name} onChange={event => setName(event.target.value)} /><FieldHelp>نامی یکتا در همین پروژه، متناسب با مسیر رسیدگی یا همکاری تیم انتخاب کنید.</FieldHelp></label>
-      <label className="block text-sm">توضیح فلو<textarea maxLength={2000} className={field} value={description} onChange={event => setDescription(event.target.value)} /><FieldHelp>مشخص کنید این مسیر برای چه درخواست‌هایی است و پس از طی مراحل چه نتیجه‌ای باید آماده شود.</FieldHelp></label>
-      <div className="rounded-xl bg-background-section p-3 text-sm leading-7"><div className="flex flex-wrap items-center justify-between gap-3"><p>{number(stages.length)} مرحله از حداکثر ۳۰ مرحله</p><button type="button" className={button} disabled={updatingOptions} onClick={() => void refreshOptions()}>{updatingOptions ? 'در حال دریافت…' : 'تازه‌سازی اعضا و برنامه‌ها'}</button></div><p className="text-xs text-text-secondary">{changed ? 'تغییرات ذخیره‌نشده دارید؛ ابتدا پیش‌نویس را ذخیره کنید.' : 'پیش‌نویس ذخیره شده است؛ پس از بررسی مراحل، نسخهٔ تازه منتشر کنید.'}</p></div>
-      {optionsFailed && <p role="alert" className="text-sm leading-7">تازه‌سازی اعضا و برنامه‌ها موفق نبود؛ اطلاعات قبلی و تغییرات شما حفظ شده‌اند. پیش از انتشار دوباره تازه‌سازی کنید.</p>}
-      {stages.map((stage, index) => <StageEditor key={stage.key} stage={stage} index={index} stages={stages} options={options} change={next => setStages(stages.map(value => value.key === stage.key ? next : value))} move={offset => move(index, offset)} remove={() => setStages(stages.filter(value => value.key !== stage.key))} />)}
-      <button type="button" className={button} disabled={stages.length >= 30} onClick={add}>افزودن مرحله</button>
-      <div className="flex flex-wrap gap-3"><button className={primary} disabled={!changed || !name.trim()}>{action.busy ? 'در حال ثبت…' : 'ذخیرهٔ پیش‌نویس'}</button>{value && <button type="button" className={primary} disabled={changed || !stages.length || optionsFailed} onClick={publish}>انتشار نسخهٔ تازه</button>}</div>
-    </fieldset>
-    {value && !value.archived && <div className="space-y-3"><button type="button" className={button} disabled={action.busy} onClick={() => setArchiving(!archiving)}>بایگانی فلو</button>{archiving && <div className="space-y-3"><p className="text-sm">ویرایش و انتشار تازه متوقف می‌شود؛ نسخه‌های قبلی حفظ می‌شوند.</p><button type="button" className={button} disabled={action.busy} onClick={() => action.run({ archive: value.id, revision: value.revision }, async key => saved(await flowApi.archive(project, value.id, value.revision, key)))}>تأیید بایگانی فلو</button></div>}</div>}
-    {action.error && <p role="alert">{action.error}</p>}<button type="button" className={button} disabled={action.busy} onClick={cancel}>بستن ویرایشگر</button>
+  const editingIndex = editingStage ? stages.findIndex(stage => stage.key === editingStage.key) : -1
+  return <FormDialog open wide fixedBody title={value ? `ویرایش فلو: ${value.name}` : 'ساخت فلو'}
+    description="نام و ترتیب مراحل را مشخص کنید. تنظیمات هر مرحله از دکمهٔ «ویرایش مرحله» باز می‌شود."
+    busy={locked} close={cancel} footer={<div className="space-y-3">
+      {action.error && <p role="alert" className="text-sm leading-7 text-text-destructive-secondary">{action.error}</p>}
+      <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className="text-xs leading-6 text-text-secondary">{changed ? 'تغییرات ذخیره‌نشده دارید.' : 'پیش‌نویس ذخیره شده است.'}</p><div className="flex flex-wrap gap-2">
+        <button type="submit" form={formId} className={primary} disabled={locked || !!value?.archived || !changed || !name.trim()}>{action.busy ? 'در حال ثبت…' : 'ذخیرهٔ پیش‌نویس'}</button>
+        {value && <button type="button" className={button} disabled={locked || value.archived || changed || !stages.length || optionsFailed} onClick={publish}>انتشار نسخهٔ تازه</button>}
+        <button type="button" className={button} disabled={locked} onClick={cancel}>بستن</button>
+      </div></div><p className="text-xs leading-6 text-text-tertiary">انتشار نسخهٔ تازه، اجرا را شروع نمی‌کند و نسخه‌ها و اجراهای قبلی را تغییر نمی‌دهد.</p>
+    </div>}>
+    <form id={formId} aria-label="ویرایش پیش‌نویس فلو" className="flex h-full min-h-0 min-w-0 flex-col gap-4" onSubmit={event => { event.preventDefault(); if (!locked) save() }}>
+      {remoteChanged && <p role="alert" className="shrink-0 rounded-lg border border-divider-regular p-3 text-sm leading-7">این فلو پس از بازشدن ویرایشگر تغییر کرده یا از فهرست خارج شده است. تغییرات شما حفظ شده‌اند؛ پیش از بستن آن‌ها را کپی کنید و سپس نسخهٔ تازه را باز کنید.</p>}
+      <fieldset disabled={locked || value?.archived} className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+        <div className="grid shrink-0 gap-4 md:grid-cols-2">
+          <label className="block text-sm">نام فلو<input required maxLength={120} className={field} value={name} onChange={event => setName(event.target.value)} /><FieldHelp>نامی یکتا برای مسیر همکاری تیم انتخاب کنید.</FieldHelp></label>
+          <label className="block text-sm">توضیح فلو<textarea rows={2} maxLength={2000} className={field} value={description} onChange={event => setDescription(event.target.value)} /><FieldHelp>کاربرد این مسیر و نتیجهٔ مورد انتظار را بنویسید.</FieldHelp></label>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-divider-regular pt-3"><h3 className="font-semibold">مراحل فلو <span className="ms-2 text-xs font-normal text-text-tertiary">{number(stages.length)} از ۳۰ مرحله</span></h3><div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={updatingOptions} onClick={() => void refreshOptions()}>{updatingOptions ? 'در حال دریافت…' : 'تازه‌سازی اعضا و برنامه‌ها'}</button><button type="button" className={button} disabled={stages.length >= 30} onClick={add}>افزودن مرحله</button></div></div>
+        {optionsFailed && <p role="alert" className="shrink-0 text-xs leading-6">تازه‌سازی موفق نبود؛ اطلاعات قبلی و تغییرات شما حفظ شده‌اند. پیش از انتشار دوباره تازه‌سازی کنید.</p>}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pe-2">
+          {stages.length ? <ol aria-label="مراحل پیش‌نویس فلو" className="m-0 list-none space-y-3 p-0">{stages.map((stage, index) => <li key={stage.key}><FlowStageRow stage={stage} index={index} total={stages.length} options={options} edit={() => setEditingStage(stage)} move={offset => move(index, offset)} remove={() => setStages(current => current.filter(item => item.key !== stage.key))} /></li>)}</ol> : <div className="rounded-xl border border-dashed border-divider-regular p-6 text-center"><p className="text-sm font-medium">اولین مرحلهٔ همکاری را اضافه کنید</p><p className="mt-2 text-xs leading-6 text-text-tertiary">برنامه، ورودی‌ها، روش اجرا و دسترسی‌ها را در تنظیمات همان مرحله مشخص می‌کنید.</p><button type="button" className={`${button} mt-4`} onClick={add}>افزودن مرحله</button></div>}
+        </div>
+      </fieldset>
+      {value && !value.archived && <details open={archiving} onToggle={event => setArchiving(event.currentTarget.open)} className="shrink-0 border-t border-divider-regular pt-3"><summary className="cursor-pointer text-xs text-text-tertiary">بایگانی فلو</summary><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><p className="text-xs leading-6">ویرایش و انتشار تازه متوقف می‌شود. تغییرات ذخیره‌نشده اعمال نمی‌شوند و نسخه‌های قبلی حفظ می‌شوند.</p><button type="button" className={`${button} text-text-destructive-secondary`} disabled={locked} onClick={() => action.run({ archive: value.id, revision: value.revision }, async key => saved(await flowApi.archive(project, value.id, value.revision, key)))}>تأیید بایگانی فلو</button></div></details>}
     </form>
+    {editingStage && <FlowStageEditor key={editingStage.key} value={editingStage} index={editingIndex < 0 ? stages.length : editingIndex} stages={stages} options={options} apply={applyStage} close={() => setEditingStage(null)} refreshOptions={refreshOptions} updatingOptions={updatingOptions} optionsFailed={optionsFailed} />}
   </FormDialog>
 }
 
