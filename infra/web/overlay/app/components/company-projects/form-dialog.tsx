@@ -29,7 +29,7 @@ export default function FormDialog({ open, title, description, busy = false, wid
     {footer && <div className="mt-4 shrink-0 border-t border-divider-regular pt-4">{footer}</div>}
     <DialogClose render={<IconButton aria-label="بستن" size="lg" disabled={busy} className="absolute inset-e-6 top-6"><span aria-hidden className="i-ri-close-line size-4" /></IconButton>} />
   </>
-  const className = `${fixedBody ? 'flex h-[min(48rem,90dvh)] max-h-[90dvh] flex-col overflow-hidden' : 'max-h-[90dvh] overflow-y-auto overscroll-contain'} w-[calc(100vw-2rem)] ${wide ? 'max-w-5xl' : 'max-w-2xl'}`
+  const className = `${fixedBody ? 'flex h-[min(58rem,94dvh)] max-h-[94dvh] flex-col overflow-hidden' : 'max-h-[90dvh] overflow-y-auto overscroll-contain'} w-[calc(100vw-2rem)] ${wide ? (fixedBody ? 'max-w-7xl' : 'max-w-5xl') : 'max-w-2xl'}`
   return <Dialog open={open} onOpenChange={next => { if (!next && !busy) close() }}>
     {keepMounted ? <DialogPortal keepMounted><DialogBackdrop hidden={!open} /><DialogPopup hidden={!open} dir="rtl" className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 ${className}`}>{content}</DialogPopup></DialogPortal> : <DialogContent dir="rtl" className={className}>{content}</DialogContent>}
   </Dialog>
