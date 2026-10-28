@@ -148,3 +148,28 @@ class StageConfigTests(StageFixture):
         for action in ('edit_definition', 'publish_definition'):
             with self.assertRaises(Forbidden):
                 agent_execution.native_permission(self.session, legacy['app_id'], self.editor.id, action)
+
+    def test_legacy_conversion_preserves_visibility_without_global_execution_grants(self):
+        scope = dict(project_id=self.a['id'], workspace_id=self.workspace_a.id)
+        row = agents.load(self.session, scope, self.agent_ids[0])
+        grants = agents.grant_snapshot(self.session, row)['grants']
+        grants.append(dict(account_id=self.admin.id,
+            membership_id=access.membership(self.session, self.workspace_a.id, self.admin.id).id, actions=['run']))
+        agents.set_grants(self.session, self.a['id'], self.workspace_a.id, self.project_owner.id, row['id'],
+            dict(expected_revision=row['acl_revision'], grants=grants), str(uuid4()))
+        reads = []
+        def observe(conn, cursor, statement, parameters, context, executemany):
+            if statement.startswith('SELECT company_team_agent_grants.action'):
+                reads.append(1)
+        sa.event.listen(self.connection, 'before_cursor_execute', observe)
+        try:
+            options = flows.options(self.session, self.a['id'], self.workspace_a.id, self.editor.id)
+        finally:
+            sa.event.remove(self.connection, 'before_cursor_execute', observe)
+        print('Legacy per-member grant reads:', len(reads))
+        legacy = next(value for value in options['agents'] if value['id'] == row['id'])
+        people = {person['account_id']: person for person in legacy['participants']}
+        self.assertEqual(people[self.admin.id]['actions'], ['view'])
+        self.assertEqual(people[self.project_owner.id]['actions'], ['view'])
+        self.assertIn(self.admin.id, legacy['runners'])
+        self.assertLessEqual(len(reads), len(options['agents']) + 1)

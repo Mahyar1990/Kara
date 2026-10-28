@@ -119,32 +119,54 @@ def get_version(session, project_id, workspace_id, actor_id, flow_id, version_id
     return version(session, scope(session, project_id, workspace_id, actor_id), flow_id, version_id)
 
 
+def legacy_options(session, scoped, actor_id, members):
+    """Read conversion hints once; never grant standalone access to a new stage."""
+    definitions = agents.definitions(session)
+    grants = agents.tables(session)[0]
+    memberships = {member['account_id']: member['membership_id'] for member in members}
+    actions = {}
+    for grant in session.execute(sa.select(grants).where(*(grants.c[k] == v for k, v in scoped.items()))).mappings():
+        if memberships.get(grant['account_id']) == grant['membership_id']:
+            actions.setdefault(grant['agent_id'], {}).setdefault(grant['account_id'], set()).add(grant['action'])
+    manager = access.can_manage_members(session, scoped['workspace_id'], actor_id)
+    rows = session.execute(sa.select(definitions).where(definitions.c.deleted_at.is_(None),
+        definitions.c.archived.is_(False), definitions.c.execution_scope == 'program',
+        *(definitions.c[k] == v for k, v in scoped.items())).order_by(definitions.c.created_at, definitions.c.id)).mappings()
+    from company_projects import harness
+    result = []
+    for agent in rows:
+        allowed = actions.get(agent['id'], {})
+        if not manager and not allowed.get(str(actor_id)):
+            continue
+        app, workflow = session.get(App, agent['app_id']), session.get(Workflow, agent['workflow_id'])
+        cfg = harness.policy(session, agent)
+        participants = []
+        for member in members:
+            permissions = allowed.get(member['account_id'], set())
+            # Legacy execution/finalization also conferred view. Preserve that
+            # visibility in the new stage without delegating either action.
+            if permissions & {'view', 'run', 'feedback', 'finalize'}:
+                participants.append(dict(account_id=member['account_id'], membership_id=member['membership_id'],
+                    actions=['view', 'feedback'] if 'feedback' in permissions else ['view']))
+        result.append({k: agent[k] for k in ('id', 'name', 'app_id', 'workflow_id', 'input_contract', 'output_contract')} | dict(
+            app_name=app.name if app else agent['name'], workflow_version=(workflow.marked_name or workflow.version) if workflow else None,
+            runners=[m['account_id'] for m in members if 'run' in allowed.get(m['account_id'], set())],
+            finalizers=[m['account_id'] for m in members if 'finalize' in allowed.get(m['account_id'], set())],
+            execution={k: cfg[k] for k in ('enabled', 'instructions', 'requires_source')} | dict(program_enabled=True),
+            participants=participants))
+    return result
+
+
 def options(session, project_id, workspace_id, actor_id):
-    scope(session, project_id, workspace_id, actor_id, write=True)
+    scoped = scope(session, project_id, workspace_id, actor_id, write=True)
     members = []
     for account, join in session.execute(sa.select(Account, TenantAccountJoin).join(TenantAccountJoin,
             TenantAccountJoin.account_id == Account.id).where(TenantAccountJoin.tenant_id == str(workspace_id),
                 Account.status == AccountStatus.ACTIVE).order_by(Account.name)):
         roles = team.get_roles(session, project_id, workspace_id, actor_id, account.id)['roles']
         members.append(dict(account_id=account.id, membership_id=join.id, name=account.name, roles=roles))
-    values = agents.list_agents(session, project_id, workspace_id, actor_id)['data']
-    result = []
-    for value in values:
-        if value['archived']:
-            continue
-        agent = agents.load(session, dict(project_id=str(project_id), workspace_id=str(workspace_id)), value['id'])
-        result.append({k: value[k] for k in ('id', 'name', 'app_id', 'app_name', 'workflow_id', 'workflow_version', 'input_contract', 'output_contract')} | {
-            'runners': [m['account_id'] for m in members if 'run' in agents.permissions(session, agent, m['account_id'])],
-            'finalizers': [m['account_id'] for m in members if 'finalize' in agents.permissions(session, agent, m['account_id'])]})
-    # Legacy rows are read only conversion hints for drafts created before this feature.
+    result = legacy_options(session, scoped, actor_id, members)
     from company_projects import harness
-    for value in result:
-        agent = agents.load(session, dict(project_id=str(project_id), workspace_id=str(workspace_id)), value['id'])
-        value['execution'] = dict(harness.policy(session, agent), program_enabled=True)
-        value['execution'] = {k: value['execution'][k] for k in ('program_enabled', 'enabled', 'instructions', 'requires_source')}
-        value['participants'] = [dict(account_id=m['account_id'], membership_id=m['membership_id'],
-            actions=[a for a in ('view', 'feedback') if a in agents.permissions(session, agent, m['account_id'])])
-            for m in members if set(agents.permissions(session, agent, m['account_id'])) & {'view', 'feedback'}]
     from company_projects.controller import visible_filters
     filters = visible_filters(session, str(workspace_id), str(actor_id))
     programs = []
