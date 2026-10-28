@@ -65,7 +65,7 @@ def set_binding(s,project,workspace,actor,data):
 
 def register(s,runner,data):
     agents.body(data,('protocol','capabilities'))
-    if data['protocol']!=PROTOCOL or not isinstance(data['capabilities'],list) or set(data['capabilities'])-{'workflow-v2','python3','javascript','http','source-v1'}: raise BadRequest('نسخه یا قابلیت Runner معتبر نیست.')
+    if data['protocol']!=PROTOCOL or not isinstance(data['capabilities'],list) or set(data['capabilities'])-{'workflow-v2','python3','javascript','http','source-v1','node-routing-v1'}: raise BadRequest('نسخه یا قابلیت Runner معتبر نیست.')
     t=table(s,'runner_capabilities'); values=dict(device_id=str(runner['id']),protocol=PROTOCOL,capabilities=sorted(set(data['capabilities'])),updated_at=agents.now())
     if s.scalar(sa.select(t.c.device_id).where(t.c.device_id==str(runner['id']))): s.execute(t.update().where(t.c.device_id==str(runner['id'])).values(**values))
     else: s.execute(t.insert().values(**values))
@@ -79,44 +79,67 @@ def project_key(s,workspace,actor):
     if not project: raise Forbidden('اجرای محلی به پروژهٔ مستقل نیاز دارد.')
     return team.scope(s,project['id'],workspace,actor)
 
-def build_snapshot(s,workflow,actor,inputs):
+def build_snapshot(s,workflow,actor,inputs,*,trusted=False):
     from company_projects import runtime_models
     from kara_source_runner.workflow_contract import validate_graph
     from company_projects.personal_agent_sources import validate
     validate(s,workflow,actor)
     graph=deepcopy(workflow.graph_dict)
     # Selection resolves only metadata and the actor's connection. No model inference here.
-    selection=runtime_models.select(s,workflow,actor,inputs.get(runtime_models.INPUT))
+    selection=inputs.get(runtime_models.FROZEN) if trusted else None
+    if selection:
+        runtime_models.execution_workflow(workflow,selection,actor)
+    else:
+        selection=runtime_models.select(s,workflow,actor,inputs.get(runtime_models.INPUT))
     models={}
     for node in graph.get('nodes',[]):
         d=node.get('data',{})
         if d.get('type')=='llm':
             m=d['model']
-            row=personal_models.load(s,actor,selection['connection_id']) if selection else personal_models.resolve(s,actor,m['provider'],m['name'],'llm')
+            chosen=selection['models'][node['id']] if selection and selection.get('version')==2 else selection
+            row=personal_models.load(s,actor,chosen['connection_id']) if chosen else personal_models.resolve(s,actor,m['provider'],m['name'],'llm')
             models[node['id']]=dict(id=str(row['id']),revision=row['revision'],provider=row['provider'],model_name=row['model_name'],model_type='llm')
-            d['model']=dict(m,provider=row['provider'],name=row['model_name'])
+            d['model']=dict(m,provider=row['provider'],name=row['model_name'],**({'mode':'chat'} if chosen else {}))
         if d.get('type')=='start':
             d['variables']=[v for v in d.get('variables',[]) if v.get('variable')!=runtime_models.INPUT]
             if selection:d['kara_runtime_model_used']=deepcopy(selection)
     try: requirements=validate_graph(graph)
     except ValueError as exc: raise BadRequest('این نسخهٔ Runner تعریف برنامه را پشتیبانی نمی‌کند: '+str(exc)) from None
     knowledge=knowledge_spec(s,workflow,actor,graph,models)
-    return dict(protocol=PROTOCOL,graph=graph,models=models,knowledge=knowledge,requirements=requirements,workflow_digest=agents.fingerprint(workflow))
+    from company_projects.execution_plan import decode
+    from company_projects import node_routing
+    choice=decode(inputs.get(runtime_models.INPUT))
+    routes=node_routing.validate_choices(s,workflow,actor,choice) if choice else {}
+    if routes:
+        coordinator=next(iter(routes.values()))['device_id']
+        requirements=['workflow-v2','node-routing-v1']
+        from company_projects.execution_plan import describe
+        for node in describe(graph)['nodes']:
+            if node['runner_required'] and routes[node['id']]['device_id']==coordinator:
+                requirements.extend(node['requirements'])
+        for node in graph['nodes']:
+            if node['data']['type']=='start': node['data']['kara_runtime_runners_used']=deepcopy(routes)
+    return dict(protocol=PROTOCOL,graph=graph,models=models,knowledge=knowledge,requirements=sorted(set(requirements)),routes=routes,workflow_digest=agents.fingerprint(workflow))
 
-def enqueue(s,app,workflow,actor,inputs,*,identity=None,attempt=None,root_node_id=None,trigger_log_id=None,preview=None,triggered_from='app-run'):
+def enqueue(s,app,workflow,actor,inputs,*,identity=None,attempt=None,root_node_id=None,trigger_log_id=None,preview=None,triggered_from='app-run',automatic=False):
     key=project_key(s,app.tenant_id,actor.id); join=team.member(s,app.tenant_id,actor.id)
     identity=identity or str(uuid4()); t=table(s,'local_executions')
     old=s.execute(sa.select(t).where(t.c.id==str(identity))).mappings().first()
     if old:
         if str(old['account_id'])!=str(actor.id) or str(old['workflow_id'])!=str(workflow.id): raise Conflict('شناسهٔ اجرا قبلاً استفاده شده است.')
         return dict(old)
-    snapshot=build_snapshot(s,workflow,actor.id,inputs)
+    from company_projects import runtime_models
+    from company_projects.execution_plan import require_choices
+    if not attempt:
+        if runtime_models.FROZEN in inputs: raise BadRequest('انتخاب ثبت‌شده قابل ارسال نیست.')
+        if not automatic: require_choices(workflow.graph_dict,inputs.get(runtime_models.INPUT))
+    snapshot=build_snapshot(s,workflow,actor.id,inputs,trusted=bool(attempt))
     if len(json.dumps(snapshot,ensure_ascii=False).encode())>8388608:raise BadRequest('تعریف و دانش این اجرا بیش از بودجهٔ واگذاری است.')
     snapshot['root_node_id']=root_node_id
     snapshot['triggered_from']=triggered_from
     if preview:snapshot['preview']=preview
-    selected=binding(s,key['project_id'],key['workspace_id'],actor.id)
-    now=agents.now(); values=dict(id=str(identity),**key,account_id=str(actor.id),membership_id=join.id,device_id=selected['device_id'] if selected else None,source_job_id=selected['source_job_id'] if selected else None,app_id=app.id,workflow_id=workflow.id,team_attempt_id=attempt['id'] if attempt else None,trigger_log_id=trigger_log_id,snapshot=snapshot,snapshot_digest=agents.digest(snapshot),inputs={k:v for k,v in inputs.items() if k!='__kara_model_connection'},state='pending',created_at=now,event_sequence=0)
+    selected=next(iter(snapshot['routes'].values())) if snapshot.get('routes') else binding(s,key['project_id'],key['workspace_id'],actor.id)
+    now=agents.now(); values=dict(id=str(identity),**key,account_id=str(actor.id),membership_id=join.id,device_id=selected['device_id'] if selected else None,source_job_id=selected['source_job_id'] if selected else None,app_id=app.id,workflow_id=workflow.id,team_attempt_id=attempt['id'] if attempt else None,trigger_log_id=trigger_log_id,snapshot=snapshot,snapshot_digest=agents.digest(snapshot),inputs=runtime_models.business_inputs(inputs),state='pending',created_at=now,event_sequence=0)
     s.execute(t.insert().values(**values))
     return values
 
@@ -154,6 +177,8 @@ def validate_access(s,job):
         from company_projects.controller import visible_filters
         filters=visible_filters(s,job['workspace_id'],job['account_id'])
         if not filters or not s.scalar(sa.select(App.id).where(App.id==app.id,*filters)): raise Forbidden('مجوز برنامه لغو شده است.')
+    from company_projects.node_routing import check_routes
+    check_routes(s,job)
     for selected in job['snapshot']['models'].values():
         row=personal_models.load(s,job['account_id'],selected['id'])
         if row['revision']!=selected['revision']: raise Conflict('اتصال مدل تغییر کرده است؛ اجرای تازه بسازید.')
@@ -168,6 +193,8 @@ def validate_access(s,job):
 def finish(s,job,state,result):
     t=table(s,'local_executions'); now=agents.now()
     s.execute(t.update().where(t.c.id==job['id']).values(state=state,result=result,finished_at=now,lease_until=None))
+    rpc=table(s,'local_rpc')
+    s.execute(rpc.update().where(rpc.c.method=='workflow-node',rpc.c.payload['parent_id'].astext==str(job['id']),rpc.c.state.in_(('pending','running'))).values(state='cancelled',result={'error':'parent_finished'},finished_at=now,lease_until=None))
     run=s.get(WorkflowRun,job['id'])
     if run:
         run.status='succeeded' if state=='succeeded' else 'stopped' if state in ('cancelled','interrupted') else 'failed'
@@ -226,7 +253,7 @@ def claim(s,runner):
             attempts=agents.tables(s)[2]; s.execute(attempts.update().where(attempts.c.id==job['team_attempt_id'],attempts.c.status=='pending').values(status='running',started_at=now))
         workflow=s.get(Workflow,job['workflow_id'])
         s.add(WorkflowRun(id=job['id'],tenant_id=job['workspace_id'],app_id=job['app_id'],workflow_id=workflow.id,type=workflow.type,triggered_from=job['snapshot'].get('triggered_from','app-run'),version=workflow.version,graph=json.dumps(job['snapshot']['graph'],ensure_ascii=False),inputs=json.dumps(job['inputs'],ensure_ascii=False),status='running',created_by_role='account',created_by=job['account_id'],created_at=utc_naive(now)))
-        return dict(job=dict(id=job['id'],actor_id=job['account_id'],app_id=job['app_id'],workflow_id=job['workflow_id'],project_id=job['project_id'],source_job_id=job['source_job_id'],snapshot_digest=job['snapshot_digest'],inputs=job['inputs'],**job['snapshot']))
+        return dict(job=dict(id=job['id'],device_id=str(job['device_id']),actor_id=job['account_id'],app_id=job['app_id'],workflow_id=job['workflow_id'],project_id=job['project_id'],source_job_id=job['source_job_id'],snapshot_digest=job['snapshot_digest'],inputs=job['inputs'],**job['snapshot']))
     return dict(job=None)
 
 def running(s,runner,identity):
@@ -241,7 +268,10 @@ def heartbeat(s,runner,identity):
 def credentials(s,runner,identity):
     job=running(s,runner,identity)
     workflow=s.get(Workflow,job['workflow_id'])
-    return dict(models={key: dict(**selected,credentials=personal_models.decrypt(personal_models.load(s,job['account_id'],selected['id']))) for key,selected in job['snapshot']['models'].items()},environment={v.name:v.value for v in workflow.environment_variables})
+    from company_projects.node_routing import model_keys
+    routes=job['snapshot'].get('routes')
+    keys=model_keys(job['snapshot'],[key for key,route in routes.items() if route['device_id']==str(runner['id'])]) if routes else set(job['snapshot']['models'])
+    return dict(models={key: dict(**selected,credentials=personal_models.decrypt(personal_models.load(s,job['account_id'],selected['id']))) for key,selected in job['snapshot']['models'].items() if key in keys},environment={v.name:v.value for v in workflow.environment_variables})
 
 def events(s,runner,identity,data):
     agents.body(data,('sequence','event')); job=running(s,runner,identity)
@@ -364,8 +394,11 @@ def check_dataset(s,dataset,actor,workspace):
 
 
 def knowledge_page(s,runner,identity,data):
+    return knowledge_for_job(s,running(s,runner,identity),data)
+
+def knowledge_for_job(s,job,data):
     from models.dataset import Dataset,Document,DocumentSegment
-    agents.body(data,('node_id','cursor')); job=running(s,runner,identity)
+    agents.body(data,('node_id','cursor'))
     spec=job['snapshot'].get('knowledge',{}).get(data['node_id'])
     cursor=data['cursor']
     if spec is None or type(cursor) is not int or cursor<0 or cursor>20000: raise BadRequest('درخواست دانش معتبر نیست.')

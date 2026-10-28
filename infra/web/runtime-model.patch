@@ -197,7 +197,7 @@
      [onChange, payload.variable],
    )
  
-+  if (payload.variable === RUNTIME_MODEL_INPUT) return <div className={className}><p className="mb-2 text-sm font-medium">مدل اجرای برنامه</p><RuntimeModelPicker value={value || ''} onChange={onChange} capabilities={payload.options || []} /></div>
++  if (payload.variable === RUNTIME_MODEL_INPUT) return <div className={className}><p className="mb-2 text-sm font-medium">مدل‌ها و Runnerهای هر گام</p><RuntimeModelPicker value={value || ''} onChange={onChange} capabilities={payload.options || []} /></div>
 +
    return (
      <div className={cn(className)}>
@@ -244,7 +244,7 @@
  
 +  const runtimePolicy = useRuntimeProgramPolicy()
 +  const programRuntimeModel = !!runtimePolicy
-+  const runtimeModel = programRuntimeModel && [BlockEnum.LLM, BlockEnum.Iteration, BlockEnum.Loop].includes(nodeType!)
++  const runtimeModel = programRuntimeModel && nodeType !== BlockEnum.HumanInput
 +  const [modelConnection, setModelConnection] = useState('')
    const isHumanInput = nodeType === BlockEnum.HumanInput
    const showBackButton = filteredExistVarForms.length > 0
@@ -330,7 +330,7 @@
 +++ b/web/app/components/workflow/panel/inputs-panel.tsx
 @@ -1,3 +1,5 @@
 +import { useRuntimeProgramPolicy } from '@/app/components/company-projects/runtime-model-config'
-+import { RUNTIME_MODEL_INPUT } from '@/utils/company-runtime-model'
++import { RUNTIME_MODEL_INPUT, runtimeModelInput } from '@/utils/company-runtime-model'
  import type { StartNodeType } from '../nodes/start/types'
  import { Button } from '@langgenius/dify-ui/button'
  import { memo, useCallback, useMemo } from 'react'
@@ -347,7 +347,7 @@
  
    const variables = useMemo(() => {
 -    const data = startVariables || []
-+    const data = (startVariables || []).filter(item => item.variable !== RUNTIME_MODEL_INPUT || nodes.some(node => node.data.type === BlockEnum.LLM)).map(item => item.variable === RUNTIME_MODEL_INPUT ? { ...item, options: runtimePolicy?.capabilities || [] } : item)
++    const data = [...(runtimePolicy ? [{ ...runtimeModelInput(), required: true, options: runtimePolicy.capabilities }] : []), ...(startVariables || []).filter(item => item.variable !== RUNTIME_MODEL_INPUT)]
      if (fileSettings?.image?.enabled) {
        return [
          ...data,

@@ -170,6 +170,18 @@ class LocalExecutionComplete(Resource):
 class LocalExecutionKnowledge(Resource):
     def post(self,execution_id): return device_call(local_execution.knowledge_page,execution_id,source_payload())
 
+@console_ns.route('/company/source-runner/execution/<uuid:execution_id>/node')
+class LocalExecutionNode(Resource):
+    def post(self,execution_id):
+        from company_projects.node_routing import request as delegate
+        return device_call(delegate,execution_id,execution_payload())
+
+@console_ns.route('/company/source-runner/rpc/<uuid:execution_id>/knowledge')
+class LocalNodeKnowledge(Resource):
+    def post(self,execution_id):
+        from company_projects.node_routing import knowledge
+        return device_call(knowledge,execution_id,source_payload())
+
 from company_projects import local_rpc
 
 def execution_payload():

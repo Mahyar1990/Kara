@@ -115,7 +115,7 @@ def enqueue_trigger(s,user,app,workflow,trigger_data,trigger_log):
     if not isinstance(user,Account): raise Forbidden('اتوماسیون به حساب شخصی و Runner آن نیاز دارد.')
     from company_projects.personal_model_runtime import require_account_execution
     require_account_execution(app.tenant_id,user)
-    job=local.enqueue(s,app,workflow,user,dict(trigger_data.inputs),root_node_id=trigger_data.root_node_id,trigger_log_id=trigger_log.id)
+    job=local.enqueue(s,app,workflow,user,dict(trigger_data.inputs),root_node_id=trigger_data.root_node_id,trigger_log_id=trigger_log.id,automatic=True)
     trigger_log.celery_task_id=job['id']; trigger_log.workflow_run_id=job['id']; s.commit()
     from services.workflow.entities import AsyncTriggerResponse
     return AsyncTriggerResponse(workflow_trigger_log_id=trigger_log.id,task_id=job['id'],status='queued',queue='local-runner')

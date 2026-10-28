@@ -43,7 +43,7 @@ def main():
         harness_runtime.flush(client,config,args.root)
         registered=harness_runtime.profiles(args.harness_config,args.allow_harness)
         client.post('harness/register',dict(profiles=harness_runtime.registration(registered)))
-        capabilities=['workflow-v2','http','source-v1']
+        capabilities=['workflow-v2','http','source-v1','node-routing-v1']
         backend=args.code_backend
         if backend=='auto':backend='docker' if shutil.which('docker') else 'process'
         if backend=='process' and args.allow_local_code:

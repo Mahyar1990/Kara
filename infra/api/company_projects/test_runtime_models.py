@@ -208,14 +208,19 @@ class RuntimeStageTests(StageFixture):
 
     def test_runtime_stage_choice_is_separate_from_immutable_business_handoff(self):
         selected = PersonalModelTests.save_connection(self)
+        from company_projects import local_execution as local, source_code as source
+        code = source.pairing(self.session, self.editor.id, dict(name='Stage device'))['code']
+        device = source.authenticate(self.session, source.pair(self.session, dict(code=code))['secret'])
+        local.register(self.session, device, dict(protocol=2, capabilities=['workflow-v2', 'node-routing-v1']))
+        choice = json.dumps(dict(version=2, models={'llm': selected['id']}, runners={'llm': dict(device_id=device['id'], source_job_id=None)}))
         stage = self.get()
         self.assertIsNotNone(stage['runtime_model'])
         self.assertNotIn(runtime.INPUT, stage['preview_inputs'])
         row = stages.mutate(self.session, self.a['id'], self.workspace_a.id, self.editor.id,
-            self.inst['id'], stage['id'], 'run', dict(expected_revision=stage['revision'], model_connection_id=selected['id']), str(uuid4()))
+            self.inst['id'], stage['id'], 'run', dict(expected_revision=stage['revision'], model_connection_id=choice), str(uuid4()))
         attempts = agents.tables(self.session)[2]
         attempt = self.session.execute(sa.select(attempts).where(attempts.c.id == row['active_attempt_id'])).mappings().one()
-        self.assertEqual(attempt['inputs'][runtime.INPUT], selected['id'])
+        self.assertEqual(json.loads(attempt['inputs'][runtime.INPUT])['models']['llm'], selected['id'])
         self.assertEqual(runtime.business_inputs(attempt['inputs']), stage['preview_inputs'])
         self.assertIsNotNone(agent_execution.claim(self.session, attempt['id']))
         self.assertEqual(stages.validate_attempt(self.session, attempt)['id'], stage['id'])

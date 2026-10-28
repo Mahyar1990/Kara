@@ -24,9 +24,10 @@ def compare(value,op,expected):
     raise ExecutionFailure('unsupported_definition')
 
 class WorkflowRuntime:
-    def __init__(self,job,secrets,code,knowledge,event,cancelled):
+    def __init__(self,job,secrets,code,knowledge,event,cancelled,delegate=None):
         validate_graph(job['graph']); self.job=job; self.secrets=secrets; self.code=code; self.knowledge=knowledge; self.event=event; self.cancelled=cancelled
         self.pool={'sys':dict(workflow_run_id=job['id'],workflow_id=job.get('workflow_id',''),timestamp=int(time.time()),query=job.get('inputs',{}).get('query',''),user_id=job.get('actor_id',''),app_id=job.get('app_id',''),files=[]),'env':secrets.get('environment',{})}; self.tokens=0; self.steps=0
+        self.delegate=delegate
     def get(self,path,default=None):
         if not isinstance(path,list) or not path: return default
         value=self.pool
@@ -94,6 +95,10 @@ class WorkflowRuntime:
         return dict(outputs=result,total_steps=1,total_tokens=self.tokens)
 
     def node(self,identity,data):
+        if self.delegate and identity in self.job.get('routes', {}) and self.job['routes'][identity]['device_id'] != self.job.get('device_id'):
+            result=self.delegate(identity,{k:v for k,v in self.pool.items() if k!='env'})
+            self.tokens+=result['total_tokens']
+            return result['output'],result['branch']
         kind=data['type']
         if kind in ('start','trigger-schedule','trigger-webhook'):
             values={}

@@ -89,6 +89,9 @@ def load(s,identity,runner=None,actor=None,lock=False):
 def access(s,row):
     team.scope(s,row['project_id'],row['workspace_id'],row['account_id'])
     if str(team.member(s,row['workspace_id'],row['account_id']).id)!=str(row['membership_id']):raise Forbidden('عضویت اجرا تغییر کرده است.')
+    if row['method']=='workflow-node':
+        from company_projects.node_routing import parent
+        parent(s,row)
     if not row['connection_id']:return None
     if row['connection_kind']=='model':connection=personal_models.load(s,row['account_id'],row['connection_id'])
     else:
@@ -114,12 +117,17 @@ def claim(s,runner):
     rows=s.execute(sa.select(t).where(t.c.device_id==str(runner['id']),t.c.account_id==str(runner['account_id']),t.c.state=='pending').order_by(t.c.created_at).with_for_update(skip_locked=True).limit(20)).mappings().all()
     for original in rows:
         row=dict(original)
+        if row['method']=='workflow-node' and 'node-routing-v1' not in current['capabilities']:continue
         if row['method']=='raw-code' and row['payload']['language'] not in current['capabilities']:continue
         try:access(s,row)
         except (Forbidden,Conflict,NotFound):
             s.execute(t.update().where(t.c.id==row['id']).values(state='failed',finished_at=agents.now(),result={'error':'access_changed'}));continue
         now=agents.now();s.execute(t.update().where(t.c.id==row['id']).values(state='running',started_at=now,lease_until=now+timedelta(seconds=90)))
-        return dict(job=dict(id=row['id'],kind='rpc',method=row['method'],payload=row['payload'],project_id=row['project_id']))
+        job=dict(id=row['id'],kind='rpc',method=row['method'],payload=row['payload'],project_id=row['project_id'])
+        if row['method']=='workflow-node':
+            from company_projects.node_routing import claim_payload
+            job.update(claim_payload(s,row))
+        return dict(job=job)
     return dict(job=None)
 
 def running(s,runner,identity):
@@ -129,6 +137,9 @@ def running(s,runner,identity):
 
 def credentials(s,runner,identity):
     row=running(s,runner,identity);connection=access(s,row)
+    if row['method']=='workflow-node':
+        from company_projects.node_routing import secrets
+        return secrets(s,row)
     if not connection:return dict(connection=None)
     if row['connection_kind']=='model':return dict(connection=dict(id=str(connection['id']),revision=connection['revision'],provider=connection['provider'],model_name=connection['model_name'],model_type=connection['model_type'],credentials=personal_models.decrypt(connection)))
     from company_projects import jira_connections,gitlab_connections
@@ -140,7 +151,11 @@ def heartbeat(s,runner,identity):
 
 def complete(s,runner,identity,data):
     agents.body(data,('state','value','error'));row=load(s,identity,runner,lock=True)
-    if data['state'] not in ('succeeded','failed') or data['error'] not in (None,'execution_failed','model_request_failed','unsupported_definition','code_failed','network_failed'):raise BadRequest('نتیجهٔ درخواست معتبر نیست.')
+    if data['state'] not in ('succeeded','failed') or data['error'] not in (None,'execution_failed','model_request_failed','unsupported_definition','code_failed','network_failed','invalid_output','knowledge_failed'):raise BadRequest('نتیجهٔ درخواست معتبر نیست.')
+    if row['method']=='workflow-node' and data['state']=='succeeded':
+        value=data['value']
+        if data['error'] is not None or not isinstance(value,dict) or set(value)!={'output','branch','total_tokens'} or not isinstance(value['output'],dict) or value['branch'] is not None or type(value['total_tokens']) is not int or not 0<=value['total_tokens']<=100000000:
+            raise BadRequest('نتیجهٔ گام معتبر نیست.')
     if len(json.dumps(data,ensure_ascii=False).encode())>16777216:raise BadRequest('حجم نتیجه بیش از حد مجاز است.')
     if row['state'] in ('succeeded','failed'):
         if row['state']==data['state'] and row['result']==dict(value=data['value'],error=data['error']):return dict(recorded=True)

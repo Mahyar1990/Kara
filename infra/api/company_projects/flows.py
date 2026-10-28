@@ -167,6 +167,7 @@ def options(session, project_id, workspace_id, actor_id):
         members.append(dict(account_id=account.id, membership_id=join.id, name=account.name, roles=roles))
     result = legacy_options(session, scoped, actor_id, members)
     from company_projects import harness
+    from company_projects.execution_plan import describe
     from company_projects.controller import visible_filters
     filters = visible_filters(session, str(workspace_id), str(actor_id))
     programs = []
@@ -185,7 +186,7 @@ def options(session, project_id, workspace_id, actor_id):
         reason = harness.compatible(session, dict(workflow_id=workflow.id, workflow_digest=agents.fingerprint(workflow)))
         programs.append(dict(app_id=app.id, app_name=app.name, workflow_id=workflow.id,
             version=workflow.marked_name or workflow.version, input_contract=inputs, output_contract=outputs,
-            harness_compatible=reason is None, harness_reason=reason))
+            execution_plan=describe(workflow.graph_dict), harness_compatible=reason is None, harness_reason=reason))
     return dict(agents=result, programs=programs, members=members)
 
 

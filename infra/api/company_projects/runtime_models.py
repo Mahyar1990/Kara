@@ -1,5 +1,6 @@
 """Resolve a declared program model input into an ephemeral, account-bound graph."""
 from copy import deepcopy
+import json
 import math
 from uuid import UUID
 
@@ -14,6 +15,7 @@ from graphon.model_runtime.entities.model_entities import ModelType
 from models.workflow import Workflow
 
 INPUT = '__kara_model_connection'
+FROZEN = '__kara_execution_selection'
 EXTRA = 'kara_runtime_model'
 PROVIDER = 'kara/runtime'
 CAPABILITIES = {'json', 'tools', 'vision'}
@@ -62,20 +64,25 @@ def llm_nodes(graph):
 
 
 def form_variables(graph, variables):
-    declared = policy(graph)
+    from company_projects.execution_plan import describe, PREFIX
     result = deepcopy(variables)
-    if declared is not None and not llm_nodes(graph):
+    if any(n.get('data', {}).get('kara_runtime_model_used') for n in graph.get('nodes', [])):
         return [item for item in result if item.get('variable') != INPUT]
+    plan = describe(graph)
+    if not any(n['runner_required'] for n in plan['nodes']):
+        return [item for item in result if item.get('variable') != INPUT]
+    if not any(item.get('variable') == INPUT for item in result):
+        result.insert(0, dict(variable=INPUT, label='مدل‌ها و دستگاه‌های اجرا', type='text-input'))
     for item in result:
-        if item.get('variable') == INPUT and declared is not None:
-            item['options'] = declared['capabilities']
+        if item.get('variable') == INPUT:
+            item.update(options=[PREFIX + json.dumps(plan, ensure_ascii=False)], required=True, max_length=262144)
     return result
 
 
 def business_inputs(inputs):
     if not isinstance(inputs, dict):
         raise BadRequest('ورودی برنامه معتبر نیست.')
-    return {key: value for key, value in inputs.items() if key != INPUT}
+    return {key: value for key, value in inputs.items() if key not in (INPUT, FROZEN)}
 
 
 def schema_for(tenant_id, actor_id, row):
@@ -123,6 +130,27 @@ def check_schema(schema, requirements, nodes=()):
 
 def select(session, workflow, actor_id, requested=None):
     graph = workflow.graph_dict
+    from company_projects.execution_plan import decode, describe
+    choice = decode(requested)
+    if choice is not None:
+        identity = require_actor(workflow.tenant_id, actor_id)
+        nodes = {n['id']: n for n in llm_nodes(graph)}
+        if set(choice['models']) != set(nodes):
+            raise BadRequest('مدل همهٔ گام‌های LLM همین نسخه را انتخاب کنید.')
+        requirements = {n['id']: n['capabilities'] for n in describe(graph)['nodes']}
+        models = {}; schemas = {}
+        for key, node in nodes.items():
+            selected = choice['models'][key]
+            if not isinstance(selected, str): raise BadRequest('شناسهٔ مدل گام معتبر نیست.')
+            try: UUID(selected)
+            except ValueError: raise BadRequest('مدل هر گام را صریحاً انتخاب کنید.') from None
+            row = personal_models.load(session, identity, selected)
+            if row['model_type'] != 'llm': raise BadRequest('مدل گام باید از نوع LLM باشد.')
+            if selected not in schemas: schemas[selected] = schema_for(workflow.tenant_id, identity, row)
+            check_schema(schemas[selected], requirements[key], [node])
+            models[key] = dict(connection_id=str(row['id']), connection_revision=row['revision'],
+                provider=row['provider'], model_name=row['model_name'])
+        return dict(version=2, actor_id=identity, tenant_id=str(workflow.tenant_id), workflow_id=str(workflow.id), models=models)
     requirements = policy(graph)
     if requirements is None or not llm_nodes(graph):
         if requested:
@@ -159,11 +187,16 @@ def execution_workflow(workflow, selection, actor_id):
     if (selection.get('actor_id'), selection.get('tenant_id'), selection.get('workflow_id')) != (
             identity, str(workflow.tenant_id), str(workflow.id)):
         raise Forbidden('انتخاب مدل متعلق به این کاربر، پروژه و نسخهٔ برنامه نیست.')
+    chosen = selection['models'] if selection.get('version') == 2 else {n['id']: selection for n in llm_nodes(workflow.graph_dict)}
+    if set(chosen) != {n['id'] for n in llm_nodes(workflow.graph_dict)}: raise Forbidden('انتخاب مدل گام‌ها کامل نیست.')
+    rows = {}
     with Session(db.engine) as session:
-        row = personal_models.load(session, identity, selection['connection_id'])
-    if (row['provider'], row['model_name'], row['revision'], row['model_type']) != (
-            selection['provider'], selection['model_name'], selection['connection_revision'], 'llm'):
-        raise Conflict('اتصال مدل پس از انتخاب تغییر کرده است؛ اجرا را با تنظیمات تازه شروع کنید.')
+        for key, selected in chosen.items():
+            row = personal_models.load(session, identity, selected['connection_id'])
+            if (row['provider'], row['model_name'], row['revision'], row['model_type']) != (
+                    selected['provider'], selected['model_name'], selected['connection_revision'], 'llm'):
+                raise Conflict('اتصال مدل پس از انتخاب تغییر کرده است؛ اجرا را با تنظیمات تازه شروع کنید.')
+            rows[key] = row
     graph = deepcopy(workflow.graph_dict)
     for node in graph.get('nodes', []):
         data = node.get('data', {})
@@ -171,6 +204,7 @@ def execution_workflow(workflow, selection, actor_id):
             data['variables'] = [item for item in data.get('variables', []) if item.get('variable') != INPUT]
             data['kara_runtime_model_used'] = deepcopy(selection)
         if data.get('type') == 'llm':
+            row = rows[node['id']]
             data['model'] = dict(data.get('model', {}), provider=row['provider'], name=row['model_name'], mode='chat')
             if isinstance(data.get('prompt_template'), dict):
                 data['prompt_template'] = [dict(data['prompt_template'], role='user')]
@@ -191,8 +225,20 @@ def prepare(workflow, user, inputs):
 
 
 def attempt_inputs(session, workflow, actor_id, inputs):
+    from company_projects.execution_plan import require_choices, decode
+    if FROZEN in inputs: raise BadRequest('انتخاب ثبت‌شدهٔ اجرا قابل ارسال توسط کاربر نیست.')
     clean = business_inputs(inputs)
+    choice = require_choices(workflow.graph_dict, inputs.get(INPUT))
+    if choice:
+        from company_projects.node_routing import validate_choices
+        validate_choices(session, workflow, actor_id, choice)
     selection = select(session, workflow, actor_id, inputs.get(INPUT))
+    if selection and selection.get('version') == 2:
+        # Freeze revisions at admission, not when a background worker eventually dispatches.
+        choice = decode(inputs[INPUT])
+        clean[INPUT] = json.dumps(choice, ensure_ascii=False)
+        clean[FROZEN] = selection
+        return clean
     return dict(clean, **{INPUT: selection['connection_id']}) if selection else clean
 
 

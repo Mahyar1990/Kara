@@ -318,9 +318,9 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
     if stage['instance_id'] != value['id']:
         raise NotFound('مرحله در این اجرا پیدا نشد.')
     agent = agents.load(session, scope, stage['binding']['agent_id'], _stage=True)
-    from company_projects.runtime_models import policy, llm_nodes
+    from company_projects.execution_plan import describe
     source_graph = session.get(Workflow, agent['workflow_id']).graph_dict
-    runtime_model = policy(source_graph) if llm_nodes(source_graph) else None
+    runtime_model = describe(source_graph)
     permissions = stage_config.permissions(session, scope, stage['binding'], actor) if stage_config.owned(stage['binding']) else agents.permissions(session, agent, actor)
     if not set(permissions) & {'view', 'run', 'feedback', 'finalize'}:
         raise Forbidden('مجوز مشاهدهٔ محتوای این مرحله را ندارید.')

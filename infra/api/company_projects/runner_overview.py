@@ -46,7 +46,7 @@ def overview(s, actor):
                              'get_text_embedding_num_tokens': 'شمارش توکن دانش',
                              'validate_model_credentials': 'آزمون اتصال مدل',
                              'validate_provider_credentials': 'آزمون اتصال مدل',
-                             'raw-code': 'اجرای کد', 'http': 'اتصال به سرویس'}.get(row['title'], 'فراخوانی اتصال یا مدل')
+                             'raw-code': 'اجرای کد', 'http': 'اتصال به سرویس', 'workflow-node': 'اجرای گام روی Runner دیگر'}.get(row['title'], 'فراخوانی اتصال یا مدل')
                     if row['connection_kind'] in ('jira', 'gitlab'):
                         title = 'اتصال به جیرا' if row['connection_kind'] == 'jira' else 'اتصال به گیت‌لب'
                 item = dict(id=str(row['id']), kind=kind, title=title, project_id=str(row['project_id']),

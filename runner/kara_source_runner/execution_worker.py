@@ -59,10 +59,26 @@ def worker(job,secrets,config,root,options,directory):
                 time.sleep(1)
     try:
         if job.get('kind')=='rpc':
-            from .rpc_runtime import call
-            result=dict(state='succeeded',value=call(job,secrets,code),error=None)
+            if job['method']=='workflow-node':
+                runtime=WorkflowRuntime(job['node_job'],secrets,code,lambda node,cursor:client.post(prefix+'knowledge',dict(node_id=node,cursor=cursor)),lambda _:None,Cancelled())
+                runtime.pool.update(job['pool']); runtime.pool['env']=secrets.get('environment',{})
+                node=next(n for n in job['node_job']['graph']['nodes'] if n['id']==job['node_id'])
+                output,branch=runtime.node(node['id'],node['data'])
+                value=dict(output=output,branch=branch,total_tokens=runtime.tokens)
+            else:
+                from .rpc_runtime import call
+                value=call(job,secrets,code)
+            result=dict(state='succeeded',value=value,error=None)
         else:
-            runtime=WorkflowRuntime(job,secrets,code,lambda node,cursor:client.post(prefix+'knowledge',dict(node_id=node,cursor=cursor)),send_event,Cancelled())
+            def delegate(node,pool):
+                deadline=time.monotonic()+600
+                while time.monotonic()<deadline:
+                    response=client.post(prefix+'node',dict(node_id=node,pool=pool))
+                    if response['state']=='succeeded':return response['result']['value']
+                    if response['state'] in ('failed','cancelled','interrupted'):raise ExecutionFailure('execution_failed')
+                    time.sleep(1)
+                raise ExecutionFailure('execution_failed')
+            runtime=WorkflowRuntime(job,secrets,code,lambda node,cursor:client.post(prefix+'knowledge',dict(node_id=node,cursor=cursor)),send_event,Cancelled(),delegate)
             result=runtime.run(); result.update(state='succeeded',error=None,snapshot_digest=job.get('snapshot_digest'))
     except ExecutionFailure as exc:
         result=dict(state='failed',outputs={},error=exc.code,total_steps=0,total_tokens=0,snapshot_digest=job.get('snapshot_digest'))
@@ -100,7 +116,12 @@ def execute(job,secrets,config,root,options):
     if job.get('kind')=='rpc' and job.get('method')=='raw-code' and job['payload'].get('language') not in allowed:raise ValueError('code execution not authorized on this device')
     if job.get('kind')!='rpc':
         from .workflow_contract import validate_graph
-        if (set(validate_graph(job['graph'])) & {'python3','javascript'}) - allowed:raise ValueError('code execution not authorized on this device')
+        needed=set(job['requirements']) if job.get('routes') else set(validate_graph(job['graph']))
+        if (needed & {'python3','javascript'}) - allowed:raise ValueError('code execution not authorized on this device')
+    elif job.get('method')=='workflow-node':
+        node=next(n['data'] for n in job['node_job']['graph']['nodes'] if n['id']==job['node_id'])
+        language=node.get('code_language') if node['type']=='code' else 'python3' if node['type']=='template-transform' else None
+        if language and language not in allowed:raise ValueError('code execution not authorized on this device')
     root=Path(root).expanduser().resolve(); root.mkdir(parents=True,exist_ok=True,mode=0o700)
     if root.stat().st_uid!=os.getuid() or root.stat().st_mode&0o022: raise ValueError('private root required')
     directory=root/'.kara-runner'/owner_id(config['server'],config['secret'])/'executions'/job['id']

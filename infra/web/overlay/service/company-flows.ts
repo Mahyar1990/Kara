@@ -1,3 +1,4 @@
+import type { RuntimeExecutionPlan } from '@/utils/company-runtime-model'
 import type { AgentInput } from './company-agents'
 import { get, post, put } from '@/service/base'
 
@@ -8,7 +9,7 @@ export type FlowStage = { app_id?: string | null; workflow_id?: string | null; e
 export type FlowBinding = { execution_scope?: 'stage'; execution?: StageExecution; participants?: (StageParticipant & { name: string })[]; app_id?: string; app_name?: string; workflow_version?: string; key: string; title: string; agent_id: string; agent_name: string; workflow_id: string; executor: { account_id: string; name: string }; finalizer: { account_id: string; name: string }; decision_role: string | null; inputs: Record<string, FlowInput>; output_contract: string[] }
 export type FlowVersion = { id: string; flow_id: string; version: number; source_revision: number; contract_version: number; digest: string; name: string; description: string; stage_bindings: FlowBinding[]; published_by: string; published_at: string }
 export type TeamFlow = { id: string; name: string; description: string; revision: number; archived: boolean; current_version_id: string | null; published: FlowVersion | null; draft_stages?: FlowStage[] }
-export type FlowProgram = { app_id: string; app_name: string; workflow_id: string; version: string; input_contract: AgentInput[]; output_contract: string[]; harness_compatible: boolean; harness_reason: string | null }
+export type FlowProgram = { execution_plan: RuntimeExecutionPlan; app_id: string; app_name: string; workflow_id: string; version: string; input_contract: AgentInput[]; output_contract: string[]; harness_compatible: boolean; harness_reason: string | null }
 export type FlowOptions = { programs: FlowProgram[]; agents: { execution?: StageExecution; participants?: StageParticipant[]; id: string; name: string; app_id: string; app_name: string; workflow_version: string | null; workflow_id: string; input_contract: AgentInput[]; output_contract: string[]; runners: string[]; finalizers: string[] }[]; members: { account_id: string; membership_id: string; name: string; roles: string[] }[] }
 export type FlowDraft = { name: string; description: string; stages: FlowStage[]; expected_revision: number }
 const base = (project: string) => `/company/projects/${project}/team/flows`
