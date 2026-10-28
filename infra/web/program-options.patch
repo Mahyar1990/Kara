@@ -1,26 +1,34 @@
---- a/web/app/components/app-sidebar/app-info/app-info-trigger.tsx
-+++ b/web/app/components/app-sidebar/app-info/app-info-trigger.tsx
-@@ -3,2 +3,3 @@
- import type { App, AppSSO } from '@/types/app'
-+import { useProgramOptions } from '@/app/components/company-projects/program-options'
- import { cn } from '@langgenius/dify-ui/cn'
-@@ -31,2 +32,3 @@
- }: AppInfoTriggerProps) => {
-+  const programOptions = useProgramOptions(appDetail)
-   const { t } = useTranslation()
-@@ -46,2 +48,3 @@
-   const mainOperations: Operation[] = [
-+    ...programOptions.operations,
-     ...(appACLCapabilities.canEdit
-@@ -116,2 +119,3 @@
-   return (
-+    <>
-     <div
-@@ -154,2 +158,4 @@
-     </div>
-+    {programOptions.dialogs}
-+    </>
-   )
+--- a/web/app/components/app-sidebar/app-info/app-operations.tsx
++++ b/web/app/components/app-sidebar/app-info/app-operations.tsx
+@@ -15,2 +15,3 @@
+   title: string
++  description?: string
+   icon: string
+@@ -44,3 +45,3 @@
+       </DropdownMenuTrigger>
+-      <DropdownMenuContent placement="bottom-end" sideOffset={4} className="min-w-40">
++      <DropdownMenuContent placement="bottom-end" sideOffset={4} className={visibleGroups.some(group => group.some(operation => !!operation.description)) ? 'min-w-60 max-w-80' : 'min-w-40'}>
+         {visibleGroups.map((group, groupIndex) => (
+@@ -53,3 +54,3 @@
+                   variant={operation.variant}
+-                  className="gap-2 px-3"
++                  className={cn('gap-2 px-3', operation.description && 'items-start py-2')}
+                   disabled={operation.disabled || operation.loading}
+@@ -74,10 +75,6 @@
+                   )}
+-                  <span
+-                    className={cn(
+-                      'system-sm-regular',
+-                      operation.variant !== 'destructive' && 'text-text-secondary',
+-                    )}
+-                  >
+-                    {operation.title}
+-                  </span>
++                  <div className="min-w-0">
++                    <span className={cn('block system-sm-regular', operation.variant !== 'destructive' && 'text-text-secondary')}>{operation.title}</span>
++                    {operation.description && <span className="mt-0.5 block max-w-64 whitespace-normal text-xs leading-5 text-text-tertiary">{operation.description}</span>}
++                  </div>
+                 </DropdownMenuItem>
 --- a/web/app/components/apps/app-card/interactions.tsx
 +++ b/web/app/components/apps/app-card/interactions.tsx
 @@ -7,2 +7,3 @@
@@ -44,29 +52,55 @@
 -  const hasEditGroup = shouldShowEditOption
 +  const hasEditGroup = shouldShowEditOption || programOperations.length > 0
    const hasCreateExportGroup = shouldShowDuplicateOption || shouldShowExportOption
-@@ -185,2 +189,3 @@
+@@ -185,2 +189,6 @@
      <>
-+      {programOperations.map(operation => <MenuItem key={operation.id} className="gap-2 px-3" onClick={event => handleMenuAction(event, operation.onClick)}><span aria-hidden className={`${operation.icon} size-4 text-text-tertiary`} /><span className="system-sm-regular text-text-secondary">{operation.title}</span></MenuItem>)}
++      {programOperations.map(operation => <MenuItem key={operation.id} className="items-start gap-2 px-3 py-2" onClick={event => handleMenuAction(event, operation.onClick)}>
++        <span aria-hidden className={`${operation.icon} mt-0.5 size-4 text-text-tertiary`} />
++        <div className="min-w-0"><span className="block system-sm-regular text-text-secondary">{operation.title}</span>{operation.description && <span className="mt-0.5 block max-w-64 whitespace-normal text-xs leading-5 text-text-tertiary">{operation.description}</span>}</div>
++      </MenuItem>)}
        {shouldShowEditOption && (
-@@ -298,2 +303,4 @@
+@@ -298,2 +306,4 @@
    })
 +  const programOptions = useProgramOptions(app)
 +  const [isProgramContextMenuOpen, setIsProgramContextMenuOpen] = useState(false)
    const isOperationsMenuOpen = operationsMenu.open
-@@ -527,2 +534,3 @@
+@@ -527,2 +537,3 @@
    const shouldShowOperationsMenu =
 +    programOptions.operations.length > 0 ||
      shouldShowEditOption ||
-@@ -537,2 +545,3 @@
+@@ -537,2 +548,3 @@
      app,
 +    programOperations: programOptions.operations.map(operation => ({ ...operation, onClick: () => { setIsOperationsMenuOpen(false); setIsProgramContextMenuOpen(false); operation.onClick() } })),
      shouldShowEditOption,
-@@ -555,3 +564,3 @@
+@@ -555,3 +567,3 @@
        {shouldShowOperationsMenu ? (
 -        <ContextMenu>
 +        <ContextMenu open={isProgramContextMenuOpen} onOpenChange={setIsProgramContextMenuOpen}>
            <ContextMenuTrigger render={children} />
-@@ -652,2 +661,3 @@
+@@ -652,2 +664,3 @@
        </div>
 +      {programOptions.dialogs}
        {activeDialog === 'edit' && (
+--- a/web/app/components/app-sidebar/app-info/app-info-trigger.tsx
++++ b/web/app/components/app-sidebar/app-info/app-info-trigger.tsx
+@@ -3,2 +3,3 @@
+ import type { App, AppSSO } from '@/types/app'
++import { useProgramOptions } from '@/app/components/company-projects/program-options'
+ import { cn } from '@langgenius/dify-ui/cn'
+@@ -31,2 +32,3 @@
+ }: AppInfoTriggerProps) => {
++  const programOptions = useProgramOptions(appDetail)
+   const { t } = useTranslation()
+@@ -46,2 +48,3 @@
+   const mainOperations: Operation[] = [
++    ...programOptions.operations,
+     ...(appACLCapabilities.canEdit
+@@ -116,2 +119,3 @@
+   return (
++    <>
+     <div
+@@ -154,2 +158,4 @@
+     </div>
++    {programOptions.dialogs}
++    </>
+   )
