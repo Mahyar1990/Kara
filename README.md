@@ -78,7 +78,7 @@ make down
 - [پروژه‌ها و برنامه‌های اختصاصی](docs/projects.md)
 - [مدیریت کاربران و نقش‌ها](docs/users.md)
 - [نقش‌های کاری تیم و قرارداد API](docs/kara-team-roles.md)
-- [تنظیمات تیمی برنامه‌ها](docs/program-team-settings.md)
+- [تنظیم اجرای مراحل فلو](docs/program-team-settings.md)
 - [قرارداد فنی اجرای تیمی و مجوزها](docs/kara-team-agents.md)
 - [فلوهای تیمی نسخه‌دار](docs/kara-team-flows.md)
 - [درخواست نسخه‌دار و تصمیم ورود PO](docs/kara-team-requests.md)

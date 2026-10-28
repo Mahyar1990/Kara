@@ -2,7 +2,7 @@ import type { Device } from './company-source'
 import type { TeamStage } from './company-stages'
 import { get, post, put } from '@/service/base'
 export type ExecutionChoice = { method: 'harness'; mode: 'manual' | 'managed'; device_id: string; source_job_id: string | null; profile_key: string | null }
-export type HarnessPolicy = { policy: { revision: number; enabled: boolean; instructions: string; requires_source: boolean }; compatible: boolean; reason: string | null; can_manage: boolean; output_contract: string[]; workflow_digest: string }
+export type HarnessPolicy = { policy: { revision: number; program_enabled?: boolean; enabled: boolean; instructions: string; requires_source: boolean }; compatible: boolean; reason: string | null; can_manage: boolean; output_contract: string[]; workflow_digest: string }
 export type HarnessInfo = { device_name?: string; profile_name?: string | null; attempt_id: string; mode: 'manual' | 'managed'; state: string; device_id: string; source_job_id: string | null; profile_key: string | null; snapshot_digest: string; prepared: null | { directory: string }; result: null | { origin?: string; evidence?: unknown; error?: string }; actions?: string[]; can_continue?: boolean }
 const base = (project: string, agent: string) => `/company/projects/${project}/team/agents/${agent}`
 export const harnessApi = {

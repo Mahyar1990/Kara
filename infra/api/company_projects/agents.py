@@ -100,17 +100,19 @@ def contracts(workflow):
     return result, outputs
 
 
-def load(session, scope, agent_id, *, lock=False):
+def load(session, scope, agent_id, *, lock=False, _stage=False):
     table = definitions(session)
     query = sa.select(table).where(table.c.id == store.uid(agent_id),
         *(table.c[k] == v for k, v in scope.items()))
     row = session.execute(query.with_for_update() if lock else query).mappings().first()
-    if row is None:
+    if row is None or (not _stage and row['execution_scope'] == 'stage'):
         raise NotFound('ایجنت در این پروژه پیدا نشد.')
     return dict(row)
 
 
 def permissions(session, agent, actor_id):
+    if agent.get('execution_scope', 'program') == 'stage':
+        return []
     join = access.membership(session, agent['workspace_id'], actor_id)
     if join is None:
         return []
@@ -145,7 +147,7 @@ def list_agents(session, project_id, workspace_id, actor_id):
     scope = team.scope(session, project_id, workspace_id, actor_id)
     manager = access.can_manage_members(session, workspace_id, actor_id)
     table = definitions(session)
-    rows = session.execute(sa.select(table).where(table.c.deleted_at.is_(None), *(table.c[k] == v for k, v in scope.items()))
+    rows = session.execute(sa.select(table).where(table.c.deleted_at.is_(None), table.c.execution_scope == 'program', *(table.c[k] == v for k, v in scope.items()))
         .order_by(table.c.created_at, table.c.id)).mappings()
     return dict(can_manage=manager, data=[public(session, row, actor_id) for row in rows
         if manager or permissions(session, row, actor_id)])
@@ -336,7 +338,7 @@ def validate_inputs(contract, inputs):
             raise BadRequest('نوع یا مقدار ورودی معتبر نیست: ' + item['label'])
 
 
-def start(session, project_id, workspace_id, actor_id, agent_id, data, key):
+def start(session, project_id, workspace_id, actor_id, agent_id, data, key, *, _stage=None):
     body(data, ('inputs', 'expected_revision', *(('execution',) if 'execution' in data else ())))
     selection=data.get('execution', {'method':'program'})
     if not isinstance(selection,dict) or selection.get('method') not in ('program','harness'): raise BadRequest('روش اجرا معتبر نیست.')
@@ -346,8 +348,17 @@ def start(session, project_id, workspace_id, actor_id, agent_id, data, key):
     # Serialize with ACL updates and membership/owner changes, without requiring manager authority.
     from models.account import Tenant
     session.scalar(sa.select(Tenant).where(Tenant.id == str(workspace_id)).with_for_update())
-    row = load(session, scope, agent_id, lock=True)
-    join = require(session, row, actor_id, 'run')
+    row = load(session, scope, agent_id, lock=True, _stage=_stage is not None)
+    if _stage is None:
+        join = require(session, row, actor_id, 'run')
+    else:
+        from company_projects import stages
+        bound, join = stages.require(session, scope, _stage, actor_id, 'run')
+        if bound['id'] != row['id']:
+            raise Forbidden('منبع مرحله با اجرا یکسان نیست.')
+        cfg = _stage['binding'].get('execution')
+        if cfg and not cfg['program_enabled' if selection['method'] == 'program' else 'enabled']:
+            raise Forbidden('این روش اجرا در نسخهٔ مرحله مجاز نیست.')
     request_digest = digest(dict(operation='run', agent_id=row['id'], **data))
     replay(session, scope, actor_id, key, request_digest)  # Detect keys used by other operations.
     _, _, attempts = tables(session)
@@ -373,7 +384,7 @@ def start(session, project_id, workspace_id, actor_id, agent_id, data, key):
     session.execute(attempts.insert().values(**attempt))
     if selection['method']=='harness':
         from company_projects import harness
-        harness.create(session,attempt,row,selection)
+        harness.create(session,attempt,row,selection, _binding=_stage['binding'] if _stage else None)
     event(session, scope, actor_id, key, request_digest, 'agent.run.requested', attempt_public(attempt))
     return attempt_public(attempt)
 
@@ -386,14 +397,19 @@ def attempt_public(row):
 
 def get_attempt(session, project_id, workspace_id, actor_id, agent_id, attempt_id):
     scope = team.scope(session, project_id, workspace_id, actor_id)
-    row = load(session, scope, agent_id)
-    join = require(session, row, actor_id, 'run')
+    row = load(session, scope, agent_id, _stage=True)
+    join = require(session, row, actor_id, 'run') if row['execution_scope'] == 'program' else team.member(session, workspace_id, actor_id)
     _, _, attempts = tables(session)
     attempt = session.execute(sa.select(attempts).where(attempts.c.id == store.uid(attempt_id),
         attempts.c.agent_id == row['id'], attempts.c.actor_id == str(actor_id),
         attempts.c.membership_id == join.id)).mappings().first()
     if not attempt:
         raise NotFound('اجرا پیدا نشد.')
+    from company_projects.stage_config import attempt_join
+    attempt_join(session, row, attempt)
+    from company_projects.stages import validate_attempt
+    if attempt['status'] in ('pending', 'running'):
+        validate_attempt(session, attempt)
     return attempt_public(attempt)
 
 

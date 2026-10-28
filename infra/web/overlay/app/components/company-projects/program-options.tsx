@@ -10,7 +10,6 @@ import FormDialog from './form-dialog'
 import { useCompanyNavigation } from './navigation'
 import { ProgramDialogState } from './program-dialog-state'
 
-const TeamEditor = dynamic(() => import('./program-team-settings').then(module => module.ProgramTeamEditor), { ssr: false, loading: () => <p role="status">در حال دریافت تنظیمات…</p> })
 const AgentComposer = dynamic(() => import('./program-agents').then(module => module.ProgramAgentComposer), { ssr: false, loading: () => <p role="status">در حال دریافت ایجنت‌ها…</p> })
 export type ProgramOption = { id: string; title: string; description?: string; icon: string; onClick: () => void }
 
@@ -19,31 +18,28 @@ export function useProgramOptions(app: { id: string; name?: string | null; mode?
   const workspace = useAtomValue(currentWorkspaceIdAtom)
   const pathname = usePathname()
   const { project } = useCompanyNavigation()
-  const [panel, setPanel] = useState<'team' | 'agents'>('team')
   const [open, setOpen] = useState(false)
-  const [visited, setVisited] = useState({ team: false, agents: false })
+  const [visited, setVisited] = useState(false)
   const [pending, setPending] = useState(0)
   const [definitionChanged, setDefinitionChanged] = useState(false)
   const change = useCallback((delta: number) => setPending(value => Math.max(0, value + delta)), [])
-  useEffect(() => { setOpen(false); setVisited({ team: false, agents: false }); setPending(0); setDefinitionChanged(false) }, [workspace, project?.id, app.id])
-  const show = (next: 'team' | 'agents') => {
-    void cache.invalidateQueries({ queryKey: next === 'team' ? ['program-team', workspace, project?.id] : ['program-roles'] })
-    setPanel(next); setVisited(value => ({ ...value, [next]: true })); setOpen(true)
+  useEffect(() => { setOpen(false); setVisited(false); setPending(0); setDefinitionChanged(false) }, [workspace, project?.id, app.id])
+  const show = () => {
+    void cache.invalidateQueries({ queryKey: ['program-roles'] })
+    setVisited(true); setOpen(true)
   }
   const close = () => {
     if (pending) return
     setOpen(false)
     if (definitionChanged && pathname.includes(`/app/${app.id}/`)) window.location.reload()
   }
-  const operations: ProgramOption[] = project && app.mode === 'workflow' ? [
-    { id: 'company-team-execution', title: 'دسترسی و تنظیمات اجرا', description: 'اعضای مجاز، نسخهٔ برنامه و روش‌های اجرا', icon: 'i-ri-settings-3-line', onClick: () => show('team') },
-    ...(project.can_manage_members ? [{ id: 'company-program-agents', title: 'ایجنت‌های داخل برنامه', description: 'انتخاب ایجنت برای مراحل برنامه', icon: 'i-ri-robot-line', onClick: () => show('agents') } satisfies ProgramOption] : []),
+  const operations: ProgramOption[] = project?.can_manage_members && app.mode === 'workflow' ? [
+    { id: 'company-program-agents', title: 'ایجنت‌های داخل برنامه', description: 'انتخاب ایجنت برای مراحل برنامه', icon: 'i-ri-robot-line', onClick: show },
   ] : []
   return {
     operations,
-    dialogs: project && (visited.team || visited.agents) ? <ProgramDialogState.Provider value={{ busy: pending > 0, change }}><FormDialog open={open} keepMounted wide busy={pending > 0} title={`${panel === 'team' ? 'دسترسی و تنظیمات اجرا' : 'ایجنت‌های داخل برنامه'} · ${app.name || 'برنامه'}`} description={panel === 'team' ? 'افراد مجاز، نسخهٔ قابل استفاده و روش‌های مجاز اجرای برنامه را ببینید یا تنظیم کنید.' : 'ایجنت کتابخانه را به مرحلهٔ همین برنامه وصل کنید. ابتدا تغییرات طراح را ذخیره کنید؛ پس از تغییر اتصال و بستن دیالوگ، طراح تازه می‌شود.'} close={close}>
-      {visited.team && <div hidden={panel !== 'team'}><TeamEditor projectId={project.id} appId={app.id} /></div>}
-      {visited.agents && <div hidden={panel !== 'agents'}><AgentComposer project={project.id} appId={app.id} onDefinitionChanged={() => setDefinitionChanged(true)} /></div>}
+    dialogs: project && visited ? <ProgramDialogState.Provider value={{ busy: pending > 0, change }}><FormDialog open={open} keepMounted wide busy={pending > 0} title={`ایجنت‌های داخل برنامه · ${app.name || 'برنامه'}`} description="ایجنت را به مرحلهٔ همین برنامه وصل کنید. ابتدا تغییرات طراح را ذخیره کنید؛ پس از تغییر اتصال و بستن دیالوگ، طراح تازه می‌شود." close={close}>
+      <div><AgentComposer project={project.id} appId={app.id} onDefinitionChanged={() => setDefinitionChanged(true)} /></div>
       <div className="mt-5 flex justify-end border-t border-divider-regular pt-4"><button type="button" disabled={pending > 0} className="rounded-lg border border-divider-regular px-4 py-2 text-sm disabled:opacity-50" onClick={close}>{definitionChanged && pathname.includes(`/app/${app.id}/`) ? 'بستن و تازه‌کردن طراح' : 'بستن'}</button></div>
     </FormDialog></ProgramDialogState.Provider> : null,
   }

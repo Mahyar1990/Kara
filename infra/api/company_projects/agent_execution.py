@@ -28,7 +28,7 @@ def managed(session, app_id):
     if not app_id:
         return None
     table = agents.definitions(session)
-    return session.execute(sa.select(table).where(table.c.app_id == str(app_id), table.c.deleted_at.is_(None))).mappings().first()
+    return session.execute(sa.select(table).where(table.c.app_id == str(app_id), table.c.deleted_at.is_(None), table.c.execution_scope == 'program')).mappings().first()
 
 
 def deny_native(app_id, *, session=None):
@@ -36,7 +36,7 @@ def deny_native(app_id, *, session=None):
         with Session(db.engine) as own:
             return deny_native(app_id, session=own)
     if managed(session, app_id):
-        raise Forbidden('این برنامه تنظیمات تیمی دارد؛ از بخش تنظیمات تیمی همان برنامه اجرا کنید.')
+        raise Forbidden('این برنامه تنظیمات تیمی دارد؛ مرحلهٔ مربوط را از فلوهای تیم اجرا کنید.')
     from company_projects.personal_agent_sources import metadata
     app = session.get(App, str(app_id)) if app_id else None
     if app and app.workflow_id and metadata(session.get(Workflow, app.workflow_id)) is not None:
@@ -66,7 +66,8 @@ def assert_execution(tenant_id, app_id, workflow_id, user_id, run_id=None):
                 attempt['workflow_id'] != str(workflow_id)) or (
                 run_id is not None and str(run_id) != attempt['id']):
             raise Forbidden('این تلاش اجرای معتبر نیست.')
-        join = agents.require(session, agent, user_id, 'run')
+        from company_projects.stage_config import attempt_join
+        join = attempt_join(session, agent, attempt)
         workflow = session.get(Workflow, str(workflow_id))
         if attempt['membership_id'] != join.id or agent['workflow_id'] != str(workflow_id) or workflow is None or (
                 workflow.app_id != str(app_id) or workflow.tenant_id != str(tenant_id) or
@@ -82,7 +83,7 @@ def native_permission(session, app_id, actor_id, action='edit_definition'):
     if app and app.workflow_id and metadata(session.get(Workflow, app.workflow_id)) is not None:
         raise Forbidden('اتصال ایجنت کتابخانه ثابت است؛ منبع کتابخانه را ویرایش و اتصال تازه‌ای ثبت کنید.')
     table = agents.definitions(session)
-    linked = list(session.execute(sa.select(table).where(table.c.app_id == str(app_id), table.c.deleted_at.is_(None))).mappings())
+    linked = list(session.execute(sa.select(table).where(table.c.app_id == str(app_id), table.c.deleted_at.is_(None), table.c.execution_scope == 'program')).mappings())
     if not linked:
         return
     active = [agent for agent in linked if not agent['archived']]
@@ -141,7 +142,7 @@ def install_http_guard(app):
             team.scope(session, agent['project_id'], workspace_id, actor.id)
             segments = set(request.path.split('/'))
             if segments & {'run', 'run-all', 'stop', 'resume', 'trigger', 'triggers'} or request.method == 'DELETE':
-                raise Forbidden('برای اجرای تیمی برنامه از بخش تنظیمات تیمی برنامه استفاده کنید؛ حذف منبع مجاز نیست.')
+                raise Forbidden('برای اجرای تیمی برنامه از مرحلهٔ مربوط در فلوهای تیم استفاده کنید؛ حذف منبع مجاز نیست.')
             action = 'publish_definition' if request.method != 'GET' and segments & {'publish', 'published'} else 'edit_definition'
             native_permission(session, app_id, actor.id, action)
 
@@ -152,12 +153,13 @@ def claim(session, attempt_id, *, start=True):
     if not candidate:
         return None
     session.scalar(sa.select(Tenant).where(Tenant.id == candidate['workspace_id']).with_for_update())
-    agent = agents.load(session, {k: candidate[k] for k in ('project_id', 'workspace_id')}, candidate['agent_id'], lock=True)
+    agent = agents.load(session, {k: candidate[k] for k in ('project_id', 'workspace_id')}, candidate['agent_id'], lock=True, _stage=True)
     row = session.execute(sa.select(attempts).where(attempts.c.id == candidate['id']).with_for_update()).mappings().one()
     if row['status'] != 'pending':
         return None
     try:
-        join = agents.require(session, agent, row['actor_id'], 'run')
+        from company_projects.stage_config import attempt_join
+        join = attempt_join(session, agent, row)
         workflow, app = session.get(Workflow, row['workflow_id']), session.get(App, agent['app_id'])
         if join.id != row['membership_id'] or not app or app.status != 'normal' or app.mode != 'workflow' or not workflow or (
                 workflow.tenant_id != row['workspace_id'] or workflow.app_id != app.id or

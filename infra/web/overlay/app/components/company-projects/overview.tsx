@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 import type { CompanyProject } from '@/service/company-projects'
 import { useQuery } from '@tanstack/react-query'
 import Link from '@/next/link'
-import { agentApi } from '@/service/company-agents'
 import { flowApi } from '@/service/company-flows'
 import { projectApi } from '@/service/company-projects'
 import { requestApi } from '@/service/company-requests'
@@ -46,19 +45,17 @@ export default function ProjectOverview({ project, accountId, opening, openApp, 
   const key = ['company-projects', project.workspace_id, project.id, 'overview', accountId]
   const options = { staleTime: 30000 }
   const apps = useQuery({ ...options, queryKey: [...key, 'apps'], queryFn: () => projectApi.apps(project.id, 'all', 1, 4) })
-  const agents = useQuery({ ...options, queryKey: [...key, 'agents'], queryFn: () => agentApi.list(project.id) })
   const flows = useQuery({ ...options, queryKey: [...key, 'flows'], queryFn: () => flowApi.list(project.id) })
   const tasks = useQuery({ ...options, queryKey: [...key, 'tasks'], queryFn: () => stageApi.tasks(project.id, 1) })
   const runs = useQuery({ ...options, queryKey: [...key, 'runs'], queryFn: () => stageApi.list(project.id) })
   const requests = useQuery({ ...options, queryKey: [...key, 'requests'], queryFn: () => requestApi.list(project.id) })
-  const visibleAgents = agents.data?.data.filter(value => !value.archived) || []
   const visibleFlows = flows.data?.data.filter(value => !value.archived) || []
   const activeRuns = runs.data?.data.filter(value => value.state === 'active') || []
   const published = visibleFlows.filter(value => !!value.current_version_id)
   const readyRequests = runs.data?.available_requests || []
   const pendingRequests = requests.data?.data.filter(value => value.state === 'pending') || []
-  const fetching = [apps, agents, flows, tasks, runs, requests].some(query => query.isFetching)
-  const refresh = () => { void Promise.all([apps.refetch(), agents.refetch(), flows.refetch(), tasks.refetch(), runs.refetch(), requests.refetch()]) }
+  const fetching = [apps, flows, tasks, runs, requests].some(query => query.isFetching)
+  const refresh = () => { void Promise.all([apps.refetch(), flows.refetch(), tasks.refetch(), runs.refetch(), requests.refetch()]) }
   const sections = [
     { title: 'دانش پروژه', description: 'مستندات محصول و منابع تحلیل', href: '/datasets', icon: 'i-ri-book-open-line' },
     { title: 'سورس کد', description: 'مخزن‌ها و worktreeهای پروژه', href: `${base}/source-code`, icon: 'i-ri-code-box-line' },
@@ -70,7 +67,7 @@ export default function ProjectOverview({ project, accountId, opening, openApp, 
     <section aria-label="خلاصهٔ وضعیت پروژه" className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Metric title="اقدام‌های من" value={tasks.isSuccess ? tasks.data.total : undefined} failed={tasks.isError} description="مرحله‌هایی که اکنون نوبت اقدام شماست" href={`${base}/inbox`} />
       <Metric title="اجراهای تیمی باز" value={runs.isSuccess ? activeRuns.length : undefined} failed={runs.isError} description="در حال انجام یا منتظر اقدام و تصمیم" href={`${base}/team-runs`} />
-      <Metric title="برنامه‌های دارای تنظیم فعال" value={agents.isSuccess ? new Set(visibleAgents.map(value => value.app_id)).size : undefined} failed={agents.isError} description="برنامه‌های دارای تنظیم تیمی قابل مشاهده" href={`${base}/program-settings`} />
+      <Metric title="برنامه‌های مراحل فلو" value={flows.isSuccess ? new Set(visibleFlows.flatMap(flow => flow.published?.stage_bindings.map(stage => stage.app_id).filter(Boolean) || [])).size : undefined} failed={flows.isError} description="برنامه‌های متصل به نسخه‌های منتشرشدهٔ فلوها" href={`${base}/team-flows`} />
       <Metric title="فلوهای منتشرشده" value={flows.isSuccess ? published.length : undefined} failed={flows.isError} description="فلوهای غیربایگانی دارای نسخهٔ منتشرشده" href={`${base}/team-flows`} />
     </section>
 
@@ -117,16 +114,11 @@ export default function ProjectOverview({ project, accountId, opening, openApp, 
     </section>
 
     <section aria-labelledby="overview-tools" className="min-w-0 space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0"><h2 id="overview-tools" className="text-xl font-semibold text-text-primary">ابزارهای انجام کار</h2><p className="mt-2 text-sm leading-7 text-text-secondary">برنامه یک کار را انجام می‌دهد؛ ایجنت نسخهٔ مجاز آن برای یک نقش است؛ فلو ترتیب همکاری تیم را مشخص می‌کند.</p></div>{project.can_edit && <button className={button} disabled={opening} onClick={createApp}>ساخت برنامه</button>}</header>
-      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-3">
+      <header className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0"><h2 id="overview-tools" className="text-xl font-semibold text-text-primary">ابزارهای انجام کار</h2><p className="mt-2 text-sm leading-7 text-text-secondary">ایجنت‌ها را داخل برنامه به کار بگیرید؛ در هر مرحلهٔ فلو، برنامه، مسئولان و روش مجاز اجرا را مشخص کنید.</p></div>{project.can_edit && <button className={button} disabled={opening} onClick={createApp}>ساخت برنامه</button>}</header>
+      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
         <Catalog id="overview-apps" title="برنامه‌ها" description="برنامه‌های قابل مشاهده؛ حداکثر ۴ مورد اخیر" count={apps.isSuccess ? apps.data.total : undefined} href="/apps">
           <State pending={apps.isPending} error={apps.isError} retry={apps.refetch} empty={apps.isSuccess && !apps.data.data.length ? 'برنامه‌ای برای شما نمایش داده نمی‌شود. برای شروع می‌توانید قالب‌های آماده را ببینید یا از مدیر پروژه دسترسی بگیرید.' : undefined}>
             <ul className="m-0 list-none divide-y divide-divider-regular p-0">{apps.data?.data.slice(0, 4).map(app => <li key={app.id} className="min-w-0 py-3 first:pt-0"><button disabled={opening} className="block w-full rounded-lg text-start text-sm font-semibold leading-7 text-text-primary hover:text-text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50" onClick={() => openApp(app.id)}><span className="block break-words [overflow-wrap:anywhere]">{app.name}</span></button><p className="mt-1 text-xs text-text-tertiary">{modes[app.mode] || 'برنامه'}</p>{app.description && <p className="mt-1 line-clamp-2 break-words text-xs leading-6 text-text-secondary [overflow-wrap:anywhere]">{app.description}</p>}</li>)}</ul>
-          </State>
-        </Catalog>
-        <Catalog id="overview-agents" title="تنظیمات تیمی برنامه‌ها" description="تنظیم‌های فعال و در دسترس؛ حداکثر ۴ مورد" count={agents.isSuccess ? visibleAgents.length : undefined} href={`${base}/program-settings`}>
-          <State pending={agents.isPending} error={agents.isError} retry={agents.refetch} empty={agents.isSuccess && !visibleAgents.length ? 'تنظیم تیمی فعالی در دسترس شما نیست. مدیر پروژه دسترسی اعضا را در تنظیمات همان برنامه تعیین می‌کند.' : undefined}>
-            <ul className="m-0 list-none divide-y divide-divider-regular p-0">{visibleAgents.slice(0, 4).map(agent => <li key={agent.id} className="min-w-0 py-3 first:pt-0"><h4 className="break-words text-sm font-semibold leading-7 text-text-primary [overflow-wrap:anywhere]"><Link href={`${base}/program-settings?program=${agent.app_id}&agent=${agent.id}`}>{agent.app_name} · {agent.name}</Link></h4><p className="mt-1 text-xs leading-6 text-text-tertiary">{agent.actions.includes('run') ? 'مجوز اجرا دارید' : 'برای مشاهده و بررسی'}</p>{agent.description && <p className="mt-1 line-clamp-2 break-words text-xs leading-6 text-text-secondary [overflow-wrap:anywhere]">{agent.description}</p>}</li>)}</ul>
           </State>
         </Catalog>
         <Catalog id="overview-flows" title="فلوهای تیم" description="فلوهای قابل مشاهده و غیربایگانی؛ حداکثر ۴ مورد" count={flows.isSuccess ? visibleFlows.length : undefined} href={`${base}/team-flows`}>

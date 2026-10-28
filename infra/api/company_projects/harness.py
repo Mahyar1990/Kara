@@ -104,10 +104,10 @@ def check_snapshot(snapshot):
     # Bound the escaped JSON representation too, including Persian text and stage context.
     if len(json.dumps(snapshot,ensure_ascii=True).encode())>SNAPSHOT_MAX_BYTES:raise BadRequest('بستهٔ مأموریت بیش از حد بزرگ است.')
 
-def create(s,attempt,agent,selection):
+def create(s,attempt,agent,selection,*,_binding=None):
     agents.body(selection,('method','mode','device_id','source_job_id','profile_key'))
     if selection['method']!='harness' or selection['mode'] not in ('manual','managed'):raise BadRequest('روش اجرای تسک معتبر نیست.')
-    actor=attempt['actor_id']; cfg=policy(s,agent);reason=compatible(s,agent)
+    actor=attempt['actor_id']; cfg=_binding['execution'] if _binding and _binding.get('execution_scope')=='stage' else policy(s,agent);reason=compatible(s,agent)
     if not cfg['enabled'] or reason:raise Forbidden(reason or 'استفاده از هارنس برای این نسخه فعال نشده است.')
     device=source.device(s,actor,selection['device_id'],True); prepared=None
     if selection['source_job_id']:
@@ -130,11 +130,13 @@ def create(s,attempt,agent,selection):
         s.execute(native.update().where(native.c.id==attempt['id']).values(status='running',started_at=now))
 
 def authorize(s,row):
-    key=team.scope(s,row['project_id'],row['workspace_id'],row['account_id']);agent=agents.load(s,key,row['snapshot']['agent_id'])
-    join=agents.require(s,agent,row['account_id'],'run');native=agents.tables(s)[2]
+    key=team.scope(s,row['project_id'],row['workspace_id'],row['account_id']);agent=agents.load(s,key,row['snapshot']['agent_id'],_stage=True)
+    native=agents.tables(s)[2]
     attempt=s.execute(sa.select(native).where(native.c.id==row['attempt_id'])).mappings().one()
+    from company_projects.stage_config import attempt_join, attempt_policy
+    join=attempt_join(s,agent,attempt)
     if join.id!=attempt['membership_id'] or attempt['status'] not in ('pending','running') or agent['workflow_digest']!=row['snapshot']['workflow_digest']:raise Conflict('مجوز، عضویت یا نسخهٔ تلاش تغییر کرده است.')
-    cfg=policy(s,agent)
+    cfg=attempt_policy(s,agent,row['attempt_id'])
     if not cfg['enabled'] or cfg['revision']!=row['policy_revision'] or compatible(s,agent):raise Conflict('قرارداد هارنس تغییر کرده است.')
     source.device(s,row['account_id'],row['device_id'])
     from company_projects.stages import validate_attempt
@@ -230,15 +232,16 @@ def submit(s,row,data,*,observed=False):
 def _configuration_error(s,row):
     try:
         key={k:row[k] for k in ('project_id','workspace_id')}
-        agent=agents.load(s,key,row['snapshot']['agent_id'])
-        cfg=policy(s,agent)
+        agent=agents.load(s,key,row['snapshot']['agent_id'],_stage=True)
+        from company_projects.stage_config import attempt_join, attempt_policy
+        cfg=attempt_policy(s,agent,row['attempt_id'])
         reason=compatible(s,agent)
         if reason:return reason
         if not cfg['enabled'] or cfg['revision']!=row['policy_revision'] or agent['workflow_digest']!=row['snapshot']['workflow_digest']:
             return 'قرارداد هارنس تغییر کرده است؛ تلاش تازه لازم است.'
         native=agents.tables(s)[2]
         attempt=s.execute(sa.select(native).where(native.c.id==row['attempt_id'])).mappings().one()
-        join=agents.require(s,agent,row['account_id'],'run')
+        join=attempt_join(s,agent,attempt)
         if join.id!=attempt['membership_id']:return 'عضویت اجرای تسک تغییر کرده است.'
         from company_projects.stages import validate_attempt
         validate_attempt(s,attempt)
@@ -332,7 +335,7 @@ def validate_artifact(s,stage,selected,content):
     from company_projects import stages
     bridge=stages.tables(s)[2]
     link=s.execute(sa.select(bridge).where(bridge.c.attempt_id==row['attempt_id'],bridge.c.stage_id==stage['id'])).mappings().first()
-    agent=agents.load(s,{k:stage[k] for k in ('project_id','workspace_id')},stage['binding']['agent_id'])
+    agent=agents.load(s,{k:stage[k] for k in ('project_id','workspace_id')},stage['binding']['agent_id'],_stage=True)
     if row['state']!='succeeded' or attempt['status']!='succeeded' or not link or link['round']!=stage['round'] or link['input_digest']!=stage['input_digest'] or stage['inputs']!=row['snapshot']['inputs'] or compatible(s,agent):raise Conflict('منشأ خروجی هارنس با مرحله یکسان نیست.')
     validate_output(stage['binding'],content)
     return content,dict(kind='harness',attempt_id=row['attempt_id'],artifact_id=selected['id'],snapshot_digest=row['snapshot_digest'],input_digest=stage['input_digest'],content_digest=agents.digest(content),outcome='structural_passed',origin=row['result']['origin'])

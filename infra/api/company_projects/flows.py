@@ -6,7 +6,7 @@ from uuid import uuid4
 import sqlalchemy as sa
 from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound, UnprocessableEntity
 
-from company_projects import access, agents, team
+from company_projects import access, agents, team, stage_config
 from models.account import Account, AccountStatus, Tenant, TenantAccountJoin
 from models.model import App
 from models.workflow import Workflow
@@ -136,7 +136,34 @@ def options(session, project_id, workspace_id, actor_id):
         result.append({k: value[k] for k in ('id', 'name', 'app_id', 'app_name', 'workflow_id', 'workflow_version', 'input_contract', 'output_contract')} | {
             'runners': [m['account_id'] for m in members if 'run' in agents.permissions(session, agent, m['account_id'])],
             'finalizers': [m['account_id'] for m in members if 'finalize' in agents.permissions(session, agent, m['account_id'])]})
-    return dict(agents=result, members=members)
+    # Legacy rows are read only conversion hints for drafts created before this feature.
+    from company_projects import harness
+    for value in result:
+        agent = agents.load(session, dict(project_id=str(project_id), workspace_id=str(workspace_id)), value['id'])
+        value['execution'] = dict(harness.policy(session, agent), program_enabled=True)
+        value['execution'] = {k: value['execution'][k] for k in ('program_enabled', 'enabled', 'instructions', 'requires_source')}
+        value['participants'] = [dict(account_id=m['account_id'], membership_id=m['membership_id'],
+            actions=[a for a in ('view', 'feedback') if a in agents.permissions(session, agent, m['account_id'])])
+            for m in members if set(agents.permissions(session, agent, m['account_id'])) & {'view', 'feedback'}]
+    from company_projects.controller import visible_filters
+    filters = visible_filters(session, str(workspace_id), str(actor_id))
+    programs = []
+    rows = session.execute(sa.select(App, Workflow).join(Workflow, sa.and_(Workflow.app_id == App.id,
+        Workflow.tenant_id == App.tenant_id)).where(App.tenant_id == str(workspace_id), App.mode == 'workflow',
+        App.status == 'normal', Workflow.version != 'draft', *filters).order_by(App.name, Workflow.created_at.desc())) if filters else []
+    for app, workflow in rows:
+        from company_projects.personal_agent_sources import metadata
+        if metadata(workflow) is not None:
+            continue
+        try:
+            inputs, outputs = agents.contracts(workflow)
+        except UnprocessableEntity:
+            continue
+        reason = harness.compatible(session, dict(workflow_id=workflow.id, workflow_digest=agents.fingerprint(workflow)))
+        programs.append(dict(app_id=app.id, app_name=app.name, workflow_id=workflow.id,
+            version=workflow.marked_name or workflow.version, input_contract=inputs, output_contract=outputs,
+            harness_compatible=reason is None, harness_reason=reason))
+    return dict(agents=result, programs=programs, members=members)
 
 
 def validate_draft(data):
@@ -150,8 +177,11 @@ def validate_draft(data):
         raise BadRequest('حداکثر ۳۰ مرحله در هر فلو مجاز است.')
     keys = set()
     for stage in stages:
+        extra = ('app_id', 'workflow_id', 'execution', 'participants') if isinstance(stage, dict) and 'execution' in stage else ()
         agents.body(stage, ('key', 'title', 'agent_id', 'executor_id', 'executor_membership_id',
-            'finalizer_id', 'finalizer_membership_id', 'decision_role', 'inputs'))
+            'finalizer_id', 'finalizer_membership_id', 'decision_role', 'inputs', *extra))
+        if extra:
+            stage_config.validate(stage)
         if not isinstance(stage['key'], str) or not KEY.fullmatch(stage['key']) or stage['key'] in keys:
             raise BadRequest('شناسهٔ مراحل باید معتبر و یکتا باشد.')
         keys.add(stage['key'])
@@ -224,10 +254,12 @@ def compile_stages(session, scoped, actor_id, stages):
         raise UnprocessableEntity('فلو برای انتشار حداقل یک مرحله لازم دارد.')
     compiled = []
     for stage in stages:
-        if any(stage[field] is None for field in ('agent_id', 'executor_id', 'executor_membership_id', 'finalizer_id', 'finalizer_membership_id')):
+        stage_owned = 'execution' in stage
+        required = ('executor_id', 'executor_membership_id', 'finalizer_id', 'finalizer_membership_id') + (() if stage_owned else ('agent_id',))
+        if any(stage[field] is None for field in required):
             raise UnprocessableEntity('ایجنت، اجراکننده و نهایی‌کنندهٔ هر مرحله را مشخص کنید.')
-        agent = agents.load(session, scoped, stage['agent_id'], lock=True)
-        if agent['archived'] or (not access.can_manage_members(session, scoped['workspace_id'], actor_id)
+        agent = stage_config.source(session, scoped, actor_id, stage) if stage_owned else agents.load(session, scoped, stage['agent_id'], lock=True)
+        if agent['archived'] or (not stage_owned and not access.can_manage_members(session, scoped['workspace_id'], actor_id)
                 and not agents.permissions(session, agent, actor_id)):
             raise Forbidden('ایجنت مرحله در دسترس شما نیست.')
         workflow = session.scalar(sa.select(Workflow).where(Workflow.id == agent['workflow_id']).with_for_update())
@@ -255,14 +287,18 @@ def compile_stages(session, scoped, actor_id, stages):
             join = team.member(session, scoped['workspace_id'], stage[prefix + '_id'], lock=True)
             if join.id != stage[prefix + '_membership_id']:
                 raise Conflict('عضویت مسئول مرحله تغییر کرده است.')
-            agents.require(session, agent, join.account_id, action)
+            if not stage_owned:
+                agents.require(session, agent, join.account_id, action)
             account = session.get(Account, join.account_id)
+            if account.status != AccountStatus.ACTIVE:
+                raise Forbidden('مسئول مرحله باید حساب فعال داشته باشد.')
             people[prefix] = dict(account_id=join.account_id, membership_id=join.id, name=account.name)
         if stage['decision_role'] and stage['decision_role'] not in team.get_roles(session, scoped['project_id'],
                 scoped['workspace_id'], actor_id, stage['finalizer_id'])['roles']:
             raise UnprocessableEntity('نهایی‌کننده نقش کاری لازم برای تصمیم این مرحله را ندارد.')
         validate_bindings(agent['input_contract'], stage['inputs'], compiled)
-        compiled.append(dict(key=stage['key'], title=stage['title'], agent_id=agent['id'], agent_name=agent['name'],
+        config = stage_config.compile_config(session, scoped, stage, agent) if stage_owned else {}
+        compiled.append(dict(**config, key=stage['key'], title=stage['title'], agent_id=agent['id'], agent_name=agent['name'],
             agent_revision=agent['revision'], workflow_id=workflow.id, workflow_digest=agent['workflow_digest'],
             app_id=app.id, app_name=app.name, workflow_version=workflow.marked_name or workflow.version,
             input_contract=agent['input_contract'], output_contract=agent['output_contract'], contract_version=1,

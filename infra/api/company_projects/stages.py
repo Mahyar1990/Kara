@@ -6,7 +6,7 @@ from uuid import uuid4
 import sqlalchemy as sa
 from werkzeug.exceptions import BadRequest, Conflict, Forbidden, HTTPException, NotFound, UnprocessableEntity
 
-from company_projects import agents, flows, requests, team
+from company_projects import agents, flows, requests, team, stage_config
 from company_projects.store import uid
 from models.account import Tenant
 from models.model import App
@@ -124,7 +124,7 @@ def list_instances(session, project, workspace, actor):
             version = flows.version(session, scope, decision['flow_id'], decision['flow_version_id'])
             first = version['stage_bindings'][0]
             try:
-                join = agents.require(session, agents.load(session, scope, first['agent_id']), actor, 'run')
+                _, join = stage_config.require(session, scope, first, actor, 'run')
                 allowed = first['executor']['account_id'] == str(actor) and first['executor']['membership_id'] == join.id
             except HTTPException:
                 pass
@@ -156,8 +156,7 @@ def create(session, project, workspace, actor, data, key):
         raise Conflict('برای فلو بایگانی‌شده اجرای تازه ایجاد نمی‌شود.')
     first = version['stage_bindings'][0]
     if not requests.is_po(session, scope, actor):
-        agent = agents.load(session, scope, first['agent_id'])
-        join = agents.require(session, agent, actor, 'run')
+        _, join = stage_config.require(session, scope, first, actor, 'run')
         if first['executor']['account_id'] != str(actor) or first['executor']['membership_id'] != join.id:
             raise Forbidden('ایجاد اجرا با PO یا اجراکنندهٔ مرحلهٔ اول است.')
     fingerprint = agents.digest(dict(operation='instance.create', body=data))
@@ -181,8 +180,7 @@ def create(session, project, workspace, actor, data, key):
 
 def require(session, scope, stage, actor, action):
     binding = stage['binding']
-    agent = agents.load(session, scope, binding['agent_id'])
-    join = agents.require(session, agent, actor, action)
+    agent, join = stage_config.require(session, scope, binding, actor, action)
     if action in ('run', 'finalize'):
         person = binding['executor' if action == 'run' else 'finalizer']
         if person['account_id'] != str(actor) or person['membership_id'] != join.id:
@@ -319,11 +317,11 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
     stage = load(session, tables(session)[1], scope, stage_id)
     if stage['instance_id'] != value['id']:
         raise NotFound('مرحله در این اجرا پیدا نشد.')
-    agent = agents.load(session, scope, stage['binding']['agent_id'])
+    agent = agents.load(session, scope, stage['binding']['agent_id'], _stage=True)
     from company_projects.runtime_models import policy, llm_nodes
     source_graph = session.get(Workflow, agent['workflow_id']).graph_dict
     runtime_model = policy(source_graph) if llm_nodes(source_graph) else None
-    permissions = agents.permissions(session, agent, actor)
+    permissions = stage_config.permissions(session, scope, stage['binding'], actor) if stage_config.owned(stage['binding']) else agents.permissions(session, agent, actor)
     if not set(permissions) & {'view', 'run', 'feedback', 'finalize'}:
         raise Forbidden('مجوز مشاهدهٔ محتوای این مرحله را ندارید.')
     bridge, feedback, artifacts, decisions = tables(session)[2:]
@@ -351,6 +349,10 @@ def get_stage(session, project, workspace, actor, instance_id, stage_id):
     result['handoffs'] = handoffs(session, value, stage) if not result['input_error'] else []
     from company_projects import harness
     result['harness'] = harness.stage_info(session,stage,actor)
+    cfg = stage['binding'].get('execution') or dict(harness.policy(session, agent), program_enabled=True)
+    reason = harness.compatible(session, agent)
+    result['execution_policy'] = dict(policy={k: cfg[k] for k in ('revision', 'program_enabled', 'enabled', 'instructions', 'requires_source')},
+        compatible=reason is None, reason=reason, can_manage=False, output_contract=agent['output_contract'], workflow_digest=agent['workflow_digest'])
     return result
 
 
@@ -397,7 +399,7 @@ def mutate(session, project, workspace, actor, instance_id, stage_id, action, da
         from company_projects.runtime_models import INPUT
         run_inputs = dict(inputs, **{INPUT: data['model_connection_id']}) if optional_model else inputs
         attempt = agents.start(session, project, workspace, actor, agent['id'],
-            dict(inputs=run_inputs, expected_revision=stage['binding']['agent_revision'], **({'execution':data['execution']} if optional_execution else {})), inner_key)
+            dict(inputs=run_inputs, expected_revision=stage['binding']['agent_revision'], **({'execution':data['execution']} if optional_execution else {})), inner_key, _stage=stage)
         session.execute(bridge.insert().values(attempt_id=attempt['id'], stage_id=stage['id'], **scope,
             round=stage['round'], input_digest=digest, created_at=agents.now()))
         from company_projects.harness import bind_stage

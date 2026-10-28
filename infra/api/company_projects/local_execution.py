@@ -145,8 +145,9 @@ def validate_access(s,job):
         attempts=agents.tables(s)[2]
         attempt=s.execute(sa.select(attempts).where(attempts.c.id==job['team_attempt_id'])).mappings().first()
         if not attempt or attempt['status'] not in ('pending','running'): raise Conflict('این تلاش تیمی فعال نیست.')
-        agent=agents.load(s,{'project_id':job['project_id'],'workspace_id':job['workspace_id']},attempt['agent_id'])
-        agents.require(s,agent,job['account_id'],'run')
+        agent=agents.load(s,{'project_id':job['project_id'],'workspace_id':job['workspace_id']},attempt['agent_id'], _stage=True)
+        from company_projects.stage_config import attempt_join
+        attempt_join(s,agent,attempt)
         from company_projects.stages import validate_attempt
         validate_attempt(s,attempt)
     else:
@@ -298,7 +299,7 @@ def complete(s,runner,identity,data):
     if job['team_attempt_id']:
         attempts=agents.tables(s)[2]
         attempt=s.execute(sa.select(attempts).where(attempts.c.id==job['team_attempt_id'])).mappings().one()
-        agent=agents.load(s,{'project_id':job['project_id'],'workspace_id':job['workspace_id']},attempt['agent_id'])
+        agent=agents.load(s,{'project_id':job['project_id'],'workspace_id':job['workspace_id']},attempt['agent_id'], _stage=True)
         result['outputs']={k:v for k,v in result['outputs'].items() if k in agent['output_contract']}
     return finish(s,job,data['state'],result)
 
