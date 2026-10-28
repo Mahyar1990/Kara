@@ -133,10 +133,12 @@ def public(session, row, actor_id):
     from company_projects.runtime_models import policy, llm_nodes
     from company_projects.personal_agent_sources import public as personal_source
     source = session.get(Workflow, row['workflow_id'])
+    app = session.get(App, row['app_id'])
     return {k: row[k] for k in ('id', 'name', 'description', 'app_id', 'workflow_id', 'revision',
         'acl_revision', 'archived', 'input_contract', 'output_contract')} | {
         'actions': permissions(session, row, actor_id), 'runtime_model': policy(source.graph_dict) if source and llm_nodes(source.graph_dict) else None,
-        'personal_source': personal_source(source)}
+        'personal_source': personal_source(source), 'app_name': app.name if app else row['name'],
+        'workflow_version': (source.marked_name or source.version) if source else None}
 
 
 def list_agents(session, project_id, workspace_id, actor_id):
