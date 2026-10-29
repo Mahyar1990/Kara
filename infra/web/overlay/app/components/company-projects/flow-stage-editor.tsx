@@ -4,12 +4,11 @@ import type { AgentInput } from '@/service/company-agents'
 import type { FlowInput, FlowOptions, FlowStage, StageParticipant } from '@/service/company-flows'
 import { DirectionProvider } from '@base-ui/react/direction-provider'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@langgenius/dify-ui/tabs'
-import { useRef, useState } from 'react'
-import FormDialog, { FieldHelp } from './form-dialog'
+import { useEffect, useRef, useState } from 'react'
+import { FieldHelp } from './form-dialog'
 import { matchesSearch } from './team-directory'
 
 const button = 'rounded-lg border border-divider-regular px-3 py-2 text-sm disabled:opacity-40'
-const primary = `${button} bg-components-button-primary-bg text-components-button-primary-text`
 const field = 'mt-2 block w-full rounded-lg border border-divider-regular bg-background-default p-3 text-sm text-text-primary'
 const hint = 'text-xs leading-6 text-text-tertiary'
 const number = (value: number) => value.toLocaleString('fa-IR')
@@ -82,17 +81,22 @@ const sections: { id: StageTab; label: string }[] = [
   { id: 'access', label: 'مسئولان و دسترسی' },
 ]
 
-export default function FlowStageEditor({ value, index, stages, options, apply, close, refreshOptions, updatingOptions, optionsFailed }: {
-  value: FlowStage; index: number; stages: FlowStage[]; options: FlowOptions; apply: (value: FlowStage) => void; close: () => void
+export type StageEditError = { message: string; attempt: number }
+export default function FlowStageEditor({ value: stage, change: setStage, error, clearError, index, stages, options, refreshOptions, updatingOptions, optionsFailed }: {
+  value: FlowStage; change: (update: (current: FlowStage) => FlowStage) => void; error: StageEditError | null; clearError: () => void; index: number; stages: FlowStage[]; options: FlowOptions
   refreshOptions: () => unknown; updatingOptions: boolean; optionsFailed: boolean
 }) {
-  // The dialog edits its own draft. Switching tabs never drops values; cancel
-  // leaves the enclosing flow draft unchanged, and applying does not publish it.
-  const [stage, setStage] = useState(value)
+  // The enclosing dialog owns this working copy and guards every return path.
   const [tab, setTab] = useState<StageTab>('general')
-  const [error, setError] = useState('')
   const [memberQuery, setMemberQuery] = useState('')
   const titleInput = useRef<HTMLInputElement>(null)
+  useEffect(() => { titleInput.current?.focus() }, [])
+  useEffect(() => {
+    if (!error) return
+    setTab('general')
+    const frame = requestAnimationFrame(() => titleInput.current?.focus())
+    return () => cancelAnimationFrame(frame)
+  }, [error])
   const source = stageProgram(options, stage)
   const legacy = options.agents.find(item => item.id === stage.agent_id)
   const cfg = stage.execution || legacy?.execution || defaultStageExecution()
@@ -119,21 +123,10 @@ export default function FlowStageEditor({ value, index, stages, options, apply, 
         ...(actions.length ? [{ account_id: member.account_id, membership_id: member.membership_id, actions }] : [])] }
     })
   }
-  const confirm = () => {
-    if (!stage.title.trim()) {
-      setError('عنوان مرحله را وارد کنید.'); setTab('general')
-      requestAnimationFrame(() => titleInput.current?.focus())
-      return
-    }
-    apply(stage)
-  }
   const sourceMissing = !!(stage.workflow_id || stage.agent_id) && !source
   const accessNeedsReview = !!stage.executor_id && !executorEligible || !!stage.finalizer_id && !finalizerEligible || staleParticipants.length > 0
   const panelClass = 'min-h-0 min-w-0 flex-1 space-y-5 overflow-y-auto overscroll-contain py-4 pe-2'
-  return <FormDialog open wide fixedBody title={`تنظیم مرحلهٔ ${number(index + 1)} · ${stage.title || 'مرحلهٔ جدید'}`}
-    description="تنظیمات این مرحله را در تب‌های زیر مشخص کنید. با اعمال تغییرات، به پیش‌نویس فلو برمی‌گردید."
-    close={close} footer={<div className="flex flex-wrap items-center justify-between gap-3"><p className="max-w-xl text-xs leading-6 text-text-tertiary">پس از اعمال مرحله، برای ثبت تغییرات، پیش‌نویس فلو را ذخیره کنید.</p><div className="flex gap-2"><button type="button" className={button} onClick={close}>انصراف</button><button type="button" className={primary} onClick={confirm}>اعمال در پیش‌نویس</button></div></div>}>
-    <div className="flex h-full min-h-0 flex-col">
+  return <div className="flex h-full min-h-0 flex-col">
       <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-text-secondary"><p>مرحلهٔ {number(index + 1)} · {source?.app_name || legacy?.app_name || 'برنامه انتخاب نشده'}</p><button type="button" className="rounded-lg px-2 py-1 text-text-accent disabled:opacity-40" disabled={updatingOptions} onClick={() => void refreshOptions()}>{updatingOptions ? 'در حال دریافت…' : 'تازه‌سازی اعضا و برنامه‌ها'}</button></div>
       {optionsFailed && <p role="alert" className="mb-2 shrink-0 text-xs leading-6">تازه‌سازی موفق نبود؛ اطلاعات قبلی و تغییرات شما حفظ شده‌اند. پیش از انتشار دوباره تازه‌سازی کنید.</p>}
       <DirectionProvider direction="rtl"><Tabs className="flex min-h-0 min-w-0 flex-1 flex-col" value={tab} onValueChange={next => setTab(next as StageTab)}>
@@ -141,8 +134,8 @@ export default function FlowStageEditor({ value, index, stages, options, apply, 
           {sections.map(section => <TabsTab key={section.id} value={section.id} type="button" className="shrink-0 whitespace-nowrap">{section.label}{(section.id === 'access' && accessNeedsReview || section.id === 'general' && sourceMissing) && <span className="ms-2 text-text-destructive-secondary" aria-label="نیازمند بازبینی">●</span>}</TabsTab>)}
         </TabsList>
         <TabsPanel value="general" className={panelClass}>
-          <label className="block text-sm">عنوان مرحله<input ref={titleInput} className={field} maxLength={120} value={stage.title} aria-invalid={!!error} onChange={event => { patch({ title: event.target.value }); setError('') }} /><FieldHelp>کاری که باید در این گام انجام و بررسی شود.</FieldHelp></label>
-          {error && <p role="alert" className="text-sm text-text-destructive-secondary">{error}</p>}
+          <label className="block text-sm">عنوان مرحله<input ref={titleInput} className={field} maxLength={120} value={stage.title} aria-invalid={!!error} onChange={event => { patch({ title: event.target.value }); clearError() }} /><FieldHelp>کاری که باید در این گام انجام و بررسی شود.</FieldHelp></label>
+          {error && <p role="alert" className="text-sm text-text-destructive-secondary">{error.message}</p>}
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block text-sm">برنامهٔ مرحله<select className={field} value={stage.app_id || ''} onChange={event => {
               const appId = event.target.value; const available = options.programs.filter(item => item.app_id === appId)
@@ -207,5 +200,4 @@ export default function FlowStageEditor({ value, index, stages, options, apply, 
         </TabsPanel>
       </Tabs></DirectionProvider>
     </div>
-  </FormDialog>
 }

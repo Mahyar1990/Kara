@@ -12,6 +12,7 @@ import { sourceError } from '@/service/company-source'
 import DeleteTeamEntity from './delete-team-entity'
 import FormDialog, { FieldHelp } from './form-dialog'
 import FlowStageEditor, { defaultStageExecution, FlowStageRow, upgradeStage } from './flow-stage-editor'
+import type { StageEditError } from './flow-stage-editor'
 import { DirectoryPage, DirectoryNotice, DirectorySummary, DirectoryToolbar, DirectoryPagination, DirectoryEmpty, directoryButton, directoryField, matchesSearch, resultPage } from './team-directory'
 
 const panel = 'min-w-0 space-y-4 [overflow-wrap:anywhere] rounded-2xl border border-divider-regular bg-background-default p-5'
@@ -42,6 +43,10 @@ function FlowEditor({ project, value, options, saved, cancel, refreshOptions, up
   const [description, setDescription] = useState(value?.description || '')
   const [stages, setStages] = useState<FlowStage[]>(() => (value?.draft_stages || []).map(stage => upgradeStage(stage, options)))
   const [editingStage, setEditingStage] = useState<FlowStage | null>(null)
+  const [stageOrigin, setStageOrigin] = useState<FlowStage | null>(null)
+  const [stageError, setStageError] = useState<StageEditError | null>(null)
+  const [confirmReturn, setConfirmReturn] = useState(false)
+  const stageLauncher = useRef<HTMLButtonElement | null>(null)
   const [archiving, setArchiving] = useState(false)
   const formId = useId()
   const action = useAction()
@@ -49,16 +54,41 @@ function FlowEditor({ project, value, options, saved, cancel, refreshOptions, up
   const changed = !value || name !== value.name || description !== value.description || JSON.stringify(stages) !== JSON.stringify(value.draft_stages)
   const save = () => { const body = { name, description, stages, expected_revision: value?.revision || 1 }; void action.run({ id: value?.id, body }, async key => saved(await flowApi.save(project, value?.id || null, body, key))) }
   const publish = () => { if (value) void action.run({ publish: value.id, revision: value.revision }, async key => saved(await flowApi.publish(project, value.id, value.revision, key))) }
-  const add = () => setEditingStage({ key: `step_${crypto.randomUUID().slice(0, 8)}`, title: `مرحلهٔ ${number(stages.length + 1)}`, agent_id: null, app_id: null, workflow_id: null, execution: defaultStageExecution(), participants: [], executor_id: null, executor_membership_id: null, finalizer_id: null, finalizer_membership_id: null, decision_role: null, inputs: {} })
-  const applyStage = (next: FlowStage) => {
+  const editStage = (stage: FlowStage) => {
+    stageLauncher.current = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null
+    setStageOrigin(stage); setEditingStage(stage); setStageError(null); setConfirmReturn(false)
+  }
+  const add = () => editStage({ key: `step_${crypto.randomUUID().slice(0, 8)}`, title: `مرحلهٔ ${number(stages.length + 1)}`, agent_id: null, app_id: null, workflow_id: null, execution: defaultStageExecution(), participants: [], executor_id: null, executor_membership_id: null, finalizer_id: null, finalizer_membership_id: null, decision_role: null, inputs: {} })
+  const stageChanged = JSON.stringify(editingStage) !== JSON.stringify(stageOrigin)
+  const returnToFlow = () => {
+    setEditingStage(null); setStageOrigin(null); setStageError(null); setConfirmReturn(false)
+    requestAnimationFrame(() => stageLauncher.current?.focus())
+  }
+  const requestReturn = () => { if (stageChanged) setConfirmReturn(true); else returnToFlow() }
+  const applyStage = () => {
+    if (!editingStage) return
+    if (!editingStage.title.trim()) {
+      setStageError(previous => ({ message: 'عنوان مرحله را وارد کنید.', attempt: (previous?.attempt || 0) + 1 }))
+      setConfirmReturn(false)
+      return
+    }
+    const next = editingStage
     setStages(current => current.some(stage => stage.key === next.key) ? current.map(stage => stage.key === next.key ? next : stage) : [...current, next])
-    setEditingStage(null)
+    returnToFlow()
   }
   const move = (index: number, offset: number) => { const current = stages[index]; const other = stages[index + offset]; if (!current || !other) return; const result = [...stages]; result[index] = other; result[index + offset] = current; setStages(result) }
   const editingIndex = editingStage ? stages.findIndex(stage => stage.key === editingStage.key) : -1
-  return <FormDialog open wide fixedBody title={value ? `ویرایش فلو: ${value.name}` : 'ساخت فلو'}
-    description="نام و ترتیب مراحل را مشخص کنید. تنظیمات هر مرحله از دکمهٔ «ویرایش مرحله» باز می‌شود."
-    busy={locked} close={cancel} footer={<div className="space-y-3">
+  return <FormDialog open wide fixedBody title={editingStage ? `تنظیم مرحلهٔ ${number((editingIndex < 0 ? stages.length : editingIndex) + 1)} · ${editingStage.title || 'مرحلهٔ جدید'}` : value ? `ویرایش فلو: ${value.name}` : 'ساخت فلو'}
+    description={editingStage ? 'تنظیمات این مرحله را در تب‌های زیر مشخص کنید. اعمال مرحله، پیش‌نویس فلو را تغییر می‌دهد؛ ذخیرهٔ نهایی را در صفحهٔ مراحل انجام دهید.' : 'نام و ترتیب مراحل را مشخص کنید. تنظیمات هر مرحله از دکمهٔ «ویرایش مرحله» باز می‌شود.'}
+    header={editingStage ? <button type="button" className="flex items-center gap-2 rounded-lg py-1 text-sm text-text-accent" onClick={requestReturn}><span aria-hidden className="i-ri-arrow-right-line size-4" />بازگشت به مراحل فلو</button> : undefined}
+    closeLabel={editingStage ? 'بازگشت به مراحل فلو' : 'بستن'}
+    busy={action.busy} close={editingStage ? requestReturn : cancel} footer={editingStage ? <div className="space-y-3">
+      {confirmReturn && <p role="alert" className="rounded-lg bg-background-section p-3 text-sm leading-7">تغییرات این مرحله هنوز به پیش‌نویس فلو اعمال نشده‌اند. آن‌ها را اعمال کنید یا بدون اعمال برگردید.</p>}
+      <div className="flex flex-wrap items-center justify-between gap-3"><p className="max-w-xl text-xs leading-6 text-text-tertiary">پس از اعمال مرحله، برای ثبت تغییرات، پیش‌نویس فلو را ذخیره کنید.</p><div className="flex flex-wrap gap-2">
+        <button type="button" className={primary} onClick={applyStage}>اعمال و بازگشت</button>
+        {confirmReturn ? <><button type="button" className={button} onClick={() => setConfirmReturn(false)}>ادامهٔ ویرایش</button><button type="button" className={button} onClick={returnToFlow}>بازگشت بدون اعمال</button></> : <button type="button" className={button} onClick={requestReturn}>بازگشت</button>}
+      </div></div>
+    </div> : <div className="space-y-3">
       {action.error && <p role="alert" className="text-sm leading-7 text-text-destructive-secondary">{action.error}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className="text-xs leading-6 text-text-secondary">{changed ? 'تغییرات ذخیره‌نشده دارید.' : 'پیش‌نویس ذخیره شده است.'}</p><div className="flex flex-wrap gap-2">
         <button type="submit" form={formId} className={primary} disabled={locked || !!value?.archived || !changed || !name.trim()}>{action.busy ? 'در حال ثبت…' : 'ذخیرهٔ پیش‌نویس'}</button>
@@ -66,7 +96,7 @@ function FlowEditor({ project, value, options, saved, cancel, refreshOptions, up
         <button type="button" className={button} disabled={locked} onClick={cancel}>بستن</button>
       </div></div><p className="text-xs leading-6 text-text-tertiary">انتشار نسخهٔ تازه، اجرا را شروع نمی‌کند و نسخه‌ها و اجراهای قبلی را تغییر نمی‌دهد.</p>
     </div>}>
-    <form id={formId} aria-label="ویرایش پیش‌نویس فلو" className="flex h-full min-h-0 min-w-0 flex-col gap-4" onSubmit={event => { event.preventDefault(); if (!locked) save() }}>
+    <form id={formId} aria-label="ویرایش پیش‌نویس فلو" hidden={!!editingStage} className={editingStage ? 'hidden' : 'flex h-full min-h-0 min-w-0 flex-col gap-4'} onSubmit={event => { event.preventDefault(); if (!locked) save() }}>
       {remoteChanged && <p role="alert" className="shrink-0 rounded-lg border border-divider-regular p-3 text-sm leading-7">این فلو پس از بازشدن ویرایشگر تغییر کرده یا از فهرست خارج شده است. تغییرات شما حفظ شده‌اند؛ پیش از بستن آن‌ها را کپی کنید و سپس نسخهٔ تازه را باز کنید.</p>}
       <fieldset disabled={locked || value?.archived} className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
         <div className="grid shrink-0 gap-4 md:grid-cols-2">
@@ -76,12 +106,12 @@ function FlowEditor({ project, value, options, saved, cancel, refreshOptions, up
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-divider-regular pt-3"><h3 className="font-semibold">مراحل فلو <span className="ms-2 text-xs font-normal text-text-tertiary">{number(stages.length)} از ۳۰ مرحله</span></h3><div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={updatingOptions} onClick={() => void refreshOptions()}>{updatingOptions ? 'در حال دریافت…' : 'تازه‌سازی اعضا و برنامه‌ها'}</button><button type="button" className={button} disabled={stages.length >= 30} onClick={add}>افزودن مرحله</button></div></div>
         {optionsFailed && <p role="alert" className="shrink-0 text-xs leading-6">تازه‌سازی موفق نبود؛ اطلاعات قبلی و تغییرات شما حفظ شده‌اند. پیش از انتشار دوباره تازه‌سازی کنید.</p>}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pe-2">
-          {stages.length ? <ol aria-label="مراحل پیش‌نویس فلو" className="m-0 list-none space-y-3 p-0">{stages.map((stage, index) => <li key={stage.key}><FlowStageRow stage={stage} index={index} total={stages.length} options={options} edit={() => setEditingStage(stage)} move={offset => move(index, offset)} remove={() => setStages(current => current.filter(item => item.key !== stage.key))} /></li>)}</ol> : <div className="rounded-xl border border-dashed border-divider-regular p-6 text-center"><p className="text-sm font-medium">اولین مرحلهٔ همکاری را اضافه کنید</p><p className="mt-2 text-xs leading-6 text-text-tertiary">برنامه، ورودی‌ها، روش اجرا و دسترسی‌ها را در تنظیمات همان مرحله مشخص می‌کنید.</p><button type="button" className={`${button} mt-4`} onClick={add}>افزودن مرحله</button></div>}
+          {stages.length ? <ol aria-label="مراحل پیش‌نویس فلو" className="m-0 list-none space-y-3 p-0">{stages.map((stage, index) => <li key={stage.key}><FlowStageRow stage={stage} index={index} total={stages.length} options={options} edit={() => editStage(stage)} move={offset => move(index, offset)} remove={() => setStages(current => current.filter(item => item.key !== stage.key))} /></li>)}</ol> : <div className="rounded-xl border border-dashed border-divider-regular p-6 text-center"><p className="text-sm font-medium">اولین مرحلهٔ همکاری را اضافه کنید</p><p className="mt-2 text-xs leading-6 text-text-tertiary">برنامه، ورودی‌ها، روش اجرا و دسترسی‌ها را در تنظیمات همان مرحله مشخص می‌کنید.</p><button type="button" className={`${button} mt-4`} onClick={add}>افزودن مرحله</button></div>}
         </div>
       </fieldset>
       {value && !value.archived && <details open={archiving} onToggle={event => setArchiving(event.currentTarget.open)} className="shrink-0 border-t border-divider-regular pt-3"><summary className="cursor-pointer text-xs text-text-tertiary">بایگانی فلو</summary><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><p className="text-xs leading-6">ویرایش و انتشار تازه متوقف می‌شود. تغییرات ذخیره‌نشده اعمال نمی‌شوند و نسخه‌های قبلی حفظ می‌شوند.</p><button type="button" className={`${button} text-text-destructive-secondary`} disabled={locked} onClick={() => action.run({ archive: value.id, revision: value.revision }, async key => saved(await flowApi.archive(project, value.id, value.revision, key)))}>تأیید بایگانی فلو</button></div></details>}
     </form>
-    {editingStage && <FlowStageEditor key={editingStage.key} value={editingStage} index={editingIndex < 0 ? stages.length : editingIndex} stages={stages} options={options} apply={applyStage} close={() => setEditingStage(null)} refreshOptions={refreshOptions} updatingOptions={updatingOptions} optionsFailed={optionsFailed} />}
+    {editingStage && <FlowStageEditor key={editingStage.key} value={editingStage} change={update => setEditingStage(current => current ? update(current) : current)} error={stageError} clearError={() => setStageError(null)} index={editingIndex < 0 ? stages.length : editingIndex} stages={stages} options={options} refreshOptions={refreshOptions} updatingOptions={updatingOptions} optionsFailed={optionsFailed} />}
   </FormDialog>
 }
 
