@@ -32,7 +32,7 @@ function PartEditor({ value, repositories, connections, confirm, close }: { valu
     if (problem) setError(problem)
     else close()
   }}>
-    <div className="grid gap-4 sm:grid-cols-2"><label className="block">شناسهٔ بخش<input className={field} dir="ltr" required pattern="[a-z][a-z0-9-]*" maxLength={48} placeholder="backend" value={part.key} onChange={e => change({ key: e.target.value })} /></label><label className="block">مسیر نسبی بخش<input className={field} dir="ltr" required maxLength={240} placeholder="services/backend" value={part.path} onChange={e => change({ path: e.target.value })} /></label></div>
+    <div className="grid gap-4 sm:grid-cols-2"><label className="block">شناسهٔ بخش<input className={field} dir="ltr" required pattern={'[a-z][a-z0-9\\-]*'} maxLength={48} placeholder="backend" value={part.key} onChange={e => change({ key: e.target.value })} /></label><label className="block">مسیر نسبی بخش<input className={field} dir="ltr" required maxLength={240} placeholder="services/backend" value={part.path} onChange={e => change({ path: e.target.value })} /></label></div>
     <label className="block">مخزن و برنچ<select className={field} required value={part.repository_id} onChange={e => change({ repository_id: e.target.value })}><option value="">انتخاب مخزن</option>{!repositories.some(r => r.id === part.repository_id) && part.repository_id && <option value={part.repository_id}>مخزن حذف‌شده؛ جایگزین کنید</option>}{repositories.map(repo => <option key={repo.id} value={repo.id}>{repo.name} — {repo.branch}</option>)}</select></label>
     <label className="block">اتصال شخصی گیت‌لب<select className={field} required value={part.connection_id} onChange={e => change({ connection_id: e.target.value })}><option value="">انتخاب اتصال خودتان</option>{!connections.some(c => c.id === part.connection_id) && part.connection_id && <option value={part.connection_id}>اتصال حذف‌شده؛ جایگزین کنید</option>}{connections.map(c => <option key={c.id} value={c.id}>{c.name} — {c.base_url}</option>)}</select></label>
     <FieldHelp>مسیر بخش باید نسبی، بدون نقطهٔ آغازین و بدون هم‌پوشانی با بخش‌های دیگر باشد.</FieldHelp>
@@ -53,6 +53,7 @@ export default function WorkspaceEditor({ projectId, value, repositories, connec
   const [error, setError] = useState('')
   const [docError, setDocError] = useState('')
   const validateDoc = (doc: Document, index = -1, components = parts): string | undefined => {
+    if (doc.content.includes('\0')) return 'متن مستند دارای نویسهٔ نامعتبر است.'
     if (!pathValid(doc.path) || !doc.path.toLowerCase().endsWith('.md')) return 'مسیر نسبی معتبر با پسوند .md وارد کنید.'
     if (docs.some((other, i) => i !== index && overlaps(other.path, doc.path)) || components.some(part => overlaps(part.path, doc.path))) return 'مسیر مستند با یک بخش یا مستند دیگر هم‌پوشانی دارد.'
     const bytes = new TextEncoder()
@@ -75,6 +76,7 @@ export default function WorkspaceEditor({ projectId, value, repositories, connec
     </Tabs></DirectionProvider></fieldset></form>
     {partEdit && <PartEditor value={partEdit.value} repositories={repositories} connections={connections} close={() => setPartEdit(null)} confirm={(part, doc) => {
       const others = parts.filter((_, i) => i !== partEdit.index)
+      if (!/^[a-z][a-z0-9-]{0,47}$/.test(part.key)) return 'شناسهٔ بخش باید با حرف انگلیسی کوچک شروع شود و فقط شامل حروف کوچک، عدد و خط تیره باشد (حداکثر ۴۸ نویسه).'
       if (!pathValid(part.path) || others.some(other => other.key === part.key || overlaps(other.path, part.path)) || docs.some(d => overlaps(d.path, part.path))) return 'شناسه باید یکتا و مسیر نسبی و بدون هم‌پوشانی باشد.'
       if (!repositories.some(repo => repo.id === part.repository_id) || !connections.some(connection => connection.id === part.connection_id)) return 'مخزن و اتصال معتبر انتخاب کنید.'
       const next = partEdit.index === -1 ? [...parts, part] : parts.map((old, i) => i === partEdit.index ? part : old)
