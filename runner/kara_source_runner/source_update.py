@@ -1,15 +1,39 @@
 """Merge a remote branch into an existing worktree without deleting local work."""
+import fcntl
 import json
 import os
 from pathlib import Path
 import re
 import shlex
+import stat
 import tempfile
 from uuid import UUID
 from .executor import RunnerFailure, command, git_environment, validate_job
 
 
 def update(job, credentials, root, heartbeat, *, owner, run=command):
+    validate_job(job)
+    try:
+        root = Path(root).expanduser().resolve()
+        directory = str(UUID(job['local_directory']))
+        private = root / directory / '.kara'
+        if directory != job['local_directory'] or (root / directory).is_symlink() or private.is_symlink():
+            raise ValueError()
+        # A cancelled/expired server job can still be stopping in another process.
+        # The OS releases this lock on crashes; never unlink a live lock file.
+        fd = os.open(private / 'update.lock', os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+        with os.fdopen(fd, 'w') as lock:
+            if not stat.S_ISREG(os.fstat(lock.fileno()).st_mode): raise ValueError()
+            try:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                raise RunnerFailure('workspace_busy') from None
+            return _update_locked(job, credentials, root, heartbeat, owner=owner, run=run)
+    except (OSError, ValueError, KeyError, TypeError):
+        raise RunnerFailure('workspace_update_failed') from None
+
+
+def _update_locked(job, credentials, root, heartbeat, *, owner, run):
     validate_job(job)
     try:
         directory = str(UUID(job['local_directory']))
@@ -25,12 +49,13 @@ def update(job, credentials, root, heartbeat, *, owner, run=command):
         if root.stat().st_uid != os.getuid() or root.stat().st_mode & 0o022 or target.is_symlink() or not safe(mark):
             raise ValueError()
         manifest = json.loads(mark.read_text())
+        if not isinstance(manifest, dict) or not isinstance(manifest.get('pending_stashes', {}), dict): raise ValueError()
         if manifest.get('owner') != owner or manifest.get('job_id') not in [*job.get('previous_job_ids', [job['update_of']]), job['id']]:
             raise ValueError()
         expected = lambda parts: [(p['key'], p['path'], p['url']) for p in parts]
         if expected(manifest['components']) != expected(job['components']):
             raise ValueError()
-        if set(credentials) != {p['key'] for p in job['components']}:
+        if not isinstance(credentials, dict) or set(credentials) != {p['key'] for p in job['components']}:
             raise ValueError()
         # Invalidate the previous snapshot before any file mutation, also on interruption.
         manifest.update(job_id=job['id'], valid=False)
@@ -59,12 +84,39 @@ def update(job, credentials, root, heartbeat, *, owner, run=command):
                 observed = Path(git(['rev-parse', '--git-common-dir']))
                 if not observed.is_absolute(): observed = destination / observed
                 if observed.resolve() != cache.resolve() or Path(git(['rev-parse', '--show-toplevel'])).resolve() != destination.resolve(): raise ValueError()
+                pending = manifest.setdefault('pending_stashes', {})
+                def clear_pending():
+                    pending.pop(part['key'], None)
+                    save()
                 if git(['ls-files', '--unmerged']) or (destination / '.git').is_dir():
+                    if part['key'] in pending: clear_pending()
                     raise RunnerFailure('merge_conflict')
                 # A previous failed merge must be resolved or aborted by its owner first.
                 merge_head = Path(git(['rev-parse', '--git-path', 'MERGE_HEAD']))
                 if not merge_head.is_absolute(): merge_head = destination / merge_head
-                if merge_head.exists(): raise RunnerFailure('merge_conflict')
+                if merge_head.exists():
+                    if part['key'] in pending: clear_pending()
+                    raise RunnerFailure('merge_conflict')
+                recovery = pending.get(part['key'])
+                if recovery:
+                    # Recover even a crash between stash push and saving its SHA/ref.
+                    recovery_ref = 'refs/kara/backups/' + str(UUID(recovery['job_id'])) + '/stash'
+                    sha = git(['for-each-ref', '--format=%(objectname)', recovery_ref])
+                    if not sha and git(['for-each-ref', '--format=%(objectname)', 'refs/stash']):
+                        entries = git(['reflog', 'show', '--format=%H%x00%gs', 'refs/stash']).splitlines()
+                        matches = [entry.split('\0')[0] for entry in entries if entry.endswith('Kara update ' + recovery['job_id'])]
+                        if matches: sha = matches[0]
+                    if sha:
+                        if not re.fullmatch('[0-9a-f]{40}|[0-9a-f]{64}', sha): raise ValueError()
+                        git(['update-ref', recovery_ref, sha])
+                        try:
+                            git(['stash', 'apply', '--index', sha])
+                        except RunnerFailure:
+                            # Explicit conflict recovery uses the retained stash, as
+                            # for a normal merge conflict; never hide it as success.
+                            clear_pending()
+                            raise RunnerFailure('merge_conflict') from None
+                    clear_pending()
                 fetch = ['--git-dir', str(cache), 'fetch', '--no-tags', '--no-recurse-submodules']
                 if (cache / 'shallow').exists(): fetch += ['--unshallow']
                 run([*fetch, '--', part['url'], '+refs/heads/' + part['branch'] + ':refs/kara/source'], env, heartbeat)
@@ -75,15 +127,20 @@ def update(job, credentials, root, heartbeat, *, owner, run=command):
                 git(['update-ref', backup + '/head', 'HEAD'])
                 stash = None
                 if git(['status', '--porcelain', '--untracked-files=all']):
+                    pending[part['key']] = dict(job_id=job['id'])
+                    save()
                     git(['stash', 'push', '--include-untracked', '-m', 'Kara update ' + job['id']])
                     stash = git(['rev-parse', 'refs/stash'])
                     git(['update-ref', backup + '/stash', stash])
                 heartbeat()
                 try:
                     git(['merge', '--no-edit', '--no-verify', '--no-gpg-sign', '--no-overwrite-ignore', remote])
-                    if stash: git(['stash', 'apply', '--index', stash])
+                    if stash:
+                        git(['stash', 'apply', '--index', stash])
+                        clear_pending()
                 except RunnerFailure:
                     # Never reset, clean, abort or drop the recovery stash on conflicts.
+                    if part['key'] in pending: clear_pending()
                     raise RunnerFailure('merge_conflict') from None
                 results.append(dict(key=part['key'], commit=git(['rev-parse', 'HEAD'])))
         manifest.update(valid=True, revision=job['revision'], components=[dict(key=p['key'], path=p['path'], url=p['url'], branch=p['branch'], commit=r['commit']) for p, r in zip(job['components'], results)])

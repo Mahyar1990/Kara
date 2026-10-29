@@ -71,6 +71,9 @@ class SourceCodeTests(ProjectDatabaseFixture):
         with self.assertRaises(Conflict): source.usable(self.session,source.row(self.session,'jobs',update['id'],{}))
         retry=source.enqueue_update(*self.args(),self.tree['id'],data|dict(action_key=str(uuid4()),update_of=next_job['id']))
         self.assertEqual(source.row(self.session,'jobs',retry['id'],{})['snapshot']['local_directory'],original['id'])
+        source.claim(self.session,self.runner)
+        source.complete(self.session,self.runner,retry['id'],dict(state='failed',components=[],error='workspace_busy'))
+        self.assertEqual(source.row(self.session,'jobs',retry['id'],{})['result']['error'],'workspace_busy')
 
     def update_request(self,base):
         from company_projects import local_execution as local

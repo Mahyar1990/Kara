@@ -1,4 +1,5 @@
 """Real local Git merges exercise source updates without contacting any service."""
+import fcntl
 import json
 from pathlib import Path
 import subprocess
@@ -99,6 +100,47 @@ class SourceUpdateTests(unittest.TestCase):
         with self.assertRaises(RunnerFailure):
             update(self.request, self.credentials, self.workspaces, lambda: None, owner='owner', run=self.run_git)
         self.assertEqual((self.local / 'private.txt').read_text(), 'private local content\n')
+
+    def test_interruption_after_stash_push_recovers_dirty_files_on_retry(self):
+        (self.local / 'dirty.txt').write_text('staged change\n'); self.git(['add', 'dirty.txt'], self.local)
+        (self.local / 'dirty.txt').write_text('staged plus unstaged\n')
+        (self.local / 'untracked.txt').write_text('must return\n')
+        (self.upstream / 'new.txt').write_text('new remote\n'); self.commit(self.upstream, 'remote')
+        def interrupted(args, env, heartbeat):
+            result = self.run_git(args, env, heartbeat)
+            if 'stash' in args and 'push' in args: raise RuntimeError('lost connection')
+            return result
+        with self.assertRaises(RuntimeError):
+            update(self.request, self.credentials, self.workspaces, lambda: None, owner='owner', run=interrupted)
+        self.assertFalse((self.local / 'untracked.txt').exists())
+        retry = dict(self.request, id=str(uuid4()), update_of=self.request['id'])
+        update(retry, self.credentials, self.workspaces, lambda: None, owner='owner', run=self.run_git)
+        self.assertEqual((self.local / 'untracked.txt').read_text(), 'must return\n')
+        self.assertEqual((self.local / 'dirty.txt').read_text(), 'staged plus unstaged\n')
+        self.assertEqual(self.git(['show', ':dirty.txt'], self.local), 'staged change')
+        self.assertTrue((self.local / 'new.txt').is_file())
+        self.assertFalse(json.loads((self.target / '.kara/manifest.json').read_text())['pending_stashes'])
+        self.assertEqual([p.name for p in self.workspaces.iterdir()], [self.job['id']])
+
+    def test_running_local_update_is_exclusive_and_crash_lock_is_reusable(self):
+        lock_path = self.target / '.kara/update.lock'
+        with lock_path.open('w') as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with self.assertRaises(RunnerFailure) as failure:
+                update(self.request, self.credentials, self.workspaces, lambda: None, owner='owner', run=self.run_git)
+            self.assertEqual(failure.exception.code, 'workspace_busy')
+            self.assertEqual(json.loads((self.target / '.kara/manifest.json').read_text())['job_id'], self.job['id'])
+        update(self.request, self.credentials, self.workspaces, lambda: None, owner='owner', run=self.run_git)
+
+    def test_malformed_recovery_metadata_fails_without_touching_worktree(self):
+        mark = self.target / '.kara/manifest.json'
+        original = json.loads(mark.read_text())
+        for malformed in [[], dict(original, pending_stashes=[])]:
+            mark.write_text(json.dumps(malformed))
+            with self.assertRaises(RunnerFailure) as failure:
+                update(self.request, self.credentials, self.workspaces, lambda: None, owner='owner', run=self.run_git)
+            self.assertEqual(failure.exception.code, 'workspace_update_failed')
+            self.assertEqual((self.local / 'base.txt').read_text(), 'base\n')
 
     def test_wrong_owner_symlink_and_cancel_do_not_mutate_files(self):
         with self.assertRaises(RunnerFailure): update(self.request, self.credentials, self.workspaces, lambda: None, owner='other', run=self.run_git)

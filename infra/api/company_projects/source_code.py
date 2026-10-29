@@ -290,7 +290,7 @@ def complete(s,runner,job_id,data):
             if actual['key']!=expected['key'] or not isinstance(actual['commit'],str) or not re.fullmatch('[0-9a-f]{40}|[0-9a-f]{64}',actual['commit']): raise BadRequest('شناسهٔ commit معتبر نیست.')
         result=dict(components=parts,local_directory=directory(job))
     else:
-        if data['error'] not in ('git_failed','disk_error','invalid_job','runner_error','merge_conflict','workspace_update_failed'): raise BadRequest('کد خطا معتبر نیست.')
+        if data['error'] not in ('git_failed','disk_error','invalid_job','runner_error','merge_conflict','workspace_update_failed','workspace_busy'): raise BadRequest('کد خطا معتبر نیست.')
         result=dict(error=data['error'])
     if job['snapshot'].get('update_of'):
         result.update(local_directory=directory(job),update_of=job['snapshot']['update_of'])
