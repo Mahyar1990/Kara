@@ -13,6 +13,7 @@ const files = [
   'app/components/company-projects/source-code.tsx',
   'app/components/company-projects/source-workspace-editor.tsx',
   'app/components/company-projects/source-runners.tsx',
+  'app/components/company-projects/runner-setup-dialog.tsx',
   'app/(commonLayout)/projects/[projectId]/source-code/page.tsx',
   'app/(commonLayout)/projects/[projectId]/source-runners/page.tsx',
   'service/company-source.ts',
