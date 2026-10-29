@@ -12,6 +12,7 @@ const button = 'rounded-lg border border-divider-regular px-3 py-2 text-sm disab
 const field = 'mt-2 block w-full rounded-lg border border-divider-regular bg-background-default p-3 text-sm text-text-primary'
 const hint = 'text-xs leading-6 text-text-tertiary'
 const number = (value: number) => value.toLocaleString('fa-IR')
+const inputTypes: Record<AgentInput['type'], string> = { 'text-input': 'متن کوتاه', paragraph: 'متن بلند', select: 'انتخاب از فهرست', number: 'عدد', checkbox: 'بله / خیر' }
 export const defaultStageExecution = () => ({ program_enabled: true, enabled: false, instructions: '', requires_source: true })
 const stageProgram = (options: FlowOptions, stage: FlowStage) => options.programs.find(value => value.workflow_id === stage.workflow_id && value.app_id === stage.app_id)
 
@@ -50,7 +51,7 @@ export function FlowStageRow({ stage, index, total, options, edit, move, remove 
     </div>
   </article>
 }
-function InputBinding({ item, value, previous, options, change }: { item: AgentInput; value?: FlowInput; previous: FlowStage[]; options: FlowOptions; change: (value?: FlowInput) => void }) {
+function InputBinding({ item, value, previous, options, change, remove, focusRef }: { item: AgentInput; value?: FlowInput; previous: FlowStage[]; options: FlowOptions; change: (value?: FlowInput) => void; remove?: () => void; focusRef: (element: HTMLSelectElement | null) => void }) {
   const selected = value?.source === 'stage' ? JSON.stringify({ source: 'stage', stage_key: value.stage_key, output: value.output }) : value?.source || ''
   const choose = (text: string) => {
     if (!text) change()
@@ -59,7 +60,8 @@ function InputBinding({ item, value, previous, options, change }: { item: AgentI
     else change(JSON.parse(text) as FlowInput)
   }
   return <div className="space-y-2 rounded-lg border border-divider-regular p-3">
-    <label className="block text-sm">منبع {item.label}{item.required && ' *'}<select className={field} value={selected} onChange={event => choose(event.target.value)}>
+    {remove && <div className="flex flex-wrap items-center justify-between gap-2"><span className={hint}>{item.label} · {inputTypes[item.type]} · اختیاری</span><button type="button" className={button} aria-label={`حذف ورودی اختیاری ${item.label} از این مرحله`} onClick={remove}>حذف ورودی</button></div>}
+    <label className="block text-sm">منبع {item.label}{item.required && ' *'}<select ref={focusRef} className={field} value={selected} onChange={event => choose(event.target.value)}>
       <option value="">بدون اتصال</option>
       {['text-input', 'paragraph'].includes(item.type) && <option value="request">متن درخواست</option>}
       <option value="constant">مقدار ثابت</option>
@@ -89,6 +91,11 @@ export default function FlowStageEditor({ value: stage, change: setStage, error,
   // The enclosing dialog owns this working copy and guards every return path.
   const [tab, setTab] = useState<StageTab>('general')
   const [memberQuery, setMemberQuery] = useState('')
+  const [addedInputs, setAddedInputs] = useState<string[]>([])
+  const [choosingInput, setChoosingInput] = useState(false)
+  const bindingRefs = useRef<Record<string, HTMLSelectElement | null>>({})
+  const addInputButton = useRef<HTMLButtonElement>(null)
+  useEffect(() => { setAddedInputs([]); setChoosingInput(false) }, [stage.workflow_id])
   const titleInput = useRef<HTMLInputElement>(null)
   useEffect(() => { titleInput.current?.focus() }, [])
   useEffect(() => {
@@ -109,6 +116,19 @@ export default function FlowStageEditor({ value: stage, change: setStage, error,
   const programs = [...new Map(options.programs.map(item => [item.app_id, item.app_name])).entries()]
   const versions = options.programs.filter(item => item.app_id === stage.app_id)
   const patch = (next: Partial<FlowStage>) => setStage(current => ({ ...current, ...next }))
+  const optionalInputs = source?.input_contract.filter(item => !item.required) || []
+  const shown = (item: AgentInput) => Object.hasOwn(stage.inputs, item.variable) || addedInputs.includes(item.variable)
+  const availableInputs = optionalInputs.filter(item => !shown(item))
+  const binding = (item: AgentInput) => <InputBinding key={item.variable} item={item} value={stage.inputs[item.variable]} previous={stages.slice(0, index)} options={options}
+    focusRef={element => { bindingRefs.current[item.variable] = element }}
+    change={value => {
+      if (!item.required) setAddedInputs(current => current.includes(item.variable) ? current : [...current, item.variable])
+      setStage(current => { const inputs = { ...current.inputs }; if (value) inputs[item.variable] = value; else delete inputs[item.variable]; return { ...current, inputs } })
+    }} remove={item.required ? undefined : () => {
+      setAddedInputs(current => current.filter(name => name !== item.variable))
+      setStage(current => { const inputs = { ...current.inputs }; delete inputs[item.variable]; return { ...current, inputs } })
+      requestAnimationFrame(() => addInputButton.current?.focus())
+    }} />
   const configure = (next: Partial<typeof cfg>) => setStage(current => ({ ...current, execution: { ...current.execution!, ...next } }))
   const setPerson = (prefix: 'executor' | 'finalizer', id: string) => setStage(current => ({ ...current,
     [`${prefix}_id`]: id || null, [`${prefix}_membership_id`]: options.members.find(member => member.account_id === id)?.membership_id || null,
@@ -149,9 +169,19 @@ export default function FlowStageEditor({ value: stage, change: setStage, error,
         </TabsPanel>
         <TabsPanel value="inputs" className={panelClass}>
           {source ? <><div><h3 className="font-semibold">ورودی‌های مرحله</h3><p className={`mt-1 ${hint}`}>مشخص کنید هر ورودی از متن درخواست، مقدار ثابت یا خروجی نهایی‌شدهٔ مرحلهٔ قبل دریافت شود.</p></div>
-            {source.input_contract.length ? source.input_contract.map(item => <InputBinding key={item.variable} item={item} value={stage.inputs[item.variable]} previous={stages.slice(0, index)} options={options} change={value => {
-              const inputs = { ...stage.inputs }; if (value) inputs[item.variable] = value; else delete inputs[item.variable]; patch({ inputs })
-            }} />) : <p className="text-sm text-text-secondary">این برنامه ورودی قابل تنظیم ندارد.</p>}
+            {source.input_contract.some(item => item.required) && <section className="space-y-3" aria-label="ورودی‌های الزامی"><h4 className="text-sm font-semibold">ورودی‌های الزامی <span aria-hidden>*</span></h4>{source.input_contract.filter(item => item.required).map(binding)}</section>}
+            {!!optionalInputs.length && <section className="space-y-3" aria-label="ورودی‌های اختیاری"><h4 className="text-sm font-semibold">ورودی‌های اختیاری</h4><p className={hint}>فقط ورودی‌هایی را اضافه کنید که می‌خواهید برای این مرحله تنظیم شوند. حذف یک مورد، تنظیم همین مرحله را حذف می‌کند و تعریف ورودی در برنامه حفظ می‌شود.</p>
+              {optionalInputs.filter(shown).map(binding)}
+              <button ref={addInputButton} type="button" className={button} disabled={!availableInputs.length} aria-expanded={choosingInput} onClick={() => setChoosingInput(current => !current)}>اضافه‌کردن ورودی</button>
+              {choosingInput && !!availableInputs.length && <label className="block text-sm">ورودی اختیاری برنامه<select autoFocus className={field} value="" onChange={event => {
+                const name = event.target.value
+                if (!availableInputs.some(item => item.variable === name)) return
+                setAddedInputs(current => [...current, name]); setChoosingInput(false)
+                requestAnimationFrame(() => bindingRefs.current[name]?.focus())
+              }}><option value="">ورودی مورد نظر را انتخاب کنید</option>{availableInputs.map(item => <option key={item.variable} value={item.variable}>{item.label} · {inputTypes[item.type]}</option>)}</select></label>}
+              {!availableInputs.length && <p className={hint}>همهٔ ورودی‌های اختیاری این برنامه اضافه شده‌اند.</p>}
+            </section>}
+            {!source.input_contract.length && <p className="text-sm text-text-secondary">این برنامه ورودی قابل تنظیم ندارد.</p>}
             <section className="rounded-xl border border-divider-regular p-4"><h3 className="text-sm font-semibold">خروجی‌های قابل تحویل</h3><div className="mt-3 flex flex-wrap gap-2">{source.output_contract.map(output => <span key={output} className="rounded-lg bg-background-section px-3 py-2 text-sm"><bdi>{output}</bdi></span>)}</div><p className={`mt-3 ${hint}`}>خروجی‌ها از نسخهٔ انتخاب‌شدهٔ برنامه می‌آیند و پس از نهایی‌سازی انسانی به مراحل بعد تحویل می‌شوند.</p></section>
           </> : <p className="rounded-lg bg-background-section p-4 text-sm leading-7">ابتدا برنامه و نسخه را در تب «مشخصات مرحله» انتخاب کنید.</p>}
         </TabsPanel>
