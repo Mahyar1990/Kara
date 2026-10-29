@@ -4,7 +4,7 @@ import type { AgentInput } from '@/service/company-agents'
 import type { FlowInput, FlowOptions, FlowStage, StageParticipant } from '@/service/company-flows'
 import { DirectionProvider } from '@base-ui/react/direction-provider'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@langgenius/dify-ui/tabs'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { FieldHelp } from './form-dialog'
 import { matchesSearch } from './team-directory'
 
@@ -13,6 +13,13 @@ const field = 'mt-2 block w-full rounded-lg border border-divider-regular bg-bac
 const hint = 'text-xs leading-6 text-text-tertiary'
 const number = (value: number) => value.toLocaleString('fa-IR')
 const inputTypes: Record<AgentInput['type'], string> = { 'text-input': 'متن کوتاه', paragraph: 'متن بلند', select: 'انتخاب از فهرست', number: 'عدد', checkbox: 'بله / خیر' }
+const inputHelp: Record<AgentInput['type'], string> = {
+  'text-input': 'برای متن کوتاه، مانند عنوان، شناسه یا عبارت کوتاه است. برنامه این مقدار را به‌صورت متن دریافت می‌کند.',
+  paragraph: 'برای متن بلند و چندخطی، مانند شرح نیازمندی، جزئیات یا دستور کار است. متن کامل به برنامه تحویل داده می‌شود.',
+  number: 'برای پارامتر عددی برنامه است؛ عدد صحیح، منفی یا اعشاری وارد کنید. برنامه مقدار را به‌صورت عدد دریافت می‌کند.',
+  checkbox: 'یک مقدار بله / خیر به برنامه می‌دهد؛ برای مشخص‌کردن یک شرط یا انتخاب دوحالته کاربرد دارد.',
+  select: 'یکی از گزینه‌های تعریف‌شده در همین نسخهٔ برنامه را دریافت می‌کند. مقدار باید عضو همان فهرست باشد.',
+}
 export const defaultStageExecution = () => ({ program_enabled: true, enabled: false, instructions: '', requires_source: true })
 const stageProgram = (options: FlowOptions, stage: FlowStage) => options.programs.find(value => value.workflow_id === stage.workflow_id && value.app_id === stage.app_id)
 
@@ -51,12 +58,12 @@ export function FlowStageRow({ stage, index, total, options, edit, move, remove 
     </div>
   </article>
 }
-function NumericConstant({ value, change }: { value: unknown; change: (value: number | string) => void }) {
+function NumericConstant({ value, change, helpId }: { value: unknown; change: (value: number | string) => void; helpId: string }) {
   const [text, setText] = useState(() => String(value ?? ''))
   useEffect(() => {
     setText(current => typeof value === 'number' && current.trim() !== '' && Number(current) === value ? current : String(value ?? ''))
   }, [value])
-  return <input className={field} type="number" step="any" value={text} onChange={event => {
+  return <input aria-describedby={helpId} className={field} type="number" step="any" value={text} onChange={event => {
     const next = event.target.value
     setText(next)
     change(next.trim() !== '' && Number.isFinite(Number(next)) ? Number(next) : next)
@@ -64,7 +71,17 @@ function NumericConstant({ value, change }: { value: unknown; change: (value: nu
 }
 
 function InputBinding({ item, value, previous, options, change, remove, focusRef }: { item: AgentInput; value?: FlowInput; previous: FlowStage[]; options: FlowOptions; change: (value?: FlowInput) => void; remove?: () => void; focusRef: (element: HTMLSelectElement | null) => void }) {
+  const helpId = useId()
   const selected = value?.source === 'stage' ? JSON.stringify({ source: 'stage', stage_key: value.stage_key, output: value.output }) : value?.source || ''
+  const upstream = value?.source === 'stage' ? previous.find(stage => stage.key === value.stage_key) : undefined
+  const purpose = value?.source === 'request'
+    ? `شرح همان درخواست تیمی به ورودی «${item.label}» برنامه داده می‌شود. هر درخواست متن خودش را به این ورودی می‌رساند.`
+    : value?.source === 'constant'
+      ? `مقدار واردشده، تنظیم پایهٔ ثابت این نسخهٔ فلو برای ورودی «${item.label}» برنامه است.`
+      : value?.source === 'stage'
+        ? `خروجی «${value.output}» از نتیجهٔ منتخب و نهایی‌شدهٔ مرحلهٔ «${upstream?.title || 'مرحلهٔ قبلی'}» به ورودی «${item.label}» تحویل داده می‌شود.`
+        : item.required ? 'این ورودی الزامی است؛ پیش از انتشار فلو، منبع دریافت مقدار آن را مشخص کنید.' : 'برای این ورودی از طرف فلو مقداری تعیین نشده است؛ رفتار پیش‌فرض برنامه حفظ می‌شود.'
+  const defaultValue = item.default === true ? 'بله' : item.default === false ? 'خیر' : item.default === '' ? 'متن خالی' : typeof item.default === 'number' ? number(item.default) : String(item.default ?? '')
   const choose = (text: string) => {
     if (!text) change()
     else if (text === 'request') change({ source: 'request' })
@@ -73,18 +90,23 @@ function InputBinding({ item, value, previous, options, change, remove, focusRef
   }
   return <div className="space-y-2 rounded-lg border border-divider-regular p-3">
     {remove && <div className="flex flex-wrap items-center justify-between gap-2"><span className={hint}>{item.label} · {inputTypes[item.type]} · اختیاری</span><button type="button" className={button} aria-label={`حذف ورودی اختیاری ${item.label} از این مرحله`} onClick={remove}>حذف ورودی</button></div>}
-    <label className="block text-sm">منبع {item.label}{item.required && ' *'}<select ref={focusRef} className={field} value={selected} onChange={event => choose(event.target.value)}>
+    <div id={helpId} className="space-y-2 rounded-lg bg-background-section p-3 text-xs leading-6 text-text-secondary"><p><span className="font-medium">نوع ورودی: {inputTypes[item.type]}. </span>{inputHelp[item.type]}</p><p>{purpose}</p>
+      {['text-input', 'paragraph'].includes(item.type) && !!item.max_length && <p>حداکثر طول: {number(item.max_length)} نویسه.</p>}
+      {item.type === 'select' && !!item.options.length && <p>گزینه‌های مجاز: {item.options.slice(0, 6).join('، ')}{item.options.length > 6 && '، …'}</p>}
+      {!value && !item.required && item.default !== undefined && item.default !== null && <p>پیش‌فرض برنامه: <bdi>{defaultValue.slice(0, 180)}{defaultValue.length > 180 && '…'}</bdi></p>}
+    </div>
+    <label className="block text-sm">منبع {item.label}{item.required && ' *'}<select ref={focusRef} aria-describedby={helpId} className={field} value={selected} onChange={event => choose(event.target.value)}>
       <option value="">بدون اتصال</option>
       {['text-input', 'paragraph'].includes(item.type) && <option value="request">متن درخواست</option>}
       <option value="constant">مقدار ثابت</option>
       {previous.flatMap(stage => (stageProgram(options, stage)?.output_contract || options.agents.find(agent => agent.id === stage.agent_id)?.output_contract || []).map(output => <option key={`${stage.key}:${output}`} value={JSON.stringify({ source: 'stage', stage_key: stage.key, output })}>خروجی «{stage.title}»: {output}</option>))}
-    </select><FieldHelp>متن درخواست: شرح همان درخواست. مقدار ثابت: دادهٔ مشترک همهٔ اجراهای این نسخهٔ فلو. خروجی مرحلهٔ قبل: نتیجهٔ منتخب و نهایی‌شدهٔ آن مرحله. ورودی الزامی را بدون اتصال نگذارید.</FieldHelp></label>
+    </select></label>
     {value?.source === 'constant' && <label className="block text-sm">مقدار {item.label}
-      {item.type === 'checkbox' ? <input className="ms-3" type="checkbox" checked={Boolean(value.value)} onChange={event => change({ source: 'constant', value: event.target.checked })} />
-        : item.type === 'select' ? <select className={field} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: event.target.value })}><option value="">انتخاب کنید</option>{item.options.map(option => <option key={option}>{option}</option>)}</select>
-          : item.type === 'number' ? <NumericConstant value={value.value} change={next => change({ source: 'constant', value: next })} />
-            : <textarea className={field} maxLength={item.max_length || undefined} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: event.target.value })} />}
-    <FieldHelp>این مقدار در همهٔ اجراهای همین نسخه استفاده می‌شود؛ اطلاعات متغیر هر درخواست و رمز را اینجا وارد نکنید.</FieldHelp></label>}
+      {item.type === 'checkbox' ? <input aria-describedby={helpId} className="ms-3" type="checkbox" checked={Boolean(value.value)} onChange={event => change({ source: 'constant', value: event.target.checked })} />
+        : item.type === 'select' ? <select aria-describedby={helpId} className={field} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: event.target.value })}><option value="">انتخاب کنید</option>{item.options.map(option => <option key={option}>{option}</option>)}</select>
+          : item.type === 'number' ? <NumericConstant helpId={helpId} value={value.value} change={next => change({ source: 'constant', value: next })} />
+            : <textarea aria-describedby={helpId} className={field} maxLength={item.max_length || undefined} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: event.target.value })} />}
+    <FieldHelp>این مقدار، تنظیم پایهٔ همین نسخهٔ فلو است؛ اطلاعات محرمانه را اینجا وارد نکنید.</FieldHelp></label>}
   </div>
 }
 
