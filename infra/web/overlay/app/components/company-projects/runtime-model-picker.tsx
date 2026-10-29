@@ -64,7 +64,8 @@ export default function RuntimeModelPicker({ value, onChange, capabilities = [],
           choose({ ...selected, runners: { ...selected.runners, [node.id]: { device_id: device, source_job_id: existing?.source_job_id || null } } })
         }}><option value="">دستگاه اجرا را انتخاب کنید</option>{overview.data?.devices.filter(device => !device.revoked_at && device.protocol === 2 && device.capabilities?.includes('workflow-v2') && node.requirements.every(cap => device.capabilities?.includes(cap))).map(device => <option key={device.id} value={device.id}>{device.name}</option>)}</select></label>
         <label className="space-y-2 text-xs"><span>سورس آماده روی همین دستگاه</span><select className={field} value={selected.runners[node.id]?.source_job_id || ''} disabled={disabled || !selected.runners[node.id]?.device_id || !sources.isSuccess} onChange={event => {
-          const device = selected.runners[node.id].device_id
+          const device = selected.runners[node.id]?.device_id
+          if (!device) return
           choose({ ...selected, runners: Object.fromEntries(Object.entries(selected.runners).map(([id, route]) => [id, route.device_id === device ? { ...route, source_job_id: event.target.value || null } : route])) })
         }}><option value="">این دستگاه برای این اجرا سورس آماده لازم ندارد</option>{sources.data?.jobs.filter(job => job.device_id === selected.runners[node.id]?.device_id && job.state === 'succeeded' && !job.result?.superseded_by).map(job => <option key={job.id} value={job.id}>{sources.data?.workspaces.find(item => item.id === job.source_workspace_id)?.name || 'سورس آماده'} · نسخهٔ {job.snapshot_revision.toLocaleString('fa-IR')} · {new Date(job.created_at).toLocaleString('fa-IR')}</option>)}</select></label>
       </div> : <p className="text-xs leading-6 text-text-tertiary">اجرا روی Runner هماهنگ‌کنندهٔ برنامه.</p>}

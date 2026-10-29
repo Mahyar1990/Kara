@@ -8,6 +8,7 @@ if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.m
 const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root)
 const files = [
   'app/components/company-projects/execution-settings.tsx',
+  'app/components/company-projects/runtime-model-picker.tsx',
   'service/company-execution.ts',
   'app/components/company-projects/source-code.tsx',
   'app/components/company-projects/source-workspace-editor.tsx',
