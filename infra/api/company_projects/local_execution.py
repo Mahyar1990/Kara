@@ -54,11 +54,17 @@ def settings(s,project,workspace,actor):
     return dict(binding=source.public(selected) if selected else None,executions=result[:50])
 
 def set_binding(s,project,workspace,actor,data):
-    agents.body(data,('device_id','source_job_id','expected_revision')); key=team.scope(s,project,workspace,actor)
+    fields=('device_id','source_job_id','expected_revision')
+    agents.body(data,(*fields,'expected_binding') if isinstance(data,dict) and 'expected_binding' in data else fields); key=team.scope(s,project,workspace,actor)
     # Account lock serializes first binding and concurrent device changes.
     from company_projects.gitlab_connections import account
     account(s,actor,lock=True); source.device(s,actor,data['device_id'],True)
     previous=binding(s,project,workspace,actor); source.check_revision(data,previous)
+    if 'expected_binding' in data:
+        expected=data['expected_binding']
+        if expected is not None: agents.body(expected,('device_id','source_job_id','revision'))
+        observed={k:previous[k] for k in ('device_id','source_job_id','revision')} if previous else None
+        if expected!=observed: raise Conflict('مقصد اجرا از زمان شروع ویرایش تغییر کرده است؛ اطلاعات را بازخوانی کنید.')
     source_job=None
     if data['source_job_id']:
         source_job=source.row(s,'jobs',data['source_job_id'],key|dict(account_id=str(actor),device_id=str(data['device_id'])))

@@ -4,6 +4,6 @@ export type LocalExecution = { kind?: 'workflow' | 'rpc'; id: string; app_id: st
 const base = (id: string) => `/company/projects/${id}/local-execution`
 export const executionApi = {
   settings: (id: string) => get<{ binding: ExecutionBinding | null; executions: LocalExecution[] }>(base(id)),
-  save: (id: string, body: { device_id: string; source_job_id: string | null; expected_revision: number }) => put<ExecutionBinding>(base(id), { body }),
+  save: (id: string, body: { device_id: string; source_job_id: string | null; expected_revision: number; expected_binding: ExecutionBinding | null }) => put<ExecutionBinding>(base(id), { body }),
   cancel: (id: string, execution: string) => post(`${base(id)}/${execution}/cancel`),
 }

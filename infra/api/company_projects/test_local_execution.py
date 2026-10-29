@@ -3,7 +3,7 @@ import json
 from uuid import uuid4
 from unittest.mock import patch
 import sqlalchemy as sa
-from werkzeug.exceptions import Conflict,Forbidden,NotFound
+from werkzeug.exceptions import BadRequest,Conflict,Forbidden,NotFound
 from company_projects import local_execution as local, source_code as source, agents, agent_execution
 from company_projects.test_agents import AgentTests, graph
 from company_projects.test_access import ProjectDatabaseFixture
@@ -34,6 +34,23 @@ class LocalExecutionTests(ProjectDatabaseFixture):
         self.attempt=self.launch(self.agent)
         self.job=local.dispatch_team(self.session,self.attempt['id'])
         return self.job
+
+    def test_binding_snapshot_rejects_stale_first_creation_and_preserves_current_target(self):
+        pair=source.pair(self.session,dict(code=source.pairing(self.session,self.reader.id,dict(name='Synthetic draft device'))['code']))
+        scope=(self.session,self.a['id'],self.workspace_a.id,self.reader.id)
+        body=dict(device_id=pair['device_id'],source_job_id=None,expected_revision=1,expected_binding=None)
+        for invalid in (None,[]):
+            with self.assertRaises(BadRequest): local.set_binding(*scope,invalid)
+        saved=local.set_binding(*scope,body)
+        # Both an absent binding and the first saved binding use revision 1.
+        # The explicit base snapshot must distinguish them under the account lock.
+        with self.assertRaises(Conflict): local.set_binding(*scope,body)
+        self.assertEqual(local.binding(*scope)['revision'],1)
+        base={k:saved[k] for k in ('device_id','source_job_id','revision')}
+        updated=local.set_binding(*scope,body|dict(expected_binding=base))
+        self.assertEqual(updated['revision'],2)
+        with self.assertRaises(Conflict): local.set_binding(*scope,body|dict(expected_binding=base))
+        self.assertEqual(local.binding(*scope)['device_id'],pair['device_id'])
 
     def test_source_update_refuses_a_source_used_by_pending_execution(self):
         from uuid import uuid4
