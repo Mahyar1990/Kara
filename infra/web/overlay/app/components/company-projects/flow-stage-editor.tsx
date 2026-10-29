@@ -51,6 +51,18 @@ export function FlowStageRow({ stage, index, total, options, edit, move, remove 
     </div>
   </article>
 }
+function NumericConstant({ value, change }: { value: unknown; change: (value: number | string) => void }) {
+  const [text, setText] = useState(() => String(value ?? ''))
+  useEffect(() => {
+    setText(current => typeof value === 'number' && current.trim() !== '' && Number(current) === value ? current : String(value ?? ''))
+  }, [value])
+  return <input className={field} type="number" step="any" value={text} onChange={event => {
+    const next = event.target.value
+    setText(next)
+    change(next.trim() !== '' && Number.isFinite(Number(next)) ? Number(next) : next)
+  }} />
+}
+
 function InputBinding({ item, value, previous, options, change, remove, focusRef }: { item: AgentInput; value?: FlowInput; previous: FlowStage[]; options: FlowOptions; change: (value?: FlowInput) => void; remove?: () => void; focusRef: (element: HTMLSelectElement | null) => void }) {
   const selected = value?.source === 'stage' ? JSON.stringify({ source: 'stage', stage_key: value.stage_key, output: value.output }) : value?.source || ''
   const choose = (text: string) => {
@@ -70,7 +82,8 @@ function InputBinding({ item, value, previous, options, change, remove, focusRef
     {value?.source === 'constant' && <label className="block text-sm">مقدار {item.label}
       {item.type === 'checkbox' ? <input className="ms-3" type="checkbox" checked={Boolean(value.value)} onChange={event => change({ source: 'constant', value: event.target.checked })} />
         : item.type === 'select' ? <select className={field} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: event.target.value })}><option value="">انتخاب کنید</option>{item.options.map(option => <option key={option}>{option}</option>)}</select>
-          : <textarea className={field} maxLength={item.max_length || undefined} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: item.type === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value })} />}
+          : item.type === 'number' ? <NumericConstant value={value.value} change={next => change({ source: 'constant', value: next })} />
+            : <textarea className={field} maxLength={item.max_length || undefined} value={String(value.value ?? '')} onChange={event => change({ source: 'constant', value: event.target.value })} />}
     <FieldHelp>این مقدار در همهٔ اجراهای همین نسخه استفاده می‌شود؛ اطلاعات متغیر هر درخواست و رمز را اینجا وارد نکنید.</FieldHelp></label>}
   </div>
 }
