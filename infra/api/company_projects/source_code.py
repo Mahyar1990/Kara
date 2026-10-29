@@ -87,8 +87,14 @@ def listing(s,project,workspace,actor):
         if private: q=q.where(t.c.account_id==str(actor))
         if 'deleted_at' in t.c: q=q.where(t.c.deleted_at.is_(None))
         return [dict(r) for r in s.execute(q.order_by(t.c.created_at.desc()).limit(100)).mappings()]
+    # Keep the current preparation for every workspace/device visible even when
+    # unrelated jobs have pushed it outside the bounded history window.
+    t=table(s,'jobs'); job_key=key|dict(account_id=str(actor))
+    latest=s.execute(sa.select(t).where(*(t.c[k]==v for k,v in job_key.items()),sa.or_(t.c.state=='succeeded',t.c.snapshot['update_of'].as_string().is_not(None))).distinct(t.c.source_workspace_id,t.c.device_id).order_by(t.c.source_workspace_id,t.c.device_id,t.c.created_at.desc(),t.c.id.desc())).mappings()
+    jobs={str(r['id']):dict(r) for r in query('jobs',True)}
+    jobs.update({str(r['id']):dict(r) for r in latest})
     return dict(repositories=[public(r)|dict(can_edit=str(r['created_by'])==str(actor) or access.can_manage_members(s,workspace,actor)) for r in query('repositories')],
-        workspaces=[public(r)|r['definition'] for r in query('workspaces',True)], jobs=[public(r)|dict(snapshot_revision=r['snapshot']['revision'],update_of=r['snapshot'].get('update_of'),local_directory=directory(r)) for r in query('jobs',True)])
+        workspaces=[public(r)|r['definition'] for r in query('workspaces',True)], jobs=[public(r)|dict(snapshot_revision=r['snapshot']['revision'],update_of=r['snapshot'].get('update_of'),local_directory=directory(r)) for r in sorted(jobs.values(),key=lambda r:(r['created_at'],str(r['id'])),reverse=True)])
 
 def retire(s,project,workspace,actor,kind,entity_id,data):
     agents.body(data,('expected_revision',))
@@ -192,6 +198,9 @@ def enqueue(s,project,workspace,actor,entity_id,data,*,update_of=None):
         if str(previous['source_workspace_id'])!=str(entity_id) or str(previous['device_id'])!=str(target['id']) or previous['snapshot']['revision']!=current['revision'] or previous['snapshot'].get('update_of')!=(str(uid(update_of)) if update_of else None): raise Conflict('شناسهٔ اقدام قبلاً برای درخواست دیگری استفاده شده است.')
         return public(previous)
     no_active(s,current['id'])
+    if not update_of:
+        existing=s.scalar(sa.select(t.c.id).where(t.c.source_workspace_id==str(current['id']),t.c.device_id==str(target['id']),t.c.account_id==str(actor),sa.or_(t.c.state=='succeeded',t.c.snapshot['update_of'].as_string().is_not(None))).limit(1))
+        if existing: raise Conflict('این worktree روی همین Runner قبلاً آماده شده است؛ فهرست را تازه و «به‌روزرسانی در همین پوشه» را انتخاب کنید.')
     value=dict(id=str(uuid4()),**key,account_id=str(actor),source_workspace_id=current['id'],device_id=target['id'],action_key=action_key,
         snapshot=current['definition']|dict(revision=current['revision'],name=current['name']),state='pending',created_at=agents.now())
     if update_of:

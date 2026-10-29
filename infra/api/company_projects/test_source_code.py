@@ -19,7 +19,7 @@ class SourceCodeTests(ProjectDatabaseFixture):
         source.claim(self.session, self.runner)
         source.complete(self.session, self.runner, job['id'], dict(state='succeeded', components=[dict(key='backend', commit='a'*40)], error=None))
         local.set_binding(*self.args(), dict(device_id=self.runner['id'], source_job_id=job['id'], expected_revision=1))
-        pending = self.enqueue()
+        pending = self.update_request(job['id'])
         local_rpc.enqueue(self.session, self.workspace_a.id, self.project_owner.id, 'invoke_llm', {'private': 'synthetic-hidden-payload'})
         second = source.pair(self.session, dict(code=source.pairing(self.session, self.project_owner.id, dict(name='Home VDI'))['code']))
         second_runner = source.authenticate(self.session, second['secret'])
@@ -71,6 +71,28 @@ class SourceCodeTests(ProjectDatabaseFixture):
         with self.assertRaises(Conflict): source.usable(self.session,source.row(self.session,'jobs',update['id'],{}))
         retry=source.enqueue_update(*self.args(),self.tree['id'],data|dict(action_key=str(uuid4()),update_of=next_job['id']))
         self.assertEqual(source.row(self.session,'jobs',retry['id'],{})['snapshot']['local_directory'],original['id'])
+
+    def update_request(self,base):
+        from company_projects import local_execution as local
+        local.register(self.session,self.runner,dict(protocol=2,capabilities=['workflow-v2','source-v1','source-update-v1']))
+        return source.enqueue_update(*self.args(),self.tree['id'],dict(device_id=self.runner['id'],expected_revision=1,action_key=str(uuid4()),update_of=base))
+
+    def test_history_window_cannot_hide_prepared_worktree_or_create_duplicate(self):
+        self.setup_source(); original=self.enqueue(); source.claim(self.session,self.runner)
+        source.complete(self.session,self.runner,original['id'],dict(state='succeeded',components=[dict(key='backend',commit='a'*40)],error=None))
+        with self.assertRaises(Conflict): self.enqueue()
+        # Unrelated cancelled history must not hide the only prepared directory.
+        jobs=source.table(self.session,'jobs'); row=source.row(self.session,'jobs',original['id'],{})
+        noise=[]
+        other=source.save_workspace(*self.args(),dict(self.data,name='Other workspace'))
+        for i in range(101):
+            entry={k:v for k,v in row.items() if k not in ('id','action_key','created_at','source_workspace_id')}
+            noise.append(dict(entry,id=str(uuid4()),action_key=str(uuid4()),source_workspace_id=other['id'],created_at=source.agents.now()+timedelta(seconds=i+1),state='cancelled',result=None))
+        self.session.execute(jobs.insert(),noise)
+        listed=source.listing(*self.args())['jobs']
+        self.assertIn(original['id'],[j['id'] for j in listed])
+        with self.assertRaises(Conflict): self.enqueue()
+        self.assertEqual(self.session.scalar(sa.select(sa.func.count()).select_from(jobs).where(jobs.c.source_workspace_id==self.tree['id'])),1)
 
     def args(self,actor=None): return (self.session,self.a['id'],self.workspace_a.id,(actor or self.project_owner).id)
     def setup_source(self):
@@ -124,7 +146,7 @@ class SourceCodeTests(ProjectDatabaseFixture):
         result=source.listing(*self.args())['jobs'][0]
         self.assertEqual(result['state'],'succeeded'); self.assertEqual(result['result']['components'][0]['commit'],'a'*40)
         with self.assertRaises(Conflict): source.credentials(self.session,self.runner,job['id'])
-        next_job=self.enqueue(); source.claim(self.session,self.runner)
+        next_job=self.update_request(job['id']); source.claim(self.session,self.runner)
         t=source.table(self.session,'jobs'); self.session.execute(t.update().where(t.c.id==next_job['id']).values(lease_until=source.agents.now()-timedelta(seconds=1)))
         self.assertEqual(source.listing(*self.args())['jobs'][0]['state'],'interrupted')
 
