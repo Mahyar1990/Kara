@@ -67,7 +67,7 @@ export default function RuntimeModelPicker({ value, onChange, capabilities = [],
           const device = selected.runners[node.id].device_id
           choose({ ...selected, runners: Object.fromEntries(Object.entries(selected.runners).map(([id, route]) => [id, route.device_id === device ? { ...route, source_job_id: event.target.value || null } : route])) })
         }}><option value="">این دستگاه برای این اجرا سورس آماده لازم ندارد</option>{sources.data?.jobs.filter(job => job.device_id === selected.runners[node.id]?.device_id && job.state === 'succeeded').map(job => <option key={job.id} value={job.id}>{sources.data?.workspaces.find(item => item.id === job.source_workspace_id)?.name || 'سورس آماده'} · نسخهٔ {job.snapshot_revision.toLocaleString('fa-IR')} · {new Date(job.created_at).toLocaleString('fa-IR')}</option>)}</select></label>
-      </div> : <p className="text-xs leading-6 text-text-tertiary">Runner جدا لازم ندارد؛ این گام توسط هماهنگ‌کنندهٔ برنامه انجام می‌شود.</p>}
+      </div> : <p className="text-xs leading-6 text-text-tertiary">اجرا روی Runner هماهنگ‌کنندهٔ برنامه.</p>}
     </div>)}
     {overview.isError && <p role="alert" className="text-xs">دریافت دستگاه‌ها انجام نشد. <button type="button" onClick={() => overview.refetch()}>تلاش دوباره</button></p>}
     {overview.isSuccess && !overview.data.devices.some(device => !device.revoked_at && device.capabilities?.includes('node-routing-v1')) && <p role="alert" className="text-xs leading-6">Runner سازگار ندارید. نسخهٔ تازهٔ Runner را از تنظیمات دریافت و روی دستگاه خودتان راه‌اندازی کنید.</p>}
