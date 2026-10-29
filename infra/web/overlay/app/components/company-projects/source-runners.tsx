@@ -37,8 +37,14 @@ function Runners({ projectId, accountId }: { projectId: string; accountId: strin
   const [origin, setOrigin] = useState(''); const [now, setNow] = useState(Date.now())
   useEffect(() => {
     setOrigin(window.location.origin)
-    const requested = new URLSearchParams(window.location.search).get('dialog')
-    if (requested === 'execution' || requested === 'history') setView({ kind: requested })
+    const url = new URL(window.location.href)
+    const requested = url.searchParams.get('dialog')
+    if (requested === 'execution' || requested === 'history') {
+      setView({ kind: requested })
+      // Consume the handoff once; closing and refreshing must keep the dialog closed.
+      url.searchParams.delete('dialog')
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+    }
     const timer = setInterval(() => setNow(Date.now()), 15000)
     return () => clearInterval(timer)
   }, [])
