@@ -62,6 +62,7 @@ def set_binding(s,project,workspace,actor,data):
     source_job=None
     if data['source_job_id']:
         source_job=source.row(s,'jobs',data['source_job_id'],key|dict(account_id=str(actor),device_id=str(data['device_id'])))
+        source.usable(s,source_job)
         if source_job['state']!='succeeded': raise BadRequest('ابتدا سورس را روی همین دستگاه آماده کنید.')
     values=dict(**key,account_id=str(actor),device_id=source.uid(data['device_id']),source_job_id=str(source_job['id']) if source_job else None,revision=(previous['revision']+1) if previous else 1,updated_at=agents.now())
     t=table(s,'execution_bindings')
@@ -75,7 +76,7 @@ def set_binding(s,project,workspace,actor,data):
 
 def register(s,runner,data):
     agents.body(data,('protocol','capabilities'))
-    if data['protocol']!=PROTOCOL or not isinstance(data['capabilities'],list) or set(data['capabilities'])-{'workflow-v2','python3','javascript','http','source-v1','node-routing-v1'}: raise BadRequest('نسخه یا قابلیت Runner معتبر نیست.')
+    if data['protocol']!=PROTOCOL or not isinstance(data['capabilities'],list) or set(data['capabilities'])-{'workflow-v2','python3','javascript','http','source-v1','source-update-v1','node-routing-v1'}: raise BadRequest('نسخه یا قابلیت Runner معتبر نیست.')
     t=table(s,'runner_capabilities'); values=dict(device_id=str(runner['id']),protocol=PROTOCOL,capabilities=sorted(set(data['capabilities'])),updated_at=agents.now())
     if s.scalar(sa.select(t.c.device_id).where(t.c.device_id==str(runner['id']))): s.execute(t.update().where(t.c.device_id==str(runner['id'])).values(**values))
     else: s.execute(t.insert().values(**values))
@@ -132,6 +133,7 @@ def build_snapshot(s,workflow,actor,inputs,*,trusted=False):
     return dict(protocol=PROTOCOL,graph=graph,models=models,knowledge=knowledge,requirements=sorted(set(requirements)),routes=routes,workflow_digest=agents.fingerprint(workflow))
 
 def enqueue(s,app,workflow,actor,inputs,*,identity=None,attempt=None,root_node_id=None,trigger_log_id=None,preview=None,triggered_from='app-run',automatic=False):
+    admission_lock(s,actor.id)
     key=project_key(s,app.tenant_id,actor.id); join=team.member(s,app.tenant_id,actor.id)
     identity=identity or str(uuid4()); t=table(s,'local_executions')
     old=s.execute(sa.select(t).where(t.c.id==str(identity))).mappings().first()
@@ -149,6 +151,8 @@ def enqueue(s,app,workflow,actor,inputs,*,identity=None,attempt=None,root_node_i
     snapshot['triggered_from']=triggered_from
     if preview:snapshot['preview']=preview
     selected=next(iter(snapshot['routes'].values())) if snapshot.get('routes') else binding(s,key['project_id'],key['workspace_id'],actor.id)
+    if selected and selected.get('source_job_id'):
+        source.usable(s,source.row(s,'jobs',selected['source_job_id'],key|dict(account_id=str(actor.id),device_id=str(selected['device_id']))))
     now=agents.now(); values=dict(id=str(identity),**key,account_id=str(actor.id),membership_id=join.id,device_id=selected['device_id'] if selected else None,source_job_id=selected['source_job_id'] if selected else None,app_id=app.id,workflow_id=workflow.id,team_attempt_id=attempt['id'] if attempt else None,trigger_log_id=trigger_log_id,snapshot=snapshot,snapshot_digest=agents.digest(snapshot),inputs=runtime_models.business_inputs(inputs),state='pending',created_at=now,event_sequence=0)
     s.execute(t.insert().values(**values))
     return values
@@ -167,6 +171,7 @@ def dispatch_team(s,attempt_id):
         complete_attempt(s,attempt['id']); return None
 
 def validate_access(s,job):
+    if job.get('source_job_id'): source.usable(s,source.row(s,'jobs',job['source_job_id'],dict(account_id=str(job['account_id']),device_id=str(job['device_id']))))
     team.scope(s,job['project_id'],job['workspace_id'],job['account_id'])
     join=team.member(s,job['workspace_id'],job['account_id'])
     if str(join.id)!=str(job['membership_id']): raise Forbidden('عضویت اجرا تغییر کرده است.')
@@ -274,7 +279,7 @@ def claim(s,runner):
             attempts=agents.tables(s)[2]; s.execute(attempts.update().where(attempts.c.id==job['team_attempt_id'],attempts.c.status=='pending').values(status='running',started_at=now))
         workflow=s.get(Workflow,job['workflow_id'])
         s.add(WorkflowRun(id=job['id'],tenant_id=job['workspace_id'],app_id=job['app_id'],workflow_id=workflow.id,type=workflow.type,triggered_from=job['snapshot'].get('triggered_from','app-run'),version=workflow.version,graph=json.dumps(job['snapshot']['graph'],ensure_ascii=False),inputs=json.dumps(job['inputs'],ensure_ascii=False),status='running',created_by_role='account',created_by=job['account_id'],created_at=utc_naive(now)))
-        return dict(job=dict(id=job['id'],device_id=str(job['device_id']),actor_id=job['account_id'],app_id=job['app_id'],workflow_id=job['workflow_id'],project_id=job['project_id'],source_job_id=job['source_job_id'],snapshot_digest=job['snapshot_digest'],inputs=job['inputs'],**job['snapshot']))
+        return dict(job=dict(id=job['id'],device_id=str(job['device_id']),actor_id=job['account_id'],app_id=job['app_id'],workflow_id=job['workflow_id'],project_id=job['project_id'],source_job_id=job['source_job_id'],source_directory=source.directory(source.row(s,'jobs',job['source_job_id'],dict(account_id=str(job['account_id'])))) if job['source_job_id'] else None,snapshot_digest=job['snapshot_digest'],inputs=job['inputs'],**job['snapshot']))
     return dict(job=None)
 
 def running(s,runner,identity):

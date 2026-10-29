@@ -17,7 +17,7 @@ export default function HarnessChoice({ project, agent, value, change, valid, st
   const config = stagePolicy || policy.data
   const enabled = config?.compatible && config.policy.enabled
   const programEnabled = config?.policy.program_enabled !== false
-  const sourceJobs = sources.data?.jobs.filter(j => j.device_id === value?.device_id && j.state === 'succeeded') || []
+  const sourceJobs = sources.data?.jobs.filter(j => j.device_id === value?.device_id && j.state === 'succeeded' && !j.result?.superseded_by) || []
   const ready = value ? !!(enabled && !profiles.isError && !sources.isError && device && (value.mode === 'manual' || device.harnesses.some(p => p.key === value.profile_key)) && (!config?.policy.requires_source || sourceJobs.some(j => j.id === value.source_job_id))) : programEnabled
   useEffect(() => { if (!programEnabled && enabled && !value) change({ method: 'harness', mode: 'manual', device_id: '', source_job_id: null, profile_key: null }) }, [programEnabled, enabled, value, change])
   useEffect(() => { valid(ready) }, [ready, valid])

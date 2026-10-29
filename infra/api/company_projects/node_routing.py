@@ -35,6 +35,7 @@ def validate_choices(s, workflow, actor, choice):
             if source_key not in prepared:
                 prepared[source_key] = source.row(s, 'jobs', selected['source_job_id'], key | dict(account_id=str(actor), device_id=str(device['id'])))
             job=prepared[source_key]
+            source.usable(s,job)
             if job['state'] != 'succeeded': raise BadRequest('سورس این گام باید روی Runner انتخاب‌شده آماده باشد.')
         routes[node] = dict(device_id=str(device['id']), device_name=device['name'], source_job_id=str(job['id']) if job else None, requirements=sorted(needed))
     sources={}
@@ -57,6 +58,7 @@ def check_routes(s, job):
             raise Conflict('قابلیت‌های Runner این اجرا تغییر کرده است.')
         if route['source_job_id']:
             row = source.row(s, 'jobs', route['source_job_id'], {k: job[k] for k in ('project_id', 'workspace_id', 'account_id')} | dict(device_id=route['device_id']))
+            source.usable(s,row)
             if row['state'] != 'succeeded': raise Conflict('سورس گام تغییر کرده است.')
 
 def parent(s, row):
@@ -91,7 +93,7 @@ def claim_payload(s, row):
     job = parent(s, row); node_id = row['payload']['node_id']
     route = job['snapshot']['routes'][node_id]
     return dict(node_job=dict(id=str(job['id']), actor_id=job['account_id'], app_id=job['app_id'], workflow_id=job['workflow_id'],
-        graph=job['snapshot']['graph'], inputs=job['inputs']), node_id=node_id, pool=row['payload']['pool'], source_job_id=route['source_job_id'])
+        graph=job['snapshot']['graph'], inputs=job['inputs']), node_id=node_id, pool=row['payload']['pool'], source_job_id=route['source_job_id'], source_directory=source.directory(source.row(s,'jobs',route['source_job_id'],dict(account_id=str(job['account_id'])))) if route['source_job_id'] else None)
 
 def secrets(s, row):
     from company_projects import personal_models

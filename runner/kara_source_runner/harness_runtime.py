@@ -56,9 +56,9 @@ def prepare(job,config,root,heartbeat=lambda:None):
         env=git_environment(Path(home),Path(os.devnull))
         if source:
             workspace_files(source['components'],source['documents'])
-            original=Path(root).expanduser().resolve()/str(UUID(source['id']))
+            original=Path(root).expanduser().resolve()/str(UUID(source['result'].get('local_directory',source['id'])))
             manifest=json.loads((original/'.kara/manifest.json').read_text())
-            if manifest.get('owner')!=owner_id(config['server'],config['secret']) or manifest.get('job_id')!=source['id']:raise HarnessFailure('workspace_failed')
+            if manifest.get('owner')!=owner_id(config['server'],config['secret']) or manifest.get('job_id')!=source['id'] or manifest.get('valid') is False:raise HarnessFailure('workspace_failed')
             commits={p['key']:p['commit'] for p in source['result']['components']}
             observed={p['key']:p for p in manifest['components']}
             for p in source['components']:

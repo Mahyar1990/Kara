@@ -88,7 +88,7 @@ def listing(s,project,workspace,actor):
         if 'deleted_at' in t.c: q=q.where(t.c.deleted_at.is_(None))
         return [dict(r) for r in s.execute(q.order_by(t.c.created_at.desc()).limit(100)).mappings()]
     return dict(repositories=[public(r)|dict(can_edit=str(r['created_by'])==str(actor) or access.can_manage_members(s,workspace,actor)) for r in query('repositories')],
-        workspaces=[public(r)|r['definition'] for r in query('workspaces',True)], jobs=[public(r)|dict(snapshot_revision=r['snapshot']['revision']) for r in query('jobs',True)])
+        workspaces=[public(r)|r['definition'] for r in query('workspaces',True)], jobs=[public(r)|dict(snapshot_revision=r['snapshot']['revision'],update_of=r['snapshot'].get('update_of'),local_directory=directory(r)) for r in query('jobs',True)])
 
 def retire(s,project,workspace,actor,kind,entity_id,data):
     agents.body(data,('expected_revision',))
@@ -157,6 +157,7 @@ def revoke(s,actor,device_id):
     return dict(revoked=True)
 
 def validate_snapshot(s,job):
+    if (job.get('result') or {}).get('superseded_by'): raise Conflict('این نسخه با به‌روزرسانی جدید جایگزین شده است.')
     key=scope(s,job['project_id'],job['workspace_id'],job['account_id'])
     current=row(s,'workspaces',job['source_workspace_id'],key|dict(account_id=str(job['account_id'])))
     if current['revision']!=job['snapshot']['revision']: raise Conflict('تعریف worktree تغییر کرده است.')
@@ -166,17 +167,53 @@ def validate_snapshot(s,job):
         if repo['revision']!=part['repository_revision'] or connection['revision']!=part['connection_revision']: raise Conflict('مخزن یا اتصال تغییر کرده است؛ تعریف worktree را بازبینی و ذخیره کنید.')
         validated(contracts.repository_on_connection,part['url'],connection['base_url'])
 
-def enqueue(s,project,workspace,actor,entity_id,data):
+def directory(job):
+    return str(uid((job.get('result') or {}).get('local_directory') or job['snapshot'].get('local_directory') or job['id']))
+
+def usable(s,job):
+    if job['state']!='succeeded' or (job.get('result') or {}).get('superseded_by'):
+        raise Conflict('این نسخهٔ سورس قابل استفاده نیست؛ آخرین به‌روزرسانی موفق را انتخاب کنید.')
+    t=table(s,'jobs'); path=directory(job)
+    if s.scalar(sa.select(t.c.id).where(t.c.account_id==str(job['account_id']),t.c.device_id==str(job['device_id']),t.c.state.in_(ACTIVE),t.c.snapshot['local_directory'].as_string()==path).limit(1)):
+        raise Conflict('به‌روزرسانی سورس در صف یا در حال اجراست؛ تا پایان آن صبر کنید.')
+
+def enqueue_update(s,project,workspace,actor,entity_id,data):
+    agents.body(data,('device_id','expected_revision','action_key','update_of'))
+    return enqueue(s,project,workspace,actor,entity_id,{k:v for k,v in data.items() if k!='update_of'},update_of=uid(data['update_of']))
+
+def enqueue(s,project,workspace,actor,entity_id,data,*,update_of=None):
+    from company_projects import local_execution as local, harness
+    local.admission_lock(s,actor)
     agents.body(data,('device_id','expected_revision','action_key')); key=scope(s,project,workspace,actor)
     current=row(s,'workspaces',entity_id,key|dict(account_id=str(actor)),lock=True); check_revision(data,current)
     target=device(s,actor,data['device_id'],True); t=table(s,'jobs'); action_key=uid(data['action_key'])
     previous=s.execute(sa.select(t).where(t.c.account_id==str(actor),t.c.action_key==action_key)).mappings().first()
     if previous:
-        if str(previous['source_workspace_id'])!=str(entity_id) or str(previous['device_id'])!=str(target['id']) or previous['snapshot']['revision']!=current['revision']: raise Conflict('شناسهٔ اقدام قبلاً برای درخواست دیگری استفاده شده است.')
+        if str(previous['source_workspace_id'])!=str(entity_id) or str(previous['device_id'])!=str(target['id']) or previous['snapshot']['revision']!=current['revision'] or previous['snapshot'].get('update_of')!=(str(uid(update_of)) if update_of else None): raise Conflict('شناسهٔ اقدام قبلاً برای درخواست دیگری استفاده شده است.')
         return public(previous)
     no_active(s,current['id'])
     value=dict(id=str(uuid4()),**key,account_id=str(actor),source_workspace_id=current['id'],device_id=target['id'],action_key=action_key,
         snapshot=current['definition']|dict(revision=current['revision'],name=current['name']),state='pending',created_at=agents.now())
+    if update_of:
+        cap=local.table(s,'runner_capabilities')
+        capabilities=s.scalar(sa.select(cap.c.capabilities).where(cap.c.device_id==str(target['id']))) or []
+        if 'source-update-v1' not in capabilities: raise Conflict('بستهٔ جدید Runner را دریافت و Runner را دوباره اجرا کنید تا به‌روزرسانی درجا فعال شود.')
+        base=row(s,'jobs',update_of,key|dict(account_id=str(actor),device_id=str(target['id'])),lock=True)
+        if str(base['source_workspace_id'])!=str(entity_id) or base['state'] in ACTIVE: raise Conflict('آماده‌سازی پایه معتبر نیست.')
+        if base['state']!='succeeded' and not base['snapshot'].get('update_of'): raise Conflict('ابتدا آماده‌سازی اولیه باید موفق شود.')
+        path=directory(base)
+        family=list(s.execute(sa.select(t).where(t.c.account_id==str(actor),t.c.device_id==str(target['id']),sa.or_(t.c.id==path,t.c.snapshot['local_directory'].as_string()==path))).mappings())
+        if any(str(r['id'])!=str(base['id']) and (r['result'] or {}).get('superseded_by') is None and r['created_at']>base['created_at'] for r in family): raise Conflict('نسخهٔ جدیدتری وجود دارد؛ فهرست را تازه کنید.')
+        ids=[str(r['id']) for r in family]
+        for active_table, field, states in [(local.table(s,'local_executions'),'source_job_id',('pending','running')), (harness.table(s),'source_job_id',harness.ACTIVE)]:
+            if s.scalar(sa.select(getattr(active_table.c,field)).where(getattr(active_table.c,field).in_(ids),active_table.c.state.in_(states)).limit(1)):
+                raise Conflict('یک اجرا یا مأموریت فعال به این سورس وابسته است؛ ابتدا آن را تمام یا لغو کنید.')
+        executions=local.table(s,'local_executions')
+        for execution in s.execute(sa.select(executions.c.snapshot).where(executions.c.account_id==str(actor),executions.c.state.in_(('pending','running')))).mappings():
+            if any(route.get('source_job_id') in ids for route in execution['snapshot'].get('routes',{}).values()): raise Conflict('یک گام فعال به این سورس وابسته است؛ ابتدا اجرا را تمام یا لغو کنید.')
+        layout=lambda parts:[(p['key'],p['path'],p['url']) for p in parts]
+        if layout(base['snapshot']['components'])!=layout(value['snapshot']['components']) or base['snapshot']['documents']!=value['snapshot']['documents']: raise Conflict('ساختار بخش‌ها یا مستندات تغییر کرده است؛ به‌روزرسانی درجا فقط با ساختار قبلی ممکن است.')
+        value['snapshot'].update(update_of=str(base['id']),local_directory=path,previous_job_ids=ids)
     validate_snapshot(s,value); s.execute(t.insert().values(**value)); return public(value)
 
 def cancel(s,project,workspace,actor,job_id):
@@ -197,9 +234,16 @@ def claim(s,runner):
     candidates=s.execute(sa.select(t).where(t.c.device_id==runner['id'],t.c.account_id==runner['account_id'],t.c.state=='pending').order_by(t.c.created_at).with_for_update(skip_locked=True).limit(1)).mappings().first()
     if not candidates: return dict(job=None)
     job=dict(candidates)
+    if job['snapshot'].get('update_of'):
+        cap=local.table(s,'runner_capabilities')
+        if 'source-update-v1' not in (s.scalar(sa.select(cap.c.capabilities).where(cap.c.device_id==str(runner['id']))) or []):
+            s.execute(t.update().where(t.c.id==job['id']).values(state='failed',finished_at=agents.now(),result={'error':'runner_update_required'})); return dict(job=None)
     try: validate_snapshot(s,job)
     except (Forbidden,NotFound,Conflict):
         s.execute(t.update().where(t.c.id==job['id']).values(state='failed',finished_at=agents.now(),result={'error':'source_access_or_revision_changed'})); return dict(job=None)
+    if job['snapshot'].get('update_of'):
+        for old in s.execute(sa.select(t).where(t.c.account_id==str(job['account_id']),t.c.device_id==str(job['device_id']),t.c.state=='succeeded')).mappings():
+            if directory(old)==directory(job): s.execute(t.update().where(t.c.id==old['id']).values(result=dict(old['result'] or {},superseded_by=str(job['id']))))
     now=agents.now(); s.execute(t.update().where(t.c.id==job['id']).values(state='running',started_at=now,lease_until=now+timedelta(seconds=90)))
     return dict(job=dict(id=str(job['id']),**job['snapshot']))
 
@@ -235,9 +279,15 @@ def complete(s,runner,job_id,data):
         for actual,expected in zip(parts,job['snapshot']['components']):
             agents.body(actual,('key','commit'))
             if actual['key']!=expected['key'] or not isinstance(actual['commit'],str) or not re.fullmatch('[0-9a-f]{40}|[0-9a-f]{64}',actual['commit']): raise BadRequest('شناسهٔ commit معتبر نیست.')
-        result=dict(components=parts,local_directory=str(job['id']))
+        result=dict(components=parts,local_directory=directory(job))
     else:
-        if data['error'] not in ('git_failed','disk_error','invalid_job','runner_error'): raise BadRequest('کد خطا معتبر نیست.')
+        if data['error'] not in ('git_failed','disk_error','invalid_job','runner_error','merge_conflict','workspace_update_failed'): raise BadRequest('کد خطا معتبر نیست.')
         result=dict(error=data['error'])
+    if job['snapshot'].get('update_of'):
+        result.update(local_directory=directory(job),update_of=job['snapshot']['update_of'])
+        if data['state']=='succeeded':
+            from company_projects import local_execution as local
+            bindings=local.table(s,'execution_bindings')
+            s.execute(bindings.update().where(bindings.c.account_id==str(job['account_id']),bindings.c.device_id==str(job['device_id']),bindings.c.source_job_id.in_(job['snapshot']['previous_job_ids'])).values(source_job_id=str(job['id']),revision=bindings.c.revision+1,updated_at=agents.now()))
     t=table(s,'jobs'); s.execute(t.update().where(t.c.id==job['id']).values(state=data['state'],finished_at=agents.now(),result=result,lease_until=None))
     return dict(recorded=True)

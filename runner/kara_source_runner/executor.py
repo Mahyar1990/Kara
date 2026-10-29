@@ -37,7 +37,7 @@ def command(args, env, heartbeat, *, timeout=1200):
                     heartbeat()
                     if time.monotonic()-start>timeout: raise RunnerFailure('git_failed')
             if process.returncode: raise RunnerFailure('git_failed')
-            return output.decode('ascii',errors='strict').strip()
+            return output.decode('utf-8',errors='strict').strip()
         finally:
             if process.poll() is None:
                 os.killpg(process.pid,signal.SIGTERM)

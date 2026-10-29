@@ -32,12 +32,12 @@ def worker(job,secrets,config,root,options,directory):
     client=Client(config['server'],config['secret']); prefix=('rpc/' if job.get('kind')=='rpc' else 'execution/')+job['id']+'/'
     directory=Path(directory); sequence=0
     os.environ['KARA_EMBEDDING_CACHE']=str(Path(root)/'.kara-runner'/owner_id(config['server'],config['secret'])/'embeddings')
-    workspace=Path(root)/job['source_job_id'] if job.get('source_job_id') else None
+    workspace=Path(root)/job.get('source_directory',job['source_job_id']) if job.get('source_job_id') else None
     if workspace:
         try:
             if not workspace.resolve().is_relative_to(Path(root).resolve()) or not workspace.is_dir():raise ValueError()
             manifest=json.loads((workspace/'.kara/manifest.json').read_text())
-            if manifest.get('owner')!=owner_id(config['server'],config['secret']):raise ValueError()
+            if manifest.get('owner')!=owner_id(config['server'],config['secret']) or manifest.get('job_id')!=job['source_job_id'] or manifest.get('valid') is False:raise ValueError()
         except (OSError,ValueError):
             atomic_json(directory/'result.json',dict(state='failed',outputs={},error='code_failed',total_steps=0,total_tokens=0,snapshot_digest=job.get('snapshot_digest')))
             return

@@ -35,6 +35,23 @@ class LocalExecutionTests(ProjectDatabaseFixture):
         self.job=local.dispatch_team(self.session,self.attempt['id'])
         return self.job
 
+    def test_source_update_refuses_a_source_used_by_pending_execution(self):
+        from uuid import uuid4
+        from company_projects import gitlab_connections as gitlab
+        self.setup_job()
+        connection=gitlab.save(self.session,self.reader.id,dict(name='Synthetic',base_url='https://git.example.test',token='synthetic-token',expected_revision=1))
+        repo=source.save_repository(*self.scope,dict(name='Synthetic',url='https://git.example.test/group/app',branch='sandbox',expected_revision=1))
+        tree=source.save_workspace(*self.scope,dict(name='Synthetic',expected_revision=1,components=[dict(key='app',path='app',repository_id=repo['id'],connection_id=connection['id'])],documents=[]))
+        prepared=source.enqueue(*self.scope,tree['id'],dict(device_id=self.device['id'],expected_revision=1,action_key=str(uuid4())))
+        source.claim(self.session,self.device)
+        source.complete(self.session,self.device,prepared['id'],dict(state='succeeded',components=[dict(key='app',commit='a'*40)],error=None))
+        local.register(self.session,self.device,dict(protocol=2,capabilities=['workflow-v2','source-v1','source-update-v1']))
+        jobs=local.table(self.session,'local_executions')
+        self.session.execute(jobs.update().where(jobs.c.id==self.job['id']).values(source_job_id=prepared['id']))
+        with self.assertRaises(Conflict):
+            source.enqueue_update(*self.scope,tree['id'],dict(device_id=self.device['id'],expected_revision=1,action_key=str(uuid4()),update_of=prepared['id']))
+        self.assertEqual(source.row(self.session,'jobs',prepared['id'],{})['state'],'succeeded')
+
     def test_dispatch_is_metadata_only_and_original_definitions_unchanged(self):
         original=self.workflow.graph
         self.setup_job()

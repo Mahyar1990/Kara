@@ -18,7 +18,7 @@ export default function ExecutionSettings({ projectId, accountId, projectName }:
   useEffect(() => { setSelected(binding?.device_id || ''); setSource(binding?.source_job_id || ''); setMessage('') }, [binding?.device_id, binding?.source_job_id, binding?.revision])
   const target = devices.data?.data.find(d => d.id === selected)
   const savedDevice = devices.data?.data.find(d => d.id === binding?.device_id)
-  const prepared = sources.data?.jobs.filter(j => j.device_id === selected && j.state === 'succeeded') || []
+  const prepared = sources.data?.jobs.filter(j => j.device_id === selected && j.state === 'succeeded' && !j.result?.superseded_by) || []
   const dirty = selected !== (binding?.device_id || '') || source !== (binding?.source_job_id || '')
   const loading = state.isPending || devices.isPending || sources.isPending
   const unavailable = state.isError || devices.isError || sources.isError

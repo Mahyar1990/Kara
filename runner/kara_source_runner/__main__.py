@@ -9,6 +9,7 @@ import shutil
 import time
 from .client import Client, ApiError
 from .execution_worker import execute as execute_workflow, flush_outbox, owner_id
+from .source_update import update as update_source
 from .executor import materialize, RunnerFailure, validate_job
 from . import harness_runtime
 
@@ -43,7 +44,7 @@ def main():
         harness_runtime.flush(client,config,args.root)
         registered=harness_runtime.profiles(args.harness_config,args.allow_harness)
         client.post('harness/register',dict(profiles=harness_runtime.registration(registered)))
-        capabilities=['workflow-v2','http','source-v1','node-routing-v1']
+        capabilities=['workflow-v2','http','source-v1','source-update-v1','node-routing-v1']
         backend=args.code_backend
         if backend=='auto':backend='docker' if shutil.which('docker') else 'process'
         if backend=='process' and args.allow_local_code:
@@ -86,10 +87,11 @@ def main():
                     try:
                         values=client.post(path+'credentials')['connections']
                         credentials={v['key']:v['token'] for v in values}
-                        parts=materialize(job,credentials,args.root,heartbeat,owner=owner_id(config['server'],config['secret']))
+                        prepare_source=update_source if job.get('update_of') else materialize
+                        parts=prepare_source(job,credentials,args.root,heartbeat,owner=owner_id(config['server'],config['secret']))
                         credentials.clear(); values.clear()
                         client.post(path+'complete',dict(state='succeeded',components=parts,error=None))
-                        print('Prepared:',args.root.expanduser().resolve()/job['id'])
+                        print('Prepared:',args.root.expanduser().resolve()/job.get('local_directory',job['id']))
                     except RunnerFailure as exc:
                         client.post(path+'complete',dict(state='failed',components=[],error=exc.code)); print('Preparation failed:',exc.code)
                     except ApiError:

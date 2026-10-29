@@ -107,11 +107,14 @@ def check_snapshot(snapshot):
 def create(s,attempt,agent,selection,*,_binding=None):
     agents.body(selection,('method','mode','device_id','source_job_id','profile_key'))
     if selection['method']!='harness' or selection['mode'] not in ('manual','managed'):raise BadRequest('روش اجرای تسک معتبر نیست.')
+    from company_projects.local_execution import admission_lock
+    admission_lock(s,attempt['actor_id'])
     actor=attempt['actor_id']; cfg=_binding['execution'] if _binding and _binding.get('execution_scope')=='stage' else policy(s,agent);reason=compatible(s,agent)
     if not cfg['enabled'] or reason:raise Forbidden(reason or 'استفاده از هارنس برای این نسخه فعال نشده است.')
     device=source.device(s,actor,selection['device_id'],True); prepared=None
     if selection['source_job_id']:
         prepared=source.row(s,'jobs',selection['source_job_id'],{k:attempt[k] for k in ('project_id','workspace_id')}|dict(account_id=actor,device_id=str(device['id'])))
+        source.usable(s,prepared)
         if prepared['state']!='succeeded':raise BadRequest('سورس موفق روی همین دستگاه را انتخاب کنید.')
         source.validate_snapshot(s,prepared)
     if cfg['requires_source'] and not prepared:raise BadRequest('برای این مأموریت سورس آماده‌شده لازم است.')
@@ -145,6 +148,7 @@ def authorize(s,row):
     if agents.digest(knowledge(s,workflow,row['account_id']))!=agents.digest(row['snapshot']['knowledge']):raise Conflict('دانش مأموریت تغییر کرده است؛ تلاش تازه بسازید.')
     if row['source_job_id']:
         prepared=source.row(s,'jobs',row['source_job_id'],key|dict(account_id=row['account_id'],device_id=row['device_id']))
+        source.usable(s,prepared)
         source.validate_snapshot(s,prepared)
     if row['mode']=='managed':
         t=table(s,'profiles');digest=s.scalar(sa.select(t.c.digest).where(t.c.device_id==row['device_id'],t.c.profile_key==row['profile_key']))

@@ -43,6 +43,35 @@ class SourceCodeTests(ProjectDatabaseFixture):
         # Reading the dashboard does not claim or alter a pending preparation.
         self.assertEqual(source.row(self.session, 'jobs', pending['id'], {})['state'], 'pending')
 
+    def test_update_reuses_directory_is_scoped_versioned_and_rebinds_on_success(self):
+        from company_projects import local_execution as local
+        self.setup_source(); original=self.enqueue(); source.claim(self.session,self.runner)
+        source.complete(self.session,self.runner,original['id'],dict(state='succeeded',components=[dict(key='backend',commit='a'*40)],error=None))
+        local.set_binding(*self.args(),dict(device_id=self.runner['id'],source_job_id=original['id'],expected_revision=1))
+        data=dict(device_id=self.runner['id'],expected_revision=1,action_key=str(uuid4()),update_of=original['id'])
+        for invalid in (None,'','not-a-uuid'):
+            with self.assertRaises(source.agents.store.ProjectError): source.enqueue_update(*self.args(),self.tree['id'],data|dict(update_of=invalid))
+        with self.assertRaises(Conflict): source.enqueue_update(*self.args(),self.tree['id'],data)
+        local.register(self.session,self.runner,dict(protocol=2,capabilities=['workflow-v2','source-v1','source-update-v1']))
+        update=source.enqueue_update(*self.args(),self.tree['id'],data)
+        self.assertEqual(source.enqueue_update(*self.args(),self.tree['id'],data)['id'],update['id'])
+        with self.assertRaises(Conflict): source.usable(self.session,source.row(self.session,'jobs',original['id'],{}))
+        claimed=source.claim(self.session,self.runner)['job']
+        self.assertEqual(claimed['local_directory'],original['id']); self.assertEqual(claimed['update_of'],original['id'])
+        self.assertEqual(source.row(self.session,'jobs',original['id'],{})['result']['superseded_by'],update['id'])
+        source.complete(self.session,self.runner,update['id'],dict(state='succeeded',components=[dict(key='backend',commit='b'*40)],error=None))
+        result=source.row(self.session,'jobs',update['id'],{})
+        self.assertEqual(result['result']['local_directory'],original['id']); source.usable(self.session,result)
+        self.assertEqual(local.binding(*self.args())['source_job_id'],update['id'])
+        with self.assertRaises(Conflict): source.enqueue_update(*self.args(),self.tree['id'],data|dict(action_key=str(uuid4())))
+        with self.assertRaises(NotFound): source.enqueue_update(*self.args(self.editor),self.tree['id'],data|dict(action_key=str(uuid4())))
+        next_job=source.enqueue_update(*self.args(),self.tree['id'],data|dict(action_key=str(uuid4()),update_of=update['id']))
+        self.assertEqual(source.claim(self.session,self.runner)['job']['local_directory'],original['id'])
+        source.complete(self.session,self.runner,next_job['id'],dict(state='failed',components=[],error='merge_conflict'))
+        with self.assertRaises(Conflict): source.usable(self.session,source.row(self.session,'jobs',update['id'],{}))
+        retry=source.enqueue_update(*self.args(),self.tree['id'],data|dict(action_key=str(uuid4()),update_of=next_job['id']))
+        self.assertEqual(source.row(self.session,'jobs',retry['id'],{})['snapshot']['local_directory'],original['id'])
+
     def args(self,actor=None): return (self.session,self.a['id'],self.workspace_a.id,(actor or self.project_owner).id)
     def setup_source(self):
         self.connection_value=gitlab.save(self.session,self.project_owner.id,dict(name='Synthetic',base_url='https://git.example.test',token='synthetic-source-token',expected_revision=1))

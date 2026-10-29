@@ -8,7 +8,7 @@ export type Device = { harnesses?: { key: string; name: string; kind: string; ve
 export type RunnerProject = { id: string; name: string; workspace_id: string; binding: null | { device_id: string; source_job_id: string | null; source_name: string | null; source_revision: number | null; source_state: string | null } }
 export type RunnerActivity = { agent_id?: string; instance_id?: string; stage_id?: string; id: string; kind: 'workflow' | 'rpc' | 'source' | 'harness'; title: string; project_id: string; device_id: string | null; state: string; created_at: string }
 export type RunnerOverview = { devices: Device[]; projects: RunnerProject[]; active: RunnerActivity[]; recent: RunnerActivity[] }
-export type Job = { id: string; source_workspace_id: string; device_id: string; state: string; created_at: string; snapshot_revision: number; result: null | { error?: string; local_directory?: string; components?: { key: string; commit: string }[] } }
+export type Job = { update_of?: string | null; local_directory?: string; id: string; source_workspace_id: string; device_id: string; state: string; created_at: string; snapshot_revision: number; result: null | { error?: string; superseded_by?: string; local_directory?: string; components?: { key: string; commit: string }[] } }
 const base = (id: string) => `/company/projects/${id}/source-code`
 const devices = '/company/me/source-runners'
 export const sourceApi = {
@@ -17,6 +17,7 @@ export const sourceApi = {
   saveWorkspace: (id: string, value: Workspace | null, body: { name: string; components: Component[]; documents: Document[]; expected_revision: number }) => value ? put<Workspace>(`${base(id)}/workspaces/${value.id}`, { body }) : post<Workspace>(`${base(id)}/workspaces`, { body }),
   remove: (id: string, kind: 'repositories' | 'workspaces', value: Repository | Workspace) => del(`${base(id)}/${kind}/${value.id}`, { body: { expected_revision: value.revision } }),
   prepare: (id: string, value: Workspace, deviceId: string, actionKey: string) => post<Job>(`${base(id)}/workspaces/${value.id}/prepare`, { body: { device_id: deviceId, expected_revision: value.revision, action_key: actionKey } }),
+  update: (id: string, value: Workspace, deviceId: string, actionKey: string, updateOf: string) => post<Job>(`${base(id)}/workspaces/${value.id}/update`, { body: { device_id: deviceId, expected_revision: value.revision, action_key: actionKey, update_of: updateOf } }),
   cancel: (id: string, jobId: string) => post(`${base(id)}/jobs/${jobId}/cancel`),
   devices: () => get<{ data: Device[] }>(devices),
   overview: () => get<RunnerOverview>(`${devices}/overview`),

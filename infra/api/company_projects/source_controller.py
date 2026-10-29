@@ -64,6 +64,11 @@ class Prepare(Resource):
     @guarded()
     def post(self,project_id,entity_id): return console(source.enqueue,entity_id,source_payload(),project=project_id)
 
+@console_ns.route('/company/projects/<uuid:project_id>/source-code/workspaces/<uuid:entity_id>/update')
+class UpdateWorkspace(Resource):
+    @guarded()
+    def post(self,project_id,entity_id): return console(source.enqueue_update,entity_id,source_payload(),project=project_id)
+
 @console_ns.route('/company/projects/<uuid:project_id>/source-code/jobs/<uuid:job_id>/cancel')
 class Cancel(Resource):
     @guarded()
