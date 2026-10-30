@@ -120,6 +120,10 @@ def prepare_source():
                    cwd=SOURCE, env=environment, check=True)
     subprocess.run(["git", "apply", str(CUSTOM / "socket-origin.patch")],
                    cwd=SOURCE, env=environment, check=True)
+    subprocess.run(["git", "apply", "--check", str(CUSTOM / "personal-model-selector.patch")],
+                   cwd=SOURCE, env=environment, check=True)
+    subprocess.run(["git", "apply", str(CUSTOM / "personal-model-selector.patch")],
+                   cwd=SOURCE, env=environment, check=True)
     from build_environment import prepare_ca
     prepare_ca(build_custom / "build-ca.crt")
     shutil.copytree(CUSTOM / "overlay", SOURCE / "web", dirs_exist_ok=True)
