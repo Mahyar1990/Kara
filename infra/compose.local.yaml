@@ -69,6 +69,10 @@ services:
   migration:
     extends:
       service: api
+    # extends sees this override's api, not the merged upstream environment.
+    # Both launch paths resolve relative files from .runtime/dify/docker.
+    env_file:
+      - .env
     image: langgenius/dify-api:1.17.1
     build: !reset null
     pull_policy: if_not_present
