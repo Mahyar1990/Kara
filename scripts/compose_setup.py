@@ -27,10 +27,6 @@ def use_workspace_owner():
 
 
 def prepare():
-    ca = Path(os.environ.get('KARA_SETUP_CA', '/run/kara-ca.crt'))
-    if ca.is_file() and ca.stat().st_size:
-        os.environ['SSL_CERT_FILE'] = str(ca)
-        os.environ['GIT_SSL_CAINFO'] = str(ca)
     # Check the private catalog dependency before downloads or configuration writes.
     company_api.catalog_files()
     local_dify.prepare()

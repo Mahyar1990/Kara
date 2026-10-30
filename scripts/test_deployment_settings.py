@@ -43,8 +43,20 @@ class DeploymentSettingsTests(unittest.TestCase):
                 (root / '.env.local').write_text('')
                 self.assertEqual(build_environment.ca_bytes(), b'')
                 (root / '.env.local').write_text('KARA_CA_BUNDLE=ca.crt\n')
-                ca.write_text('-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----')
+                ca.write_text((Path(__file__).parent / 'fixtures/build-test-ca.pem').read_text())
                 self.assertIn(b'BEGIN CERTIFICATE', build_environment.ca_bytes())
                 ca.write_text('-----BEGIN PRIVATE KEY-----')
                 with self.assertRaises(ValueError):
                     build_environment.ca_bytes()
+
+    def test_rejects_malformed_pem_before_writing_build_input(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env.local').write_text('KARA_CA_BUNDLE=ca.crt\n')
+            (root / 'ca.crt').write_text('-----BEGIN CERTIFICATE-----\nnot-a-certificate\n-----END CERTIFICATE-----')
+            output = root / 'build-ca.crt'
+            output.write_text('previous validated input')
+            with patch.object(local_dify, 'ROOT', root), patch.dict('os.environ', {}, clear=True):
+                with self.assertRaisesRegex(ValueError, 'valid PEM'):
+                    build_environment.prepare_ca(output)
+            self.assertEqual(output.read_text(), 'previous validated input')

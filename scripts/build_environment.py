@@ -1,5 +1,6 @@
 """Private CA inputs shared by host and bootstrap-container build preparation."""
 import os
+import ssl
 from pathlib import Path
 
 
@@ -22,6 +23,11 @@ def ca_bytes():
     data = source.read_bytes()
     if b'PRIVATE KEY' in data or b'-----BEGIN CERTIFICATE-----' not in data:
         raise ValueError('KARA_CA_BUNDLE must contain PEM certificates only, without private keys')
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.load_verify_locations(cadata=data.decode('ascii'))
+    except (ssl.SSLError, UnicodeError) as error:
+        raise ValueError('KARA_CA_BUNDLE must contain valid PEM certificates') from error
     return data.rstrip() + b'\n'
 
 
