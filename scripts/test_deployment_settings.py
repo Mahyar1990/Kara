@@ -60,3 +60,18 @@ class DeploymentSettingsTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'valid PEM'):
                     build_environment.prepare_ca(output)
             self.assertEqual(output.read_text(), 'previous validated input')
+
+    def test_ca_bundle_with_non_ascii_annotations_preserves_bytes_and_trust(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env.local').write_text('KARA_CA_BUNDLE=ca.crt\n')
+            certificate = (Path(__file__).parent / 'fixtures/build-test-ca.pem').read_bytes()
+            data = b'# Organization annotation: \x82\n' + certificate
+            (root / 'ca.crt').write_bytes(data)
+            with patch.object(local_dify, 'ROOT', root), patch.dict('os.environ', {}, clear=True):
+                self.assertEqual(build_environment.ca_bytes(), data.rstrip() + b'\n')
+                build_environment.configure_ca()
+                self.assertEqual(build_environment.os.environ['SSL_CERT_FILE'], str(root / 'ca.crt'))
+                output = root / 'build-ca.crt'
+                build_environment.prepare_ca(output)
+                self.assertEqual(output.read_bytes(), data.rstrip() + b'\n')

@@ -25,8 +25,10 @@ def ca_bytes():
         raise ValueError('KARA_CA_BUNDLE must contain PEM certificates only, without private keys')
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.load_verify_locations(cadata=data.decode('ascii'))
-    except (ssl.SSLError, UnicodeError) as error:
+        # OpenSSL accepts bundle annotations that are not ASCII; do not decode
+        # the entire OS trust store as though every byte were a PEM block.
+        context.load_verify_locations(cafile=str(source))
+    except ssl.SSLError as error:
         raise ValueError('KARA_CA_BUNDLE must contain valid PEM certificates') from error
     return data.rstrip() + b'\n'
 
