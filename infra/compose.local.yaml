@@ -1,6 +1,9 @@
 # Compose 2.24.4+ supports !override and optional env_file entries.
 services:
   api:
+    depends_on:
+      migration:
+        condition: service_completed_successfully
     image: company-agent/dify-api:1.17.1-projects
     pull_policy: never
     environment:
@@ -9,6 +12,9 @@ services:
       KARA_TEAM_STAGE_RETRY_LIMIT: "${KARA_TEAM_STAGE_RETRY_LIMIT:-3}"
       KARA_TEAM_RECOVERY_AFTER_SECONDS: "${KARA_TEAM_RECOVERY_AFTER_SECONDS:-900}"
   worker:
+    depends_on:
+      migration:
+        condition: service_completed_successfully
     image: company-agent/dify-api:1.17.1-projects
     pull_policy: never
     environment:
@@ -17,11 +23,17 @@ services:
       KARA_TEAM_STAGE_RETRY_LIMIT: "${KARA_TEAM_STAGE_RETRY_LIMIT:-3}"
       KARA_TEAM_RECOVERY_AFTER_SECONDS: "${KARA_TEAM_RECOVERY_AFTER_SECONDS:-900}"
   worker_beat:
+    depends_on:
+      migration:
+        condition: service_completed_successfully
     image: company-agent/dify-api:1.17.1-projects
     pull_policy: never
     environment:
       CODE_EXECUTION_API_KEY: "${SANDBOX_API_KEY:?Private sandbox key is required}"
   api_websocket:
+    depends_on:
+      migration:
+        condition: service_completed_successfully
     image: company-agent/dify-api:1.17.1-projects
     pull_policy: never
   nginx:
@@ -40,3 +52,23 @@ services:
   weaviate:
     environment:
       DISABLE_TELEMETRY: "true"
+
+  # Use the unmodified engine: importing Kara before the base schema exists fails.
+  migration:
+    extends:
+      service: api
+    image: langgenius/dify-api:1.17.1
+    build: !reset null
+    pull_policy: if_not_present
+    restart: "no"
+    profiles: !reset []
+    entrypoint: ["/app/api/.venv/bin/flask"]
+    command: ["db", "upgrade"]
+    working_dir: /app/api
+    depends_on: !override
+      db_postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      disable: true
