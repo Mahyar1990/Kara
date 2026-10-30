@@ -92,7 +92,7 @@ changes.update({
         '        if not user_id or not tenant_id:\n',
         '        from company_projects.agent_execution import managed\n        if managed(session, workflow_id) is not None:\n            session.rollback()\n            return None  # Managed definitions do not use socket collaboration yet.\n        session.rollback()\n        if not user_id or not tenant_id:\n'), (
         '        workflow_id = mapping["workflow_id"]\n        user_id = mapping["user_id"]\n',
-        '        workflow_id = mapping["workflow_id"]\n        from company_projects.agent_execution import deny_native\n        deny_native(workflow_id)\n        user_id = mapping["user_id"]\n')],
+        '        workflow_id = mapping["workflow_id"]\n        from company_projects.agent_execution import deny_native\n        with self._socketio.app.app_context():\n            deny_native(workflow_id)\n        user_id = mapping["user_id"]\n')],
 })
 changes['core/app/apps/workflow/app_generator.py'].append((
     '            application_generate_entity = WorkflowAppGenerateEntity(\n                task_id=str(uuid.uuid4()),\n',
