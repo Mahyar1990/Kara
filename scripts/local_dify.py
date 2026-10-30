@@ -2,6 +2,8 @@
 """Prepare and operate the pinned, private local Dify deployment."""
 
 import argparse
+import ipaddress
+from urllib.parse import urlsplit
 from html.parser import HTMLParser
 import json
 import os
@@ -29,6 +31,13 @@ def run(args, **kwargs):
 def settings():
     values = {
         "DIFY_HTTP_PORT": "8080",
+        "DIFY_BIND_ADDRESS": "127.0.0.1",
+        "DIFY_PUBLIC_URL": "",
+        "KARA_NPM_REGISTRY": "https://registry.npmjs.org/",
+        "KARA_CA_BUNDLE": "",
+        "KARA_BOOTSTRAP_IMAGE": "python:3.12-bookworm",
+        "KARA_TOOLS_IMAGE": "python:3.12-bookworm",
+        "DIFY_WEAVIATE_IMAGE": "cr.weaviate.io/semitechnologies/weaviate:1.39.2",
         "DIFY_HTTPS_PORT": "8443",
         "DIFY_PROJECT_NAME": "company-agent-local",
     }
@@ -50,7 +59,46 @@ def settings():
         raise ValueError("HTTP and HTTPS ports must differ")
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", values["DIFY_PROJECT_NAME"]):
         raise ValueError("Invalid Compose project name")
+    address = ipaddress.ip_address(values["DIFY_BIND_ADDRESS"])
+    if address.version != 4:
+        raise ValueError("DIFY_BIND_ADDRESS must be an IPv4 address")
+    for key, schemes in (("DIFY_PUBLIC_URL", ("http", "https")),
+                         ("KARA_NPM_REGISTRY", ("https",))):
+        if not values[key] and key == "DIFY_PUBLIC_URL":
+            continue
+        url = urlsplit(values[key])
+        if (url.scheme not in schemes or not url.hostname or url.username or url.password
+                or url.query or url.fragment or any(c.isspace() for c in values[key])):
+            raise ValueError(f"Invalid {key}; credentials are not supported in URLs")
+        if key == "DIFY_PUBLIC_URL" and url.path not in ("", "/"):
+            raise ValueError("DIFY_PUBLIC_URL must be an origin without a path")
+        url.port  # Validate port syntax/range.
+        values[key] = url.geturl()
+    if not address.is_loopback and not values["DIFY_PUBLIC_URL"]:
+        raise ValueError("Network binding requires DIFY_PUBLIC_URL")
+    for key in ("KARA_BOOTSTRAP_IMAGE", "KARA_TOOLS_IMAGE", "DIFY_WEAVIATE_IMAGE"):
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/:@-]*", values[key]):
+            raise ValueError(f"Invalid {key}")
     return values
+
+
+def public_environment(values):
+    origin = values.get("DIFY_PUBLIC_URL", "").rstrip("/")
+    socket = origin.replace("https://", "wss://", 1).replace("http://", "ws://", 1) if origin else "ws://localhost"
+    return {
+        "EXPOSE_NGINX_PORT": values["DIFY_HTTP_PORT"],
+        "EXPOSE_NGINX_SSL_PORT": values["DIFY_HTTPS_PORT"],
+        "KARA_BIND_ADDRESS": values.get("DIFY_BIND_ADDRESS", "127.0.0.1"),
+        "NEXT_PUBLIC_SOCKET_URL": socket,
+        "CONSOLE_WEB_URL": origin,
+        "CONSOLE_API_URL": origin,
+        "APP_WEB_URL": origin,
+        "SERVICE_API_URL": origin,
+        "APP_API_URL": origin,
+        "KARA_NPM_REGISTRY": values.get("KARA_NPM_REGISTRY", "https://registry.npmjs.org/"),
+        "KARA_TOOLS_IMAGE": values.get("KARA_TOOLS_IMAGE", "python:3.12-bookworm"),
+        "DIFY_WEAVIATE_IMAGE": values.get("DIFY_WEAVIATE_IMAGE", "cr.weaviate.io/semitechnologies/weaviate:1.39.2"),
+    }
 
 
 def verify_checkout():
@@ -67,6 +115,8 @@ def verify_checkout():
 
 
 def prepare():
+    from build_environment import configure_ca
+    configure_ca()
     expected = json.loads(LOCK.read_text())
     if not UPSTREAM.exists():
         UPSTREAM.parent.mkdir(parents=True, exist_ok=True)
@@ -84,7 +134,7 @@ def prepare():
         "CELERY_WORKER_AMOUNT": "1",
         "SERVER_WORKER_AMOUNT": "1",
         "COMPOSE_PROFILES": "postgresql,weaviate,collaboration",
-        "NEXT_PUBLIC_SOCKET_URL": f"ws://localhost:{values['DIFY_HTTP_PORT']}",
+        **public_environment(values),
         "SECRET_KEY": secrets.token_hex(32),
         "DB_PASSWORD": secrets.token_hex(24),
         "REDIS_PASSWORD": secrets.token_hex(24),
@@ -135,9 +185,7 @@ def compose(args, capture=False):
     values = settings()
     environment = os.environ.copy()
     # Keep local port overrides consistent even when an existing .env is preserved.
-    environment["EXPOSE_NGINX_PORT"] = values["DIFY_HTTP_PORT"]
-    environment["EXPOSE_NGINX_SSL_PORT"] = values["DIFY_HTTPS_PORT"]
-    environment["NEXT_PUBLIC_SOCKET_URL"] = f"ws://localhost:{values['DIFY_HTTP_PORT']}"
+    environment.update(public_environment(values))
     command = compose_command() + [
         "--parallel", "2",
         "--project-name", values["DIFY_PROJECT_NAME"],
@@ -150,14 +198,21 @@ def compose(args, capture=False):
                capture_output=capture, text=True)
 
 
+def local_open(url, timeout):
+    return urllib.request.build_opener(urllib.request.ProxyHandler({})).open(url, timeout=timeout)
+
+
 def wait_for_api(timeout=300):
     """Allow the first app import and migrations to finish before reporting ready."""
-    url = f"http://127.0.0.1:{settings()['DIFY_HTTP_PORT']}/console/api/ping"
+    values = settings()
+    host = values.get('DIFY_BIND_ADDRESS', '127.0.0.1')
+    host = '127.0.0.1' if host == '0.0.0.0' else host
+    url = f"http://{host}:{values['DIFY_HTTP_PORT']}/console/api/ping"
     deadline = time.monotonic() + timeout
     print("Waiting for Dify API readiness...", flush=True)
     while time.monotonic() < deadline:
         try:
-            with urllib.request.urlopen(url, timeout=5) as response:
+            with local_open(url, timeout=5) as response:
                 if json.load(response).get("result") == "pong":
                     print("Dify API is ready.", flush=True)
                     return
@@ -167,7 +222,7 @@ def wait_for_api(timeout=300):
     raise RuntimeError("Dify did not become ready within 5 minutes; inspect make logs")
 
 
-def doctor():
+def doctor(server_only=False):
     verify_checkout()
     if not shutil.which("docker"):
         raise RuntimeError("Docker client is missing")
@@ -181,7 +236,7 @@ def doctor():
          '{{index .Config.Labels "company-agent.localization"}}'],
         capture_output=True, text=True,
     ).stdout.strip()
-    if web_revision != fingerprint():
+    if not server_only and web_revision != fingerprint():
         raise RuntimeError("Running web customization is outdated; run make up")
     from company_api import fingerprint as api_fingerprint
     for name in ("api", "worker", "worker_beat", "api_websocket"):
@@ -206,10 +261,19 @@ def doctor():
     print("Dify sandbox check: matching private credentials")
     for name, service in resolved["services"].items():
         for port in service.get("ports", []):
-            if port.get("host_ip") != "127.0.0.1":
-                raise RuntimeError(f"Unexpected non-local port binding: {name}")
+            allowed = settings()["DIFY_BIND_ADDRESS"] if name == "nginx" else "127.0.0.1"
+            if port.get("host_ip") != allowed:
+                raise RuntimeError(f"Unexpected port binding: {name}")
     compose(["ps"])
-    url = f"http://127.0.0.1:{settings()['DIFY_HTTP_PORT']}/install"
+    address = settings()['DIFY_BIND_ADDRESS']
+    probe_host = '127.0.0.1' if address == '0.0.0.0' else address
+    if server_only:
+        with local_open(f"http://{probe_host}:{settings()['DIFY_HTTP_PORT']}/console/api/ping", timeout=15) as response:
+            if json.load(response).get('result') != 'pong':
+                raise RuntimeError('Unexpected API health response')
+        print('Kara API check: pong; client checks skipped')
+        return
+    url = f"http://{probe_host}:{settings()['DIFY_HTTP_PORT']}/install"
     try:
         with urllib.request.urlopen(url, timeout=15) as response:
             markup = response.read().decode("utf-8")
@@ -225,7 +289,7 @@ def doctor():
             print(f"Dify web check: HTTP {response.status}; {url}")
             print("Dify localization check: fa-IR / rtl")
         with urllib.request.urlopen(
-            f"http://127.0.0.1:{settings()['DIFY_HTTP_PORT']}/console/api/ping",
+            f"http://{probe_host}:{settings()['DIFY_HTTP_PORT']}/console/api/ping",
             timeout=15,
         ) as response:
             payload = json.load(response)
@@ -239,7 +303,9 @@ def doctor():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["setup", "up", "down", "status", "logs", "doctor"])
-    action = parser.parse_args().action
+    parser.add_argument("--server-only", action="store_true", help="Skip all web/client checks in doctor")
+    arguments = parser.parse_args()
+    action = arguments.action
     if action == "setup":
         prepare()
     elif action == "up":
@@ -270,7 +336,7 @@ def main():
     elif action == "logs":
         compose(["logs", "--tail", "80", "api", "web", "worker"])
     else:
-        doctor()
+        doctor(server_only=arguments.server_only)
 
 
 if __name__ == "__main__":

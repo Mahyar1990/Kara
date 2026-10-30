@@ -27,6 +27,10 @@ def use_workspace_owner():
 
 
 def prepare():
+    ca = Path(os.environ.get('KARA_SETUP_CA', '/run/kara-ca.crt'))
+    if ca.is_file() and ca.stat().st_size:
+        os.environ['SSL_CERT_FILE'] = str(ca)
+        os.environ['GIT_SSL_CAINFO'] = str(ca)
     # Check the private catalog dependency before downloads or configuration writes.
     company_api.catalog_files()
     local_dify.prepare()
@@ -35,11 +39,10 @@ def prepare():
     values = local_dify.settings()
     environment = (local_dify.DOCKER_DIR / '.env').read_text(encoding='utf-8')
     # Preserve existing credentials; only the launcher's public overrides differ.
-    environment += (
-        f"\nEXPOSE_NGINX_PORT={values['DIFY_HTTP_PORT']}\n"
-        f"EXPOSE_NGINX_SSL_PORT={values['DIFY_HTTPS_PORT']}\n"
-        f"NEXT_PUBLIC_SOCKET_URL=ws://localhost:{values['DIFY_HTTP_PORT']}\n"
-    )
+    public = local_dify.public_environment(values)
+    # Replace all occurrences; never append a second conflicting value.
+    lines = [line for line in environment.splitlines() if line.partition('=')[0] not in public]
+    environment = '\n'.join(lines + [f"{key}={value}" for key, value in public.items()]) + '\n'
     target = ROOT / '.runtime/compose.env'
     with target.open('w', encoding='utf-8') as output:
         target.chmod(0o600)

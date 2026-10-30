@@ -7,6 +7,9 @@ services:
     build:
       context: ../../dify-web-source
       dockerfile: .company-web/Dockerfile
+      args:
+        KARA_NPM_REGISTRY: ${KARA_NPM_REGISTRY:-https://registry.npmjs.org/}
+        KARA_TOOLS_IMAGE: ${KARA_TOOLS_IMAGE:-python:3.12-bookworm}
   # Start the local stack even without COMPOSE_PROFILES in the host shell.
   db_postgres:
     profiles: !reset []

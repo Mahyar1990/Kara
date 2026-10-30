@@ -22,6 +22,12 @@ def fingerprint():
         if path.is_file() and "node_modules" not in path.parts:
             digest.update(path.relative_to(CUSTOM).as_posix().encode())
             digest.update(path.read_bytes())
+    from build_environment import ca_bytes
+    from local_dify import settings
+    values = settings()
+    digest.update(ca_bytes())
+    digest.update(values['KARA_NPM_REGISTRY'].encode())
+    digest.update(values['KARA_TOOLS_IMAGE'].encode())
     digest.update(Path(__file__).read_bytes())
     return digest.hexdigest()
 
@@ -110,6 +116,12 @@ def prepare_source():
                    cwd=SOURCE, env=environment, check=True)
     subprocess.run(["git", "apply", str(CUSTOM / "program-options.patch")],
                    cwd=SOURCE, env=environment, check=True)
+    subprocess.run(["git", "apply", "--check", str(CUSTOM / "socket-origin.patch")],
+                   cwd=SOURCE, env=environment, check=True)
+    subprocess.run(["git", "apply", str(CUSTOM / "socket-origin.patch")],
+                   cwd=SOURCE, env=environment, check=True)
+    from build_environment import prepare_ca
+    prepare_ca(build_custom / "build-ca.crt")
     shutil.copytree(CUSTOM / "overlay", SOURCE / "web", dirs_exist_ok=True)
     overrides = json.loads((CUSTOM / "fa-overrides.json").read_text())
     for namespace, values in overrides.items():
@@ -128,7 +140,10 @@ def prepare_source():
 
 def build_image():
     source = prepare_source()
-    command = ["docker", "build"]
+    from local_dify import settings
+    values = settings()
+    command = ["docker", "build", "--build-arg", f"KARA_NPM_REGISTRY={values['KARA_NPM_REGISTRY']}",
+               "--build-arg", f"KARA_TOOLS_IMAGE={values['KARA_TOOLS_IMAGE']}"]
     if os.environ.get("KARA_WEB_SKIP_CHECKS") == "true":
         command.extend(["--build-arg", "KARA_WEB_SKIP_CHECKS=true"])
     if os.environ.get("KARA_WEB_DISABLE_CACHE") == "true":

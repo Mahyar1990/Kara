@@ -1,0 +1,10 @@
+--- a/web/app/components/workflow/collaboration/core/websocket-manager.ts
++++ b/web/app/components/workflow/collaboration/core/websocket-manager.ts
+@@ -50,3 +50,6 @@
+   constructor(config: WebSocketConfig = {}) {
+-    this.url = SOCKET_URL
++    // The default follows the browser origin, including remote hosts and HTTPS.
++    this.url = isDefaultSocketUrl() && typeof window !== 'undefined'
++      ? window.location.origin.replace(/^http/, 'ws')
++      : SOCKET_URL
+     this.transports = config.transports || ['websocket']

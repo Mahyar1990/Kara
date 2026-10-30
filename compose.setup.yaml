@@ -2,12 +2,15 @@
 name: kara-setup
 services:
   setup:
-    build:
-      context: infra/bootstrap
+    image: ${KARA_BOOTSTRAP_IMAGE:-python:3.12-bookworm}
     working_dir: /workspace
     environment:
       PYTHONUTF8: "1"
+      PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
+      HOME: /tmp
+      KARA_SETUP_CA: /run/kara-ca.crt
     volumes:
       - .:/workspace
+      - ${KARA_CA_BUNDLE:-./infra/bootstrap/empty-ca.crt}:/run/kara-ca.crt:ro
     command: ["python", "scripts/compose_setup.py"]

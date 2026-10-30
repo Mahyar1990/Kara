@@ -1,6 +1,13 @@
 ARG KARA_WEB_PACKAGES_BASE=base
+ARG KARA_TOOLS_IMAGE=python:3.12-bookworm
+FROM ${KARA_TOOLS_IMAGE} AS tools
 FROM node:24.20.0-alpine AS base
-RUN apk add --no-cache tzdata && corepack enable
+COPY --from=tools /usr/share/zoneinfo /usr/share/zoneinfo
+COPY .company-web/build-ca.crt /tmp/kara-build-ca.crt
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+ARG KARA_NPM_REGISTRY=https://registry.npmjs.org/
+ENV npm_config_registry=${KARA_NPM_REGISTRY}
+RUN cat /tmp/kara-build-ca.crt >> /etc/ssl/certs/ca-certificates.crt && rm /tmp/kara-build-ca.crt
 ENV PNPM_HOME=/pnpm
 ENV PATH=/pnpm:$PATH
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -17,7 +24,7 @@ COPY packages packages
 RUN if [ "$KARA_WEB_OFFLINE" = "true" ]; then \
       pnpm install --offline --frozen-lockfile --ignore-scripts; \
     else \
-      corepack install && pnpm install --frozen-lockfile --ignore-scripts --fetch-timeout=600000 --network-concurrency=8; \
+      npm install --global --ignore-scripts --no-audit --no-fund "$(node -p "require('./package.json').packageManager.split('+')[0]")" && pnpm install --registry="$KARA_NPM_REGISTRY" --frozen-lockfile --ignore-scripts --fetch-timeout=600000 --network-concurrency=8; \
     fi
 COPY .company-web/package.json .company-web/package-lock.json .company-web/
 RUN if [ "$KARA_WEB_OFFLINE" = "true" ]; then \

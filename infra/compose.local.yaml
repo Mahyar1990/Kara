@@ -37,9 +37,20 @@ services:
     image: company-agent/dify-api:1.17.1-projects
     pull_policy: never
   nginx:
+    depends_on:
+      api:
+        condition: service_started
+        restart: true
+      web:
+        condition: service_started
+        restart: true
+      api_websocket:
+        condition: service_started
+        required: false
+        restart: true
     ports: !override
-      - "127.0.0.1:${EXPOSE_NGINX_PORT:-8080}:80"
-      - "127.0.0.1:${EXPOSE_NGINX_SSL_PORT:-8443}:443"
+      - "${KARA_BIND_ADDRESS:-127.0.0.1}:${EXPOSE_NGINX_PORT:-8080}:80"
+      - "${KARA_BIND_ADDRESS:-127.0.0.1}:${EXPOSE_NGINX_SSL_PORT:-8443}:443"
   plugin_daemon:
     ports: !override
       - "127.0.0.1:${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}:5003"
@@ -50,6 +61,7 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       EXPERIMENTAL_ENABLE_VINEXT: "false"
   weaviate:
+    image: ${DIFY_WEAVIATE_IMAGE:-cr.weaviate.io/semitechnologies/weaviate:1.39.2}
     environment:
       DISABLE_TELEMETRY: "true"
 

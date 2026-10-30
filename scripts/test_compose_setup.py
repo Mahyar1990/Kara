@@ -36,7 +36,7 @@ class ComposeSetupTests(unittest.TestCase):
             self.assertEqual((root / '.runtime/compose.env').read_bytes(), first)
             self.assertIn(b'SECRET_KEY=fixture-private\n', first)
             self.assertIn(b'EXPOSE_NGINX_PORT=9080\n', first)
-            self.assertIn(b'NEXT_PUBLIC_SOCKET_URL=ws://localhost:9080\n', first)
+            self.assertIn(b'NEXT_PUBLIC_SOCKET_URL=ws://localhost\n', first)
             generated = json.loads((root / '.runtime/compose.build.json').read_text())
             self.assertEqual(generated['services']['api']['build']['labels'],
                              {'company-agent.projects': 'api-revision'})
