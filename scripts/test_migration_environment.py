@@ -37,6 +37,8 @@ class MigrationEnvironmentTests(unittest.TestCase):
                 'api', 'worker', 'worker_beat', 'api_websocket', 'nginx',
                 'plugin_daemon', 'web', 'weaviate', 'db_postgres', 'redis')}
             services['api']['environment'] = {key: '${' + key + '}' for key in expected}
+            (docker / 'optional-api.env').write_text('SQLALCHEMY_POOL_RECYCLE=1234\n')
+            services['api']['env_file'] = ['optional-api.env', '.env']
             services['db_postgres']['healthcheck'] = {'test': ['CMD', 'true']}
             base = docker / 'docker-compose.yaml'
             base.write_text(json.dumps({'services': services}))
@@ -60,6 +62,8 @@ class MigrationEnvironmentTests(unittest.TestCase):
                     for key, value in expected.items():
                         self.assertEqual(migration.get('environment', {}).get(key), value,
                                          f'{name}: migration setting missing: {key}')
+                    self.assertEqual(migration['environment'].get('SQLALCHEMY_POOL_RECYCLE'),
+                                     resolved['api']['environment']['SQLALCHEMY_POOL_RECYCLE'])
                     self.assertEqual(migration['image'], 'langgenius/dify-api:1.17.1')
                     self.assertNotIn('build', migration)
                     for role in ('api', 'worker', 'worker_beat', 'api_websocket'):

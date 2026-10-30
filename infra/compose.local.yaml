@@ -68,11 +68,10 @@ services:
   # Use the unmodified engine: importing Kara before the base schema exists fails.
   migration:
     extends:
+      # Resolve against the upstream service, including its optional env files.
+      # Both launch paths use .runtime/dify/docker as project_directory.
+      file: docker-compose.yaml
       service: api
-    # extends sees this override's api, not the merged upstream environment.
-    # Both launch paths resolve relative files from .runtime/dify/docker.
-    env_file:
-      - .env
     image: langgenius/dify-api:1.17.1
     build: !reset null
     pull_policy: if_not_present
