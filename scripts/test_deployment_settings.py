@@ -75,3 +75,23 @@ class DeploymentSettingsTests(unittest.TestCase):
                 output = root / 'build-ca.crt'
                 build_environment.prepare_ca(output)
                 self.assertEqual(output.read_bytes(), data.rstrip() + b'\n')
+
+    def test_valid_certificate_does_not_mask_bad_pem_or_private_key(self):
+        certificate = (Path(__file__).parent / 'fixtures/build-test-ca.pem').read_bytes()
+        invalid_suffixes = (
+            b'-----BEGIN CERTIFICATE-----\nnot-a-certificate\n-----END CERTIFICATE-----\n',
+            b'-----BEGIN CERTIFICATE-----\nincomplete\n',
+            b'-----BEGIN PRIVATE KEY-----\n',
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env.local').write_text('KARA_CA_BUNDLE=ca.crt\n')
+            output = root / 'build-ca.crt'
+            output.write_bytes(b'previous validated input')
+            with patch.object(local_dify, 'ROOT', root), patch.dict('os.environ', {}, clear=True):
+                for suffix in invalid_suffixes:
+                    with self.subTest(suffix=suffix):
+                        (root / 'ca.crt').write_bytes(certificate + b'\n' + suffix)
+                        with self.assertRaises(ValueError):
+                            build_environment.prepare_ca(output)
+                        self.assertEqual(output.read_bytes(), b'previous validated input')
