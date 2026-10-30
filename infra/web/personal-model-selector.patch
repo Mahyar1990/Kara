@@ -165,3 +165,21 @@
      currentModel,
      credentialPanel,
    )
+--- a/web/app/components/header/account-setting/model-provider-page/model-selector/popup.tsx
++++ b/web/app/components/header/account-setting/model-provider-page/model-selector/popup.tsx
+@@ -181,11 +181,11 @@
+     const modelMap = new Map(modelList.map((model) => [model.provider, model]))
+     const installedMarketplaceModels = MODEL_PROVIDER_QUOTA_GET_PAID.flatMap<ModelSelectorProvider>(
+       (providerKey) => {
+-        const installedProvider = installedProviderMap.get(providerKey)
+-
+-        if (!installedProvider) return []
+-
++        // Personal models are available independently of shared provider metadata.
+         const matchedModel = modelMap.get(providerKey)
+         if (matchedModel) return [matchedModel]
++
++        const installedProvider = installedProviderMap.get(providerKey)
++        if (!installedProvider) return []
+
+         if (!aiCreditVisibleProviders.has(providerKey)) return []
