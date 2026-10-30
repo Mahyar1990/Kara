@@ -13,6 +13,11 @@ ENV PATH=/pnpm:$PATH
 ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM ${KARA_WEB_PACKAGES_BASE} AS packages
+# An external cached stage does not inherit the current base's build inputs.
+ARG KARA_NPM_REGISTRY=https://registry.npmjs.org/
+ENV npm_config_registry=${KARA_NPM_REGISTRY}
+COPY --from=base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 ARG KARA_WEB_OFFLINE=false
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
