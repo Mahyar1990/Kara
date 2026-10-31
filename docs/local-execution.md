@@ -22,10 +22,49 @@ python -m kara_source_runner pair --server https://YOUR-KARA-HOST
 ```sh
 docker build -f Dockerfile.code -t kara/code-python:2.0 .
 docker pull node:22-alpine
-python -m kara_source_runner run
+python -m kara_source_runner service install
 ```
 
+فرمان service مخصوص Linux با systemd کاربری است؛ پس از نصب، ترمینال می‌تواند بسته شود. در macOS یا محیط فاقد systemd، به‌جای آن `python -m kara_source_runner run` را اجرا و ترمینال را باز نگه دارید. Windows به WSL دارای systemd نیاز دارد؛ در WSL بدون آن، اجرای دستی ممکن است. برای کاربرد مدل/سورس بدون گره کد، آماده‌سازی تصویرهای کد الزامی نیست؛ نبود Docker به‌تنهایی اجرای process را مجاز نمی‌کند.
+
 Runner هیچ تصویری را حین کار خودکار pull نمی‌کند. کد در کانتینر بدون شبکه، بدون capability، با فایل‌سیستم پایهٔ خواندنی، کاربر غیرریشه و محدودیت حافظه، زمان و تعداد فرایند اجرا می‌شود. تصویر پایتون همراه بسته Jinja2 نیز دارد؛ کدهای فعلی محصول فقط به کتابخانهٔ استاندارد پایتون نیاز دارند.
+
+### سرویس پس‌زمینهٔ Linux برای هر همکار
+
+بستهٔ Runner نسخهٔ ۲٫۱٫۲ شامل فرمان `service` و فایل `BACKGROUND.md` است. ابتدا با حساب شخصی خود pair کنید و اجرای دستی قبلی را متوقف کنید؛ بسته و venv باید در پوشه‌ای دائمی و خصوصی بمانند. unit کاربری در `~/.config/systemd/user/kara-source-runner.service` یا مسیر XDG_CONFIG_HOME ساخته، enabled و شروع می‌شود. نصب و مدیریت آن بدون sudo است؛ نصب‌کننده Docker نصب نمی‌کند، گروه یا lingering را تغییر نمی‌دهد و به pairing، توکن یا سورس‌ها دست نمی‌زند.
+
+برای CA سازمانی و عضویت موجود در گروه Docker، به‌جای فرمان پایهٔ نصب از این نمونه با مسیر واقعی همان دستگاه استفاده کنید:
+
+```sh
+python -m kara_source_runner service install --ca-bundle /PATH/TO/trusted-ca.pem --docker-group docker
+```
+
+گواهی به SSL_CERT_FILE، REQUESTS_CA_BUNDLE و GIT_SSL_CAINFO معرفی و اعتبار ساختاری آن بررسی می‌شود؛ TLS روشن می‌ماند. گروه انتخابی باید از قبل متعلق به حساب باشد؛ sg آن را برای سرویس فعال می‌کند و UID همان کاربر می‌ماند. عضویت گروه Docker دسترسی مدیریتی daemon می‌دهد و باید با مسئول سیستم هماهنگ شود. در نبود گزینهٔ CA، همین متغیرهای موجود محیط نصب بررسی و ذخیره می‌شوند. PATH و انتخاب صریح Docker نیز حفظ می‌شوند؛ سایر متغیرهای shell کپی نمی‌شوند و فایل‌های startup shell اجرا نمی‌شوند.
+
+برای ساخت تصویر Python در شبکهٔ محدود، base image و index معتبر خودتان را تعیین کنید؛ مسیر CA فقط build secret است و محتوایش در تصویر کپی نمی‌شود:
+
+```sh
+docker build -f Dockerfile.code -t kara/code-python:2.0 --build-arg PYTHON_BASE_IMAGE=python:3.12-bookworm --build-arg PIP_INDEX_URL=https://YOUR-MIRROR/simple/ --secret id=kara_ca,src=/PATH/TO/trusted-ca.pem .
+```
+
+اطلاعات ورود را در URL index قرار ندهید. نصب سرویس تصویر کد را pull نمی‌کند و active بودن سرویس به معنی آماده‌بودن همهٔ تصویرها یا اتصال موفق به کارا نیست. وضعیت online را در کارا و یک آزمون کوچک مناسب را پس از نصب بررسی کنید.
+
+فرمان‌های مدیریت مستقل‌اند؛ توقف/راه‌اندازی مجدد کار جاری را قطع می‌کند:
+
+```sh
+python -m kara_source_runner service status
+python -m kara_source_runner service logs
+python -m kara_source_runner service stop
+python -m kara_source_runner service start
+python -m kara_source_runner service restart
+python -m kara_source_runner service uninstall
+```
+
+uninstall فقط unit مدیریت‌شده را حذف می‌کند؛ فایل اتصال، worktree، بسته و backupها می‌مانند. نصب دوبارهٔ عین تنظیمات، unit را بازنویسی نمی‌کند. سرویس متفاوت یا دستی با خطا حفظ می‌شود؛ برای جایگزینی آگاهانه، همهٔ گزینه‌های اختصاصی را دوباره همراه `service install --replace` مشخص کنید. نسخهٔ قبلی unit با مجوز خصوصی backup و سرویس restart می‌شود. گزینه‌های run مانند `--root`، backend، تصویرها، اجازهٔ نوشتن و هارنس برای service install نیز وجود دارند؛ اجازهٔ process یا هارنس خودکار فعال نمی‌شود. برای config اختصاصی، `--config /PATH/device.json` را پیش از service بیاورید؛ هر حساب سیستم فقط یک نام سرویس مدیریت‌شده دارد.
+
+برای ارتقا، ابتدا سرویس را متوقف، فایل‌های بسته را در همان محل جایگزین و سپس سرویس را شروع کنید؛ تنظیمات خصوصی و ریشهٔ سورس حفظ شوند. نسخه‌های جدید از اجرای هم‌زمان دو Runner برای یک config جلوگیری می‌کنند؛ نسخه‌های قدیمی این قفل را ندارند و باید دستی متوقف شوند.
+
+بستن ترمینال سرویس را متوقف نمی‌کند. ادامه پس از logout/boot به user manager، دسترسی به home/venv، Docker و شبکه وابسته است؛ `loginctl show-user "$(id -u)" --property=Linger` را بررسی و در صورت نیاز از مسئول سیستم دربارهٔ lingering کمک بگیرید. نصب‌کننده خروج از حساب یا reboot انجام نمی‌دهد. restart سرویس باعث تکرار خودکار کار قطع‌شده نمی‌شود. هر همکار دستگاه و اتصال شخصی خودش را دارد؛ برای سرور کارا روی دستگاه دیگر، HTTPS معتبر لازم است و loopback سرور نباید روی VDI همکار کپی شود.
 
 برای سیستم شرکت یا VDI بدون Docker:
 

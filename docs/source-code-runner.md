@@ -27,10 +27,12 @@
 
 ```sh
 python3 -m kara_source_runner pair --server https://your-kara.example.com
-python3 -m kara_source_runner run
+python3 -m kara_source_runner service install
 ```
 
 برای محیط توسعهٔ فعلی آدرس `http://localhost:8080` است. HTTP فقط برای آدرس‌های دقیق loopback مجاز است. بیرون loopback اتصال HTTPS با اعتبارسنجی گواهی الزامی است. Runner اتصال خروجی دارد و پورت ورودی باز نمی‌کند؛ اتصال مستقیم به پایگاه داده یا Redis ندارد.
+
+نصب سرویس مخصوص Linux با systemd کاربری است و بدون sudo، Runner را مستقل از ترمینال اجرا می‌کند. در سایر محیط‌ها `python3 -m kara_source_runner run` را اجرا و ترمینال را باز نگه دارید. ابتدا اجرای دستی قبلی را متوقف کنید؛ از همان حساب و pairing شخصی استفاده کنید. بستهٔ جدید شامل BACKGROUND.md و گزینه‌های CA سازمانی، گروه Docker و فرمان‌های status/stop/start/restart/logs/uninstall است؛ [راهنمای سرویس و پیش‌نیازها](local-execution.md) را بخوانید. برای استفاده از کارای مشترک روی VDI دیگر، آدرس HTTPS سرور لازم است؛ localhost به VDI خود همکار اشاره دارد.
 
 برای انتخاب محل فایل‌ها:
 
@@ -40,7 +42,7 @@ python3 -m kara_source_runner run --root /your/private/workspaces
 
 فایل خصوصی دستگاه پیش‌فرض `~/.config/kara-source-runner/device.json` است؛ فقط مالک می‌تواند آن را بخواند (`0600`). برای دستگاه دیگر از `--config` پیش از نام دستور استفاده کنید. فایل تنظیمات و پوشه‌های کد را در Git قرار ندهید.
 
-7. در «سورس کد»، Runner خودتان را انتخاب و «آماده‌سازی روی Runner» را ثبت کنید. Runner باید در ترمینال در حال اجرا باشد. هر بخش با `git fetch` فقط از برنچ تعیین‌شده و سپس **Git worktree واقعی با HEAD جداشده روی SHA دقیق** آماده می‌شود. دریافت shallow است؛ submodule و Git LFS به‌صورت خودکار دریافت نمی‌شوند.
+7. در «سورس کد»، Runner خودتان را انتخاب و «آماده‌سازی روی Runner» را ثبت کنید. سرویس Runner یا اجرای دستی آن باید online باشد. هر بخش با `git fetch` فقط از برنچ تعیین‌شده و سپس **Git worktree واقعی با HEAD جداشده روی SHA دقیق** آماده می‌شود. دریافت shallow است؛ submodule و Git LFS به‌صورت خودکار دریافت نمی‌شوند.
 
 ## محل داده و تکرارپذیری
 

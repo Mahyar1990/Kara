@@ -1,17 +1,20 @@
 """Run with python3 -m kara_source_runner; credentials never appear in arguments."""
 import argparse
+from contextlib import ExitStack
 import getpass
 import json
 import os
 from pathlib import Path
 import stat
 import shutil
+import subprocess
 import time
 from .client import Client, ApiError
 from .execution_worker import execute as execute_workflow, flush_outbox, owner_id
 from .source_update import update as update_source
 from .executor import materialize, RunnerFailure, validate_job
 from . import harness_runtime
+from . import service
 
 def save_config(path,value):
     path.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
@@ -24,11 +27,14 @@ def main():
     parser.add_argument('--config',type=Path,default=Path.home()/'.config/kara-source-runner/device.json')
     sub=parser.add_subparsers(dest='action',required=True)
     pair=sub.add_parser('pair'); pair.add_argument('--server',required=True)
-    run=sub.add_parser('run'); run.add_argument('--root',type=Path,default=Path.home()/'KaraSourceWorkspaces'); run.add_argument('--once',action='store_true'); run.add_argument('--python-image',default='kara/code-python:2.0'); run.add_argument('--javascript-image',default='node:22-alpine'); run.add_argument('--allow-worktree-write',action='store_true'); run.add_argument('--code-backend',choices=['auto','docker','process'],default='auto'); run.add_argument('--allow-local-code',action='store_true')
-    run.add_argument('--allow-harness',action='store_true');run.add_argument('--harness-config',type=Path,default=Path.home()/'.config/kara-source-runner/harnesses.json')
+    run=sub.add_parser('run'); service.add_run_options(run); run.add_argument('--once',action='store_true')
+    service.add_parser(sub)
     harness=sub.add_parser('harness-prepare');harness.add_argument('--attempt',required=True);harness.add_argument('--root',type=Path,default=Path.home()/'KaraSourceWorkspaces')
     args=parser.parse_args()
+    locks=ExitStack()
     try:
+        if args.action=='service':
+            raise SystemExit(service.manage(args))
         if args.action=='pair':
             if args.config.exists() or args.config.is_symlink(): raise ValueError('Device config already exists; use another --config path.')
             client=Client(args.server); value=client.post('pair',dict(code=getpass.getpass('One-time pairing code: ')))
@@ -40,6 +46,7 @@ def main():
             job=client.post('harness/'+args.attempt+'/bundle');target=harness_runtime.prepare(job,config,args.root)
             client.post('harness/'+args.attempt+'/prepared',dict(snapshot_digest=job['snapshot_digest']))
             print('Task directory:',target/'worktree');return
+        locks.enter_context(service.instance_lock(args.config))
         # Deliver completed work under its original profile before changing registration.
         harness_runtime.flush(client,config,args.root)
         registered=harness_runtime.profiles(args.harness_config,args.allow_harness)
@@ -106,9 +113,12 @@ def main():
                 print('Job stopped or connection unavailable; reconnecting without replay.')
                 if args.once:break
                 time.sleep(5)
-    except (ApiError,RunnerFailure,harness_runtime.HarnessFailure,ValueError,OSError,KeyError,TypeError):
+    except service.ServiceError as error:
+        print(str(error)); raise SystemExit(1) from None
+    except (ApiError,RunnerFailure,harness_runtime.HarnessFailure,ValueError,OSError,KeyError,TypeError,subprocess.TimeoutExpired):
         # Do not log config, payloads or upstream Git output.
         print('Runner stopped. Check connection, permissions and local files.'); raise SystemExit(1) from None
     except KeyboardInterrupt: print('\nRunner stopped; unfinished jobs expire in Kara.')
+    finally: locks.close()
 
 if __name__=='__main__': main()

@@ -16,7 +16,7 @@ class RunnerFailure(Exception):
 
 def git_environment(home, askpass):
     # Do not inherit Git configuration, shell injection options, proxies or trace outputs.
-    env={k:v for k,v in os.environ.items() if k in ('PATH','SYSTEMROOT','WINDIR','LANG','LC_ALL','TMPDIR','SSL_CERT_FILE','SSL_CERT_DIR')}
+    env={k:v for k,v in os.environ.items() if k in ('PATH','SYSTEMROOT','WINDIR','LANG','LC_ALL','TMPDIR','SSL_CERT_FILE','SSL_CERT_DIR','GIT_SSL_CAINFO')}
     env.update(HOME=str(home), XDG_CONFIG_HOME=str(home), GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull,
         GIT_TERMINAL_PROMPT='0', GIT_ASKPASS=str(askpass), SSH_ASKPASS=str(askpass), GIT_LFS_SKIP_SMUDGE='1')
     return env
