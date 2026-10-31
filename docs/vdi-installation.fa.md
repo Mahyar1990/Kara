@@ -12,7 +12,8 @@
 - مهاجرت پایهٔ بانک با ایمیج اصلی انجام شد؛ سپس سرویس‌های اختصاصی کارا شروع شدند.
 - API داخل کانتینر و از پورت محلی `8080` پاسخ `{"result":"pong"}` داد.
 - صفحهٔ نصب فارسی باز شد، حساب مدیر ساخته شد و صفحهٔ پروژه‌های خالی نمایش داده شد.
-- اتصال مدل، اجرای ایجنت، ساخت پروژه، پذیرش همهٔ سرویس‌ها، راه‌اندازی پس از reboot و بازیابی backup آزمایش نشدند. `make doctor` روی VDI اجرا نشد.
+- در ادامهٔ نصب، پروژه ساخته شد؛ آزمون احراز هویت جیرا و گیت‌لب موفق بود، کاربر رفع خطای توکن مدل را گزارش کرد و worktree هشت‌مخزنی نسخهٔ ۶ آماده و به مقصد اجرا متصل شد. جزئیات در بخش «ادامهٔ راه‌اندازی» آمده است.
+- پاسخ واقعی مدل در برنامه، دسترسی واقعی برنامه به سورس، پذیرش همهٔ سرویس‌ها، راه‌اندازی پس از reboot و بازیابی backup هنوز تأیید نشده‌اند. `make doctor` روی VDI در شواهد گفتگو اجرا نشد.
 - فرمان `hello-world` اجرای واقعی کانتینر را ثابت کرد؛ چون ایمیج ممکن بود از قبل موجود باشد، به‌تنهایی مدرک دانلود تازه نبود. دریافت بعدی ایمیج‌های Python، API و سایر سرویس‌ها نیز مشاهده شد.
 
 ## محیط و نسخه‌های مشاهده‌شده
@@ -329,5 +330,78 @@ sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml
 | pnpm metadata از npm عمومی: 403 | تعیین صریح registry در فرمان pnpm؛ کنترل‌ها حفظ شدند |
 | `tenant_account_joins` موجود نبود | توقف سرویس‌های اختصاصی، migration با ایمیج اصلی، شروع دوباره |
 | 502 با API سالم | آزمون مستقیم API و سپس curl با noproxy/127.0.0.1 موفق شد؛ علت آخر قطعی نبود |
+
+## ادامهٔ راه‌اندازی: اتصال‌ها، Runner و worktree
+
+این بخش بر اساس تصاویر و گزارش کاربر تا ۳۰ اکتبر ۲۰۲۶، برای تحویل در ۳۱ اکتبر ثبت شده است؛ وضعیت زندهٔ VDI در زمان خواندن باید دوباره بررسی شود. [سند تحویل چت](vdi-handoff-2026-10-31.fa.md) نقطهٔ توقف و فهرست پیگیری را دارد. این بخش تغییر جدیدی روی VDI اعمال نمی‌کند.
+
+### گواهی سرویس‌های در حال اجرا و نصب افزونهٔ مدل
+
+قابل‌دسترسی‌بودن Marketplace از میزبان، اعتماد TLS داخل API را ثابت نمی‌کند. در این نصب، `curl` میزبان پاسخ ۲۰۰ داد ولی Python داخل API با `self-signed certificate in certificate chain` شکست خورد. آزمون همان درخواست با CA معتبر میزبان در API پاسخ ۲۰۰ داد.
+
+روی **همین VDI**، فایل محلی `infra/compose.vdi-ca.yaml` ساخته و بعد از `.runtime/compose.build.json` به فهرست مسیرهای Compose اصلی اضافه شد. برای سرویس‌های `api`، `worker`، `worker_beat`، `api_websocket` و `plugin_daemon`، bundle میزبان در مسیر یکسان `/etc/ssl/certs/ca-certificates.crt` به‌صورت read-only mount شد؛ متغیرهای `REQUESTS_CA_BUNDLE`، `SSL_CERT_FILE` و `PIP_CERT` به همین مسیر اشاره کردند. نسخهٔ پشتیبان Compose در `.runtime/compose.before-vdi-ca.yaml` نگهداری شد. این فایل‌ها تنظیمات محلی‌اند؛ CA یا اعتبارنامه را وارد Git نکنید.
+
+پس از `config --quiet` موفق، تنظیم با فرمان زیر اعمال شد؛ restart ساده برای اعمال mount و env جدید کافی نیست:
+
+```bash
+sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" up -d --no-build --no-deps api worker worker_beat api_websocket plugin_daemon
+```
+
+آزمون داخل API پس از اعمال تنظیم:
+
+```bash
+sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" exec -T api python -c "import requests; r=requests.get('https://marketplace.dify.ai/', timeout=20); print('HTTP status:', r.status_code)"
+```
+
+پاسخ مشاهده‌شده ۲۰۰ بود و کاربر سپس نصب موفق افزونهٔ `langgenius/openai_api_compatible` نسخهٔ `0.0.73` را گزارش کرد. قبل از رفع CA، API خطای `Reached maximum retries` برای download-url و Plugin Daemon خطای `plugin not found` داشت. نصب افزونه ممکن است به دریافت وابستگی‌های Python نیز نیاز داشته باشد؛ نتیجهٔ همین نصب را تضمین شبکهٔ دیگر ندانید. این تنظیم runtime مستقل از `KARA_CA_BUNDLE` برای bootstrap/build در [راهنمای استقرار](deployment.md) است. پیش از به‌روزرسانی، ادغام فایل‌های Compose و حفظ تنظیم محلی را بررسی کنید.
+
+### نصب و اجرای Runner شخصی
+
+از صفحهٔ «Runnerهای شخصی»، بستهٔ همان نسخهٔ برنامه دریافت شد و با Python میزبان در پوشهٔ `$HOME/kara-runner` استخراج شد:
+
+```bash
+python3 -m zipfile -e "$HOME/Downloads/kara-source-runner.zip" "$HOME/kara-runner"
+```
+
+```bash
+python3 -m venv "$HOME/kara-runner/.venv"
+```
+
+```bash
+"$HOME/kara-runner/.venv/bin/python" -m pip install --cert /etc/ssl/certs/ca-certificates.crt -r "$HOME/kara-runner/requirements.txt"
+```
+
+Python میزبان این نصب ۳.۱۰ بود و pip از مخزن داخلی تنظیم‌شدهٔ میزبان استفاده کرد. آدرس index و امکان دریافت بسته‌ها را روی دستگاه دیگر بررسی کنید؛ نصب روی Python میزبان با Python ۳.۱۲ کانتینر bootstrap یکی نیست.
+
+در رابط، نام دستگاه ثبت و کد یک‌بارمصرف ساخته شد. سپس:
+
+```bash
+cd "$HOME/kara-runner" && .venv/bin/python -m kara_source_runner pair --server http://127.0.0.1:8080
+```
+
+کد در prompt وارد شد؛ آن را در گفتگو یا دستور ثابت قرار ندهید. تنظیم دستگاه در `~/.config/kara-source-runner/device.json` خصوصی است. اجرای Runner بدون sudo:
+
+```bash
+cd "$HOME/kara-runner" && REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt .venv/bin/python -m kara_source_runner run
+```
+
+پیام‌های مشاهده‌شده `Code execution backend: docker` و `Runner online` بودند. این پیام به‌تنهایی اثبات اجرای موفق کد با Docker و مجوز socket کاربر نیست؛ آن آزمون هنوز باقی است. ترمینال باید باز بماند؛ Ctrl+C Runner را متوقف می‌کند. pairing تکراری برای هر بار اجرا لازم نیست. سرویس دائمی/شروع پس از reboot در این گفتگو تنظیم نشد.
+
+### اتصال‌های شخصی و دریافت سورس
+
+- جیرا: پس از pairing، اجرای Runner و انتخاب مقصد اجرای پروژه، آزمون اتصال و احراز هویت موفق شد. موفقیت آزمون، مجوز جست‌وجوی همهٔ درخواست‌ها را ثابت نمی‌کند.
+- مدل: دو اتصال شخصی ثبت شدند؛ خطای اولیه ناشی از توکن اشتباه بود و کاربر رفع آن را گزارش کرد. هنوز خروجی واقعی یک برنامه با این مدل در تصاویر ثبت نشده است.
+- گیت‌لب: توکن شخصی با دسترسی خواندن مخزن و هویت کاربر ساخته و آزمون اتصال موفق شد. توکن فقط در فرم اتصال ذخیره شد؛ هیچ توکنی در این سند نیست.
+- برای worktree، حداکثر ۸ بخش با شناسه، مسیر نسبی جداگانه، مخزن/برنچ و اتصال شخصی تعریف شد؛ ذخیرهٔ فرم فقط تعریف را ثبت می‌کند. «آماده‌سازی روی Runner» دریافت واقعی و ثبت commit هر بخش را انجام می‌دهد.
+- در آماده‌سازی اولیه، چند مخزن دریافت شدند ولی یک آدرس اشتباه بود؛ `Preparation failed: git_failed` رخ داد. اصلاح URL مخزن باید در تعریف worktree نیز ذخیره شود؛ سپس آماده‌سازی تازه انجام شود. تاریخچهٔ ناموفق قبلی باقی می‌ماند.
+- `curl` بدون احراز هویت به Git smart-HTTP پاسخ ۴۰۱ داد که برای مخزن خصوصی طبیعی بود؛ با توکن پاسخ ۲۰۰ دریافت شد. موفقیت مخزن اول، وجود/مجوز مخزن بعدی را ثابت نمی‌کند. توکن را در URL ننویسید و برای تشخیص، TLS را خاموش نکنید.
+- هنگام غیرفعال‌بودن آماده‌سازی، Runner واقعاً متوقف بود و فهرست «Runner مقصد» نیز انتخاب نداشت. Runner دوباره اجرا و مقصد انتخاب شد؛ صرف وجود دستگاه paired کافی نیست.
+- آماده‌سازی نهایی با وضعیت «آماده»، نسخهٔ تعریف ۶ و commit هر ۸ مخزن تأیید شد. سپس در «Runnerهای شخصی ← ویرایش مقصد»، همان نتیجه از فهرست «فایل‌های سورس در دسترس اجرا» انتخاب و «ذخیرهٔ مقصد اجرا» زده شد. پیام موفقیت و انتخاب ذخیره‌شده در تصویر ثبت شدند.
+
+فایل‌ها زیر `$HOME/KaraSourceWorkspaces/<preparation-id>` روی VDI هستند. هر آماده‌سازی پوشهٔ تازه‌ای دارد؛ فایل‌های تلاش قبلی را برای رفع خطا حذف نکنید. اتصال سورس به مقصد به‌تنهایی اجرای برنامه یا مجوز نوشتن/push/merge ایجاد نمی‌کند. جزئیات در [راهنمای سورس و Runner](source-code-runner.md) و [اجرای محلی](local-execution.md) است.
+
+### نقطهٔ توقف آزمون برنامه
+
+در استودیو برنامه‌ای وجود نداشت. از «ایجاد از قالب»، `Chatflow Basic: Chatbot` ساخته شد. گرهٔ LLM قالب به `langgenius/openai/openai` و مدل `gpt-5.4-mini` اشاره می‌کرد؛ خطای `Provider langgenius/openai/openai does not exist` دیده شد. این افزونه با افزونهٔ نصب‌شدهٔ OpenAI-API-compatible متفاوت است. قدم بعد، انتخاب مدل/ارائه‌دهندهٔ سازگار با اتصال شخصی موجود در گرهٔ LLM است؛ نصب مجدد کل محیط یا نصب افزونهٔ OpenAI صرفاً به دلیل پیش‌فرض قالب لازم نیست. هنوز نتیجهٔ انتخاب مدل و اجرای واقعی دریافت نشده است. Chatbot ساده، آزمون دسترسی به سورس نیست؛ آن را جداگانه با ابزار/مرحلهٔ مناسب و اجرای واقعی بررسی کنید.
 
 مراجع: [راهنمای عمومی Docker پروژه](docker-quickstart.md)، [Docker image رسمی Weaviate](https://hub.docker.com/r/semitechnologies/weaviate)، [اتصال مدل](company-model-connection.md).
