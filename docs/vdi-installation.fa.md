@@ -1,19 +1,19 @@
 # نصب کارا روی VDI لینوکسی با شبکهٔ محدود
 
-> مسیر قابل‌تکرار جدید در [راهنمای استقرار](deployment.md) آمده است. تغییرات دستی فایل‌های تولیدشده در ادامه، شرح مسیر نصب قبلی‌اند؛ برای نصب جدید از تنظیمات راه‌انداز استفاده کنید.
+> مسیر عمومی و قابل‌تکرار در [راهنمای استقرار](deployment.md) آمده است. این سند تجربهٔ نصب و ارتقای همین VDI تا ۳۱ اکتبر ۲۰۲۶ را ثبت می‌کند؛ وضعیت ادامهٔ کار در [سند تحویل](vdi-handoff-2026-10-31.fa.md) است.
 
-این راهنما حاصل نصب واقعی در ۲۹ اکتبر ۲۰۲۶ است. هدف، نصب مستقل کارا برای یک کاربر دیگر است؛ حساب‌ها، رمزها و بانک دادهٔ محیط قبلی منتقل نمی‌شوند. دستورها در ترمینال **خود VDI** اجرا می‌شوند. هر مرحله باید موفق شود و سپس مرحلهٔ بعد انجام شود.
+این راهنما حاصل نصب واقعی ۲۹ اکتبر و ارتقای ۳۰ تا ۳۱ اکتبر ۲۰۲۶ است. هدف، نصب مستقل کارا برای یک کاربر دیگر است؛ حساب‌ها، رمزها و بانک دادهٔ محیط قبلی منتقل نمی‌شوند. دستورها در ترمینال **خود VDI** اجرا می‌شوند. هر مرحله باید موفق شود و سپس مرحلهٔ بعد انجام شود.
 
 موفقیت این نصب به معنی تضمین نصب روی هر شبکه یا نسخهٔ آینده نیست. مسیر زیر خطاهای مشاهده‌شده را از ابتدا پیشگیری می‌کند؛ نسخه‌ها، دسترسی رجیستری و گواهی‌های VDI جدید باید دوباره بررسی شوند.
 
 ## نتیجه و محدودهٔ تأییدشده
 
-- API و وب فارسی از سورس ساخته شدند؛ بررسی نوع‌ها، آزمون‌های رابط و ساخت Next.js در Dockerfile فعال ماندند و مراحل ساخت موفق شدند.
+- در نصب اولیه، ساخت API/وب، بررسی نوع‌ها و آزمون‌های رابط موفق بودند. در ارتقای اخیر نیز تصاویر API/وب و ساخت Next.js موفق شدند؛ به درخواست کاربر، این بار `KARA_WEB_SKIP_CHECKS=true` استفاده شد و بررسی‌های کلاینتِ این مرحله اجرا نشدند.
 - مهاجرت پایهٔ بانک با ایمیج اصلی انجام شد؛ سپس سرویس‌های اختصاصی کارا شروع شدند.
 - API داخل کانتینر و از پورت محلی `8080` پاسخ `{"result":"pong"}` داد.
 - صفحهٔ نصب فارسی باز شد، حساب مدیر ساخته شد و صفحهٔ پروژه‌های خالی نمایش داده شد.
-- در ادامهٔ نصب، پروژه ساخته شد؛ آزمون احراز هویت جیرا و گیت‌لب موفق بود، کاربر رفع خطای توکن مدل را گزارش کرد و worktree هشت‌مخزنی نسخهٔ ۶ آماده و به مقصد اجرا متصل شد. جزئیات در بخش «ادامهٔ راه‌اندازی» آمده است.
-- پاسخ واقعی مدل در برنامه، دسترسی واقعی برنامه به سورس، پذیرش همهٔ سرویس‌ها، راه‌اندازی پس از reboot و بازیابی backup هنوز تأیید نشده‌اند. `make doctor` روی VDI در شواهد گفتگو اجرا نشد.
+- پروژه ساخته شد؛ آزمون احراز هویت جیرا/گیت‌لب و آماده‌سازی و اتصال worktree هشت‌مخزنی نسخهٔ ۶ موفق بودند. بعداً نمایش و انتخاب مدل شخصی و همگام‌سازی دو کاربر اصلاح شدند؛ این موارد به معنی موفقیت اجرای مدل نیستند.
+- در ارتقای اخیر، مهاجرت `Exited (0)`، API/بانک `healthy` و سرویس‌های طولانی‌مدت `Up` بودند؛ ping از مسیر Nginx پاسخ `pong` داد و کاربر تست موفق کلاینت را گزارش کرد. پاسخ واقعی مدل، اجرای برنامه با سورس، reboot و بازیابی backup تأیید نشده‌اند. `make doctor` روی VDI اجرا نشده است؛ فهرست `pg_restore --list` برای backup بررسی شد، نه restore واقعی.
 - فرمان `hello-world` اجرای واقعی کانتینر را ثابت کرد؛ چون ایمیج ممکن بود از قبل موجود باشد، به‌تنهایی مدرک دانلود تازه نبود. دریافت بعدی ایمیج‌های Python، API و سایر سرویس‌ها نیز مشاهده شد.
 
 ## محیط و نسخه‌های مشاهده‌شده
@@ -32,7 +32,7 @@
 | Weaviate | 1.39.2 |
 | مخزن نصب‌شده | `https://github.com/Mahyar1990/Kara.git`، شاخهٔ `feat/program-team-settings` |
 
-این منابع نمونهٔ موفق‌اند، نه حداقل اندازه‌گیری‌شده یا ظرفیت تضمین‌شده. ساخت وب و cacheها فضای بیشتری مصرف می‌کنند؛ فضای `/home` و دیسک Docker جداگانه بررسی شوند. شاخهٔ بالا شاخهٔ همین جلسه است؛ برای انتشار بعدی، شاخه/commit مورد توافق را انتخاب و ثبت کنید. hash دقیق checkout روی VDI در تصاویر این جلسه ثبت نشد؛ hash محیط مک را جای آن ننویسید.
+این منابع نمونهٔ موفق‌اند، نه حداقل اندازه‌گیری‌شده یا ظرفیت تضمین‌شده. ساخت وب و cacheها فضای بیشتری مصرف می‌کنند؛ فضای `/home` و دیسک Docker جداگانه بررسی شوند. شاخهٔ بالا شاخهٔ همین جلسه است؛ برای انتشار بعدی، شاخه/commit مورد توافق را انتخاب و ثبت کنید. آخرین pull ثبت‌شده روی VDI از `409bbe4` تا `9a40d78` بود؛ اصلاحات دستی بعدی و commitهای محلی جدید را با این hash یکسان ندانید.
 
 ## ۱. بررسی اولیه و دسترسی Docker
 
@@ -79,9 +79,28 @@ git -C "$HOME/Kara" log -1 --format='%H %s'
 
 این خروجی را همراه نسخهٔ نصب نگه دارید. اعتبارنامه و توکن Git را در فایل یا دستور قابل اشتراک قرار ندهید.
 
+## تنظیمات پایدار همین VDI
+
+فایل خصوصی `$HOME/Kara/.env.local` هنگام ارتقا وجود نداشت و با مقادیر زیر ساخته شد. این‌ها تنظیمات همین محیط‌اند؛ روی سرور دیگر IP، URL، registry، مسیر CA و نام پروژه را متناسب با آن محیط تعیین کنید. اصلاحات عمومی سورس همچنان برای همهٔ استقرارها لازم‌اند.
+
+```dotenv
+DIFY_HTTP_PORT=8080
+DIFY_HTTPS_PORT=8443
+DIFY_PROJECT_NAME=company-agent-local
+DIFY_BIND_ADDRESS=10.20.168.117
+DIFY_PUBLIC_URL=http://10.20.168.117:8080
+KARA_NPM_REGISTRY=https://nexus3.dotin.ir/repository/Dotin-NPM/
+KARA_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+KARA_BOOTSTRAP_IMAGE=python:3.12-bookworm
+KARA_TOOLS_IMAGE=python:3.12-bookworm
+DIFY_WEAVIATE_IMAGE=semitechnologies/weaviate:1.39.2
+```
+
+فایل را با دسترسی محدود نگه دارید و فایل موجود را بدون بررسی بازنویسی نکنید. setup باید تنظیمات خصوصی Dify را حفظ کند. `KARA_CA_BUNDLE` برای آماده‌سازی/ساخت است؛ اعتماد TLS سرویس‌های runtime و Runner باید جداگانه بررسی شود. در تنظیم فعلی پورت روی IP بالا bind می‌شود؛ دسترسی میزبان از `127.0.0.1:8080` را فرض نکنید. در مرورگر از URL یکسان بالا استفاده کنید تا cookie و WebSocket با origin دیگری مخلوط نشوند.
+
 ## ۳. آماده‌سازی بدون apt در کانتینر bootstrap
 
-مسیر عادی پروژه (`compose.setup.yaml`) از `python:3.12-slim-bookworm` استفاده و Git را با apt نصب می‌کند. روی این شبکه، HTTP مخزن Debian مسدود بود؛ HTTPS هم ابتدا خطای CA و پس از استفاده از CA میزبان، صفحهٔ مسدودی سازمان و 403 داد. برای این VDI، مستقیماً از ایمیج کامل استفاده کنید:
+در نسخهٔ اولیه، `compose.setup.yaml` از Python slim و نصب Git با apt استفاده می‌کرد؛ نسخهٔ جدید از ایمیج کامل و تنظیمات راه‌انداز پشتیبانی می‌کند. روی این شبکه، HTTP مخزن Debian مسدود بود؛ HTTPS هم ابتدا خطای CA و پس از استفاده از CA میزبان، صفحهٔ مسدودی سازمان و 403 داد. برای این VDI، مستقیماً از ایمیج کامل استفاده کنید:
 
 ```bash
 sudo docker run --rm python:3.12-bookworm sh -c 'python --version && git --version && test -s /etc/ssl/certs/ca-certificates.crt && test -f /usr/share/zoneinfo/Asia/Tehran'
@@ -115,11 +134,7 @@ sudo docker run --rm \
 sudo docker pull semitechnologies/weaviate:1.39.2
 ```
 
-```bash
-sudo docker tag semitechnologies/weaviate:1.39.2 cr.weaviate.io/semitechnologies/weaviate:1.39.2
-```
-
-tag فقط نام محلی اضافه می‌کند؛ نسخهٔ ایمیج تغییر نمی‌کند. نیازی به تغییر سورس ثابت upstream نیست. digest را از خروجی واقعی `docker pull` محیط خود ثبت کنید. معیار این دستور، نام و نسخهٔ مخزن رسمی است؛ برابری digest دو رجیستری در این جلسه جداگانه مقایسه نشد.
+نسخهٔ جدید با `DIFY_WEAVIATE_IMAGE` همین ایمیج را انتخاب می‌کند؛ tag جایگزین فقط در نصب قدیمی برای نام رجیستری upstream لازم بود. سورس ثابت upstream را تغییر ندهید. digest را از خروجی واقعی `docker pull` محیط خود ثبت کنید. معیار این دستور، نام و نسخهٔ مخزن رسمی است؛ برابری digest دو رجیستری در این جلسه جداگانه مقایسه نشد.
 
 ```bash
 sudo docker pull langgenius/dify-api:1.17.1
@@ -158,62 +173,13 @@ sudo docker run --rm \
 
 انتظار: نصب موفق و خروجی `12.3.4`. این آزمون به احراز هویت اضافی نیاز نداشت. اگر مخزن محیط جدید نیاز به توکن داشت، آن را در Dockerfile یا ENV ثابت قرار ندهید؛ تنظیم build secret لازم است و در این نصب آزمایش نشده است.
 
-## ۶. یک‌بار تنظیم ساخت وب مخصوص VDI
+## ۶. آماده‌سازی ساخت وب با تنظیمات رسمی
 
-چهار مشکل مرتبط در نصب وب مشاهده شد:
+نصب اولیه با CA و سپس 403 در `apk`، دانلود ناموفق Corepack و درخواست pnpm به registry عمومی مواجه شد. راه‌حل اکنون در سورس پروژه است: فایل‌های zoneinfo از ایمیج کامل، نصب مستقیم نسخهٔ قفل‌شدهٔ pnpm و تعیین صریح registry. setup، CA و تنظیمات ساخت را از `.env.local` به سورس تولیدشده منتقل می‌کند.
 
-1. `apk add tzdata` به دلیل CA نامعتبر شکست خورد؛ با CA میزبان، مخزن Alpine همچنان 403 داد.
-2. فایل‌های `/usr/share/zoneinfo` در ایمیج کامل Python موجود بودند؛ به‌جای نصب APK، همان داده‌ها به تصویر وب کپی شدند. این کار نصب بستهٔ Alpine نیست؛ تأمین فایل‌های زمانی لازم است.
-3. Corepack ابتدا از npm عمومی و بعد از آدرس غیرمنتظرهٔ `nexus.itr.co` دانلود می‌کرد. علت دقیق این تغییر مسیر ثابت نشد؛ نصب مستقیم همان نسخهٔ pnpm با npm موفق شد.
-4. تنظیم `npm_config_registry` به‌تنهایی مانع درخواست عمومی metadata در مرحلهٔ pnpm نشد. افزودن صریح `--registry=...` به `pnpm install` مشکل را حل کرد. بررسی supply-chain، lockfile، typecheck و آزمون‌ها خاموش نشدند.
+اسکریپت قدیمی جایگزینی دستی Dockerfile در `.runtime/dify-web-source` را دوباره اجرا نکنید؛ پس از setup جدید به آن نیاز نیست. فایل‌های upstream در `.runtime/dify` را ویرایش نکنید. CA سازمان وارد تصویر ساخت می‌شود؛ trust store میزبان تغییر نمی‌کند و ایمیج سازمانی را بی‌بررسی منتشر نکنید.
 
-دستور زیر جایگزین **مجموع اصلاحات دستی این ترد** است. فقط Dockerfile تولیدشده در `.runtime/dify-web-source` و یک کپی CA را تغییر می‌دهد؛ سورس tracked و `.runtime/dify` دست‌نخورده می‌مانند. اسکریپت از Dockerfile tracked دوباره تولید می‌کند و اگر نسخه یا خطوط مورد انتظار عوض شده باشند، متوقف می‌شود. این دستور یکپارچه در قالب همین راهنما تدوین شده؛ اجزای معادل آن روی VDI موفق بودند، اما اجرای تازهٔ کل دستور روی VDI دوم هنوز انجام نشده است.
-
-```bash
-sudo docker run --rm -i \
-  --user "$(id -u):$(id -g)" \
-  -v "$HOME/Kara:/workspace" \
-  -v /etc/ssl/certs/ca-certificates.crt:/tmp/vdi-ca.crt:ro \
-  python:3.12-bookworm python - <<'PY'
-import json
-from pathlib import Path
-import shutil
-
-root = Path('/workspace')
-source = root / '.runtime/dify-web-source'
-folder = source / '.company-web'
-target = folder / 'Dockerfile'
-text = (root / 'infra/web/Dockerfile').read_text()
-manager = json.loads((source / 'package.json').read_text())['packageManager']
-if manager != 'pnpm@12.3.4':
-    raise SystemExit('Package manager changed; review this runbook before patching.')
-registry = 'https://nexus3.dotin.ir/repository/Dotin-NPM/'
-replacements = {
-    'RUN apk add --no-cache tzdata && corepack enable': f'''COPY --from=python:3.12-bookworm /usr/share/zoneinfo /usr/share/zoneinfo
-COPY .company-web/vdi-ca.crt /usr/local/share/ca-certificates/vdi-ca.crt
-ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/vdi-ca.crt
-ENV npm_config_registry={registry}
-RUN npm install --global --ignore-scripts --no-audit --no-fund pnpm@12.3.4''',
-    'corepack install && ': '',
-    'pnpm install --frozen-lockfile': f'pnpm install --registry={registry} --frozen-lockfile',
-}
-for old in replacements:
-    if text.count(old) != 1:
-        raise SystemExit(f'Unexpected Dockerfile; no changes made: {old}')
-for old, new in replacements.items():
-    text = text.replace(old, new, 1)
-backup = folder / 'Dockerfile.before-vdi'
-if not backup.exists():
-    shutil.copyfile(target, backup)
-shutil.copyfile('/tmp/vdi-ca.crt', folder / 'vdi-ca.crt')
-target.write_text(text)
-print('VDI web build configuration is ready.')
-PY
-```
-
-گواهی‌های مورد اعتماد VDI در ایمیج وب قرار می‌گیرند و Node از آن‌ها استفاده می‌کند؛ trust store سیستم میزبان تغییر نمی‌کند. این ایمیج مختص محیط سازمان است. فایل CA عمومی است و کلید خصوصی نیست، ولی تنظیمات سازمانی و ایمیج تولیدشده را بی‌بررسی منتشر نکنید.
-
-**هر اجرای مجدد setup این Dockerfile تولیدشده را بازنویسی می‌کند.** پس از setup یا به‌روزرسانی، این مرحله را دوباره و با کنترل سازگاری اجرا کنید. فرمان `make up` نیز ممکن است سورس ساخت را دوباره آماده کند؛ برای این محیط از مسیر Compose مستندشده استفاده کنید.
+در ارتقای همین VDI، اعتبارسنجی CA ابتدا به علت decode اجباری ASCII شکست خورد، درحالی‌که بارگذاری مستقیم فایل با OpenSSL موفق بود. اصلاح عمومی `scripts/build_environment.py` اکنون از `load_verify_locations(cafile=...)` استفاده می‌کند و رد کلید خصوصی و دادهٔ نامعتبر را حفظ کرده است. در checkout قدیمی `9a40d78` این اصلاح دستی با backup اعمال شد؛ commit مربوطه `5335cc9` است. از حذف بایت‌های غیر ASCII یا خاموش‌کردن TLS استفاده نکنید. bundle مشاهده‌شده ۱۹۵۰۳۱ بایت، ۱۲۵ نشانگر و ۱۲۳ CA بارگذاری‌شده داشت؛ علت اختلاف شمارش بررسی نشد.
 
 ## ۷. ساخت بدون شروع زودهنگام API
 
@@ -221,62 +187,43 @@ PY
 sudo docker compose --parallel 1 --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" build api web
 ```
 
-ساخت اولیه می‌تواند چندین دقیقه طول بکشد. در نصب حاضر دریافت بسته‌ها، بررسی نوع‌ها، آزمون‌های رابط و کامپایل وب موفق شدند. هنگام شکست، آخرین خط خطا و مرحلهٔ شکست را بخوانید؛ موفقیت `Built` با آماده‌بودن سرویس تفاوت دارد.
+ساخت اولیه می‌تواند چندین دقیقه طول بکشد. فرمان بالا کنترل‌های پیش‌فرض را دارد. در ارتقای اخیر، با درخواست صریح کاربر فرمان زیر استفاده و هر دو تصویر ساخته شدند؛ آن را معادل اجرای آزمون‌های کلاینت ندانید:
+
+```bash
+sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" build --build-arg KARA_WEB_SKIP_CHECKS=true api web
+```
+
+هنگام شکست، آخرین خط خطا و مرحلهٔ شکست را بخوانید؛ موفقیت `Built` با آماده‌بودن سرویس تفاوت دارد.
 
 ## ۸. مهاجرت پایه پیش از سرویس‌های اختصاصی
 
-این ترتیب برای clone و بانک تازه مهم است. در ترد ابتدا همهٔ سرویس‌ها شروع شدند و API در مهاجرت اختصاصی با `tenant_account_joins does not exist` شکست خورد. برای نصب بعدی از ابتدا وابستگی‌ها را روشن کنید:
+در نصب اولیه، شروع زودهنگام API باعث `tenant_account_joins does not exist` شد. مسیر فعلی Compose سرویس یک‌بارهٔ `migration` دارد: با ایمیج پایهٔ `langgenius/dify-api:1.17.1`، پیش از API، Worker، Worker Beat و WebSocket، `flask db upgrade` اجرا می‌شود. هر چهار نقش به پایان موفق آن وابسته‌اند. برای بانک موجود ابتدا backup معتبر بگیرید.
 
-```bash
-sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" up -d --no-build --pull missing db_postgres redis weaviate
-```
+در ارتقای همین VDI، محیط بانک به migration منتقل نشده بود و اتصال اشتباهاً به `localhost:5432` انجام می‌شد. افزودن دستی env_file خصوصی این نصب را رفع کرد. اصلاح نهایی سورس در `infra/compose.local.yaml`، سرویس `api` را مستقیماً از `docker-compose.yaml` upstream گسترش می‌دهد تا تنظیمات API و env_fileهای اختیاری آن نیز حفظ شوند؛ ایمیج پایه و نبود build سفارشی حفظ شده‌اند. مسیر مطلق `/home/m.zhiani/...` را وارد تنظیمات عمومی نکنید.
 
-```bash
-sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" ps db_postgres redis weaviate
-```
-
-پیش از مهاجرت، PostgreSQL باید `healthy` باشد. اگر قبلاً همهٔ سرویس‌ها را روشن کرده‌اید، ابتدا آن چهار سرویس را متوقف کنید:
-
-```bash
-sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" stop api worker worker_beat api_websocket
-```
-
-سپس با **ایمیج اصلی** مهاجرت پایه را اجرا کنید، نه ایمیج سفارشی کارا:
-
-```bash
-sudo docker run --rm \
-  --network company-agent-local_default \
-  --env-file "$HOME/Kara/.runtime/compose.env" \
-  --workdir /app/api \
-  --entrypoint /app/api/.venv/bin/flask \
-  langgenius/dify-api:1.17.1 db upgrade
-```
-
-نام شبکه مربوط به نام پیش‌فرض پروژه است. اگر نام پروژه را در تنظیمات تغییر داده‌اید، شبکه و نام پروژه باید مطابق همان محیط باشند. env به‌صورت فایل خصوصی خوانده می‌شود؛ آن را چاپ نکنید. انتظار: اجرای upgradeها و پایان با exit code صفر. برای بانک دارای دادهٔ قبلی، پیش از ارتقا backup معتبر تهیه کنید؛ داده‌های آن محیط را حذف نکنید.
-
-این ترتیب پیشنهادی از اقدامات موفق جلسه استخراج شده است؛ بازاجرای کامل آن روی بانک تازهٔ دوم در این ترد انجام نشد. راه‌حل تعمیر تجربه‌شده، توقف چهار سرویس، اجرای همین `db upgrade` و شروع دوبارهٔ آن‌ها بود.
+پس از setup/build، فرمان بخش بعد مهاجرت را با وابستگی‌هایش اجرا می‌کند. خطای migration را با حذف volume، حذف بانک یا دورزدن وابستگی رفع نکنید. مهاجرت موفق همین VDI با `Exited (0)` مشاهده شد؛ نصب تازهٔ دوم با اصلاح نهایی سورس هنوز آزموده نشده است.
 
 ## ۹. راه‌اندازی و بررسی پاسخ واقعی
 
 ```bash
-sudo docker compose --parallel 1 --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" up -d --no-build --pull missing
+sudo docker compose --parallel 1 --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" up -d --no-build
 ```
 
 ```bash
 sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" ps -a
 ```
 
-`init_permissions` یک کار اولیه است؛ پایان موفق آن با کد صفر طبیعی است. سرویس‌های طولانی‌مدت نباید در چرخهٔ restart باشند. برای تأیید API:
+`migration` و `init_permissions` کارهای یک‌باره‌اند؛ پایان موفق هر دو با کد صفر طبیعی است. سرویس‌های طولانی‌مدت نباید در چرخهٔ restart باشند. برای تأیید API:
 
 ```bash
 sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" exec -T api python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:5001/console/api/ping', timeout=20).read().decode())"
 ```
 
 ```bash
-curl --noproxy '*' --fail --show-error --max-time 20 http://127.0.0.1:8080/console/api/ping
+curl --noproxy '*' --fail --show-error --max-time 20 http://10.20.168.117:8080/console/api/ping
 ```
 
-انتظار در هر دو: `{"result":"pong"}`. در این جلسه curl معمولی به `localhost` پاسخ 502 داد، اما API مستقیم و سپس curl با `127.0.0.1` و `--noproxy` موفق شدند. چون هم نام میزبان و هم رفتار proxy تغییر کردند و زمان هم گذشته بود، علت قطعی 502 آخر از این آزمایش به‌تنهایی معلوم نیست؛ آن را قطعاً خرابی Nginx یا قطعاً proxy ننامید. از دستور مستقیم بالا برای بررسی محلی استفاده کنید؛ نیازی به خاموش‌کردن پراکسی کل سیستم نیست.
+انتظار در هر دو: `{"result":"pong"}`. آدرس بیرونی بالا مخصوص bind همین VDI است؛ روی دستگاه دیگر URL همان استقرار را استفاده کنید. در نصب اولیه آزمون localhost با proxy خطای 502 داشت؛ در بررسی بعدی API مستقیم سالم بود. این خطای تاریخی را علت قطعی همهٔ 502ها ندانید. پس از recreate کانتینرها نیز یک بار reload Nginx مشکل آدرس داخلی قدیمی را رفع کرد؛ نسخهٔ جدید تنظیم Docker DNS دارد، اما آزمون بار/قطعی جداگانه انجام نشده است.
 
 اگر شکست خورد:
 
@@ -288,9 +235,9 @@ sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml
 
 ## ۱۰. ساخت حساب مستقل
 
-در Firefox **داخل VDI**، [صفحهٔ نصب کارا](http://127.0.0.1:8080/install) را باز کنید. ایمیل، نام و رمز مدیر جدید را وارد و «راه‌اندازی» را انتخاب کنید. شرط مشاهده‌شدهٔ فرم: حداقل ۸ نویسه شامل حرف و عدد. رمز را در اسکرین‌شات آشکار نکنید.
+این مرحله فقط برای نصب تازه است؛ هنگام ارتقا حساب موجود را دوباره نسازید. در Firefox **داخل VDI**، [صفحهٔ نصب کارا](http://10.20.168.117:8080/install) را باز کنید. ایمیل، نام و رمز مدیر جدید را وارد و «راه‌اندازی» را انتخاب کنید. شرط مشاهده‌شدهٔ فرم: حداقل ۸ نویسه شامل حرف و عدد. رمز را در اسکرین‌شات آشکار نکنید.
 
-پس از موفقیت، [پروژه‌ها](http://127.0.0.1:8080/projects) باز می‌شود. خالی‌بودن پروژه‌ها در نصب مستقل طبیعی است؛ clone سورس پروژه‌ها و داده‌های محیط قبلی را منتقل نمی‌کند. در این نقطه نصب اولیه پذیرفته شده است. اتصال مدل مرحلهٔ جداگانه‌ای است.
+پس از موفقیت، [پروژه‌ها](http://10.20.168.117:8080/projects) باز می‌شود. خالی‌بودن پروژه‌ها در نصب مستقل طبیعی است؛ clone سورس پروژه‌ها و داده‌های محیط قبلی را منتقل نمی‌کند. در این نقطه نصب اولیه پذیرفته شده است. اتصال مدل مرحلهٔ جداگانه‌ای است.
 
 نوار Firefox با متن `You must log in to this network...` در تصاویر وجود داشت، ولی صفحهٔ محلی و ساخت حساب موفق بودند؛ آن نوار را مدرک شکست نصب کارا در نظر نگیرید.
 
@@ -299,7 +246,7 @@ sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml
 شروع روزمره، بدون ساخت مجدد:
 
 ```bash
-sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" up -d --no-build --pull missing
+sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" up -d --no-build
 ```
 
 توقف با حفظ داده‌ها:
@@ -308,11 +255,20 @@ sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml
 sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" stop
 ```
 
-برای به‌روزرسانی: وضعیت Git و backup را بررسی، نسخهٔ مورد توافق را دریافت، setup را اجرا، اصلاحات مرحلهٔ ۶ را دوباره اعمال و سازگاری نسخه‌ها را کنترل کنید؛ سپس build و مهاجرت متناسب با همان نسخه را انجام دهید. دستورهای این سند را کورکورانه برای نسخهٔ جدید استفاده نکنید.
+برای به‌روزرسانی: وضعیت Git و backup را بررسی، نسخهٔ مورد توافق را دریافت، تنظیمات خصوصی را حفظ و setup را اجرا کنید؛ سپس build و مهاجرت متناسب با همان نسخه را انجام دهید. اصلاح دستی قدیمی Dockerfile یا stash را یکجا برنگردانید؛ تفاوت‌های محلی را با سورس جدید تطبیق دهید. دستورهای این سند را کورکورانه برای نسخهٔ جدید استفاده نکنید.
 
 `.runtime` را حذف نکنید؛ `docker compose down -v`، `docker system prune` و پاک‌کردن volumeها راه‌حل معمول خطاهای این نصب نیستند. این ترد چنین پاک‌سازی‌ای انجام نداد.
 
 در تحویل نفر بعد ثبت کنید: commit واقعی سورس، نسخه و معماری ایمیج‌ها، آدرس مخزن داخلی، تاریخ اعتبار CA، نتیجهٔ ساخت و migration، هر دو ping و ورود به صفحهٔ پروژه‌ها. env، رمز مدیر، کلید مدل، داده‌های بانک، cacheهای شخصی و کل `.runtime` را به مخزن Git یا گزارش عمومی اضافه نکنید.
+
+## ارتقای تأییدشدهٔ ۳۰ تا ۳۱ اکتبر ۲۰۲۶
+
+- تغییرات tracked و untracked نصب قبلی با `git stash push --include-untracked -m "vdi-before-remote-update-2026-10-30"` حفظ شدند؛ stash شامل overlay قدیمی CA و model-selector هم بود. آن را حذف یا کامل apply/pop نکنید؛ فایل‌های ignored runtime در این عملیات منتقل نشدند.
+- pull از شاخهٔ `feat/program-team-settings` با fast-forward تا `9a40d78` موفق شد. `.env.local` بالا ساخته شد و backup در `/home/m.zhiani/Kara/.runtime/update-backups/20261030-234607` ثبت شد: `env.local`، `compose.env`، `compose.build.json`، `database.dump` و `database-list.txt`.
+- dump با `pg_dump -Fc` گرفته و با `pg_restore --list` خوانده شد؛ این مدرک restore واقعی یا backup کامل فایل‌ها، vectorها و volumeها نیست. پیش از عملیات پرریسک آینده، backup تازه و متناسب با داده‌های همان زمان لازم است.
+- پس از اصلاح دستی CA، setup با حفظ تنظیمات خصوصی و بررسی ۵۹۴۷ کلید فارسی موفق شد؛ build API/وب موفق بود. پس از اصلاح محیط migration، اجرای `up -d --no-build` بدون خطا تمام شد و ping از Nginx پاسخ `pong` داد. کاربر تست موفق کلاینت را گزارش کرد.
+- اصلاح‌های عمومی محلی: `5335cc9` اعتبارسنجی فایل CA، `bf8f6cd` انتقال صریح محیط migration، `81d793b` آزمون CA خراب پس از گواهی معتبر و `bcd6651` ارث‌بری کامل تنظیمات اختیاری upstream. تغییر نهایی migration در commit آخر است. این چهار commit در شواهد این ترد هنوز روی ریموت/VDI دریافت نشده‌اند؛ قبل از انتشار، وضعیت واقعی Git و ریموت را بررسی کنید.
+- بررسی نهایی کد محلی `make check` با ۷۹ آزمون موفق بود؛ اجرای واقعی migration جدید، build/تست کلاینت محلی انجام نشد. شکست تاریخی `doctor --server-only` روی مک با تصویر قدیمی API، وضعیت VDI را توصیف نمی‌کند. چک مستنداتِ این به‌روزرسانی جدا از این شواهد تاریخی ثبت می‌شود.
 
 ## فهرست خطاهای واقعی و اقدام موفق
 
@@ -329,6 +285,12 @@ sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml
 | Corepack: 403 یا آدرس غیرمنتظره | نصب مستقیم pnpm 12.3.4 با npm از Nexus داخلی |
 | pnpm metadata از npm عمومی: 403 | تعیین صریح registry در فرمان pnpm؛ کنترل‌ها حفظ شدند |
 | `tenant_account_joins` موجود نبود | توقف سرویس‌های اختصاصی، migration با ایمیج اصلی، شروع دوباره |
+| `KARA_CA_BUNDLE` نامعتبر / `UnicodeDecodeError` | فایل با OpenSSL معتبر بود؛ حذف decode اجباری ASCII و اعتبارسنجی cafile با حفظ کنترل‌ها |
+| migration به `localhost:5432` | متغیرهای بانک غایب بودند؛ انتقال env خصوصی روی VDI و اصلاح ارث‌بری upstream در سورس |
+| مدل شخصی در انتخابگر نبود / 403 summary | اصلاح انتخابگر و patch رسمی؛ endpoint اعتبارات مشترک عمداً مسدود ماند |
+| WebSocket خطای app context / token | اصلاح context سمت سرور و origin ثابت؛ همگام‌سازی دو کاربر تأیید شد |
+| Chatflow خطای 500 پیش از مدل | مسیر local dispatch فقط workflow را می‌پذیرد؛ پشتیبانی advanced-chat هنوز باقی است |
+| مدل `Connection refused` پورت 443 | بررسی علت در شبکه/سرویس هنوز باقی است؛ خطای قبل از TLS و احراز هویت |
 | 502 با API سالم | آزمون مستقیم API و سپس curl با noproxy/127.0.0.1 موفق شد؛ علت آخر قطعی نبود |
 
 ## ادامهٔ راه‌اندازی: اتصال‌ها، Runner و worktree
@@ -341,7 +303,7 @@ sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml
 
 روی **همین VDI**، فایل محلی `infra/compose.vdi-ca.yaml` ساخته و بعد از `.runtime/compose.build.json` به فهرست مسیرهای Compose اصلی اضافه شد. برای سرویس‌های `api`، `worker`، `worker_beat`، `api_websocket` و `plugin_daemon`، bundle میزبان در مسیر یکسان `/etc/ssl/certs/ca-certificates.crt` به‌صورت read-only mount شد؛ متغیرهای `REQUESTS_CA_BUNDLE`، `SSL_CERT_FILE` و `PIP_CERT` به همین مسیر اشاره کردند. نسخهٔ پشتیبان Compose در `.runtime/compose.before-vdi-ca.yaml` نگهداری شد. این فایل‌ها تنظیمات محلی‌اند؛ CA یا اعتبارنامه را وارد Git نکنید.
 
-پس از `config --quiet` موفق، تنظیم با فرمان زیر اعمال شد؛ restart ساده برای اعمال mount و env جدید کافی نیست:
+**وضعیت تاریخی:** این overlay هنگام ارتقا همراه تغییر Compose در stash ذخیره شد؛ شواهدی از بازاعمال آن پس از setup جدید نداریم. نتیجهٔ ۲۰۰ زیر مربوط به قبل از ارتقا است. اعتماد runtime فعلی را جداگانه بررسی و در صورت نیاز تنظیم سازگار با سورس جدید را اعمال کنید؛ کل stash را برنگردانید. فرمان زیر اقدام موفق قبلی را ثبت می‌کند؛ restart ساده برای mount/env جدید کافی نیست:
 
 ```bash
 sudo docker compose --project-directory "$HOME/Kara" -f "$HOME/Kara/compose.yaml" up -d --no-build --no-deps api worker worker_beat api_websocket plugin_daemon
@@ -376,10 +338,10 @@ Python میزبان این نصب ۳.۱۰ بود و pip از مخزن داخلی
 در رابط، نام دستگاه ثبت و کد یک‌بارمصرف ساخته شد. سپس:
 
 ```bash
-cd "$HOME/kara-runner" && .venv/bin/python -m kara_source_runner pair --server http://127.0.0.1:8080
+cd "$HOME/kara-runner" && .venv/bin/python -m kara_source_runner pair --server http://10.20.168.117:8080
 ```
 
-کد در prompt وارد شد؛ آن را در گفتگو یا دستور ثابت قرار ندهید. تنظیم دستگاه در `~/.config/kara-source-runner/device.json` خصوصی است. اجرای Runner بدون sudo:
+در pairing اولیه آدرس `127.0.0.1` استفاده شده بود؛ فرمان بالا URL فعلی این VDI را نشان می‌دهد. بعد از تغییر bind، دسترسی Runner و سازگاری نسخهٔ بسته را بررسی کنید؛ بدون بررسی تنظیم خصوصی موجود، pairing را تکرار نکنید. کد در prompt وارد شد؛ آن را در گفتگو یا دستور ثابت قرار ندهید. تنظیم دستگاه در `~/.config/kara-source-runner/device.json` خصوصی است. اجرای Runner بدون sudo:
 
 ```bash
 cd "$HOME/kara-runner" && REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt .venv/bin/python -m kara_source_runner run
@@ -390,7 +352,7 @@ cd "$HOME/kara-runner" && REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt 
 ### اتصال‌های شخصی و دریافت سورس
 
 - جیرا: پس از pairing، اجرای Runner و انتخاب مقصد اجرای پروژه، آزمون اتصال و احراز هویت موفق شد. موفقیت آزمون، مجوز جست‌وجوی همهٔ درخواست‌ها را ثابت نمی‌کند.
-- مدل: دو اتصال شخصی ثبت شدند؛ خطای اولیه ناشی از توکن اشتباه بود و کاربر رفع آن را گزارش کرد. هنوز خروجی واقعی یک برنامه با این مدل در تصاویر ثبت نشده است.
+- مدل: دو اتصال شخصی ثبت شدند و کاربر رفع خطای اولیهٔ توکن را گزارش کرد؛ بااین‌حال آزمون‌های بعدی `model_request_failed` داشتند و اجرای واقعی مدل هنوز موفق نشده است. تشخیص آخر در بخش بعد آمده است.
 - گیت‌لب: توکن شخصی با دسترسی خواندن مخزن و هویت کاربر ساخته و آزمون اتصال موفق شد. توکن فقط در فرم اتصال ذخیره شد؛ هیچ توکنی در این سند نیست.
 - برای worktree، حداکثر ۸ بخش با شناسه، مسیر نسبی جداگانه، مخزن/برنچ و اتصال شخصی تعریف شد؛ ذخیرهٔ فرم فقط تعریف را ثبت می‌کند. «آماده‌سازی روی Runner» دریافت واقعی و ثبت commit هر بخش را انجام می‌دهد.
 - در آماده‌سازی اولیه، چند مخزن دریافت شدند ولی یک آدرس اشتباه بود؛ `Preparation failed: git_failed` رخ داد. اصلاح URL مخزن باید در تعریف worktree نیز ذخیره شود؛ سپس آماده‌سازی تازه انجام شود. تاریخچهٔ ناموفق قبلی باقی می‌ماند.
@@ -400,8 +362,15 @@ cd "$HOME/kara-runner" && REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt 
 
 فایل‌ها زیر `$HOME/KaraSourceWorkspaces/<preparation-id>` روی VDI هستند. هر آماده‌سازی پوشهٔ تازه‌ای دارد؛ فایل‌های تلاش قبلی را برای رفع خطا حذف نکنید. اتصال سورس به مقصد به‌تنهایی اجرای برنامه یا مجوز نوشتن/push/merge ایجاد نمی‌کند. جزئیات در [راهنمای سورس و Runner](source-code-runner.md) و [اجرای محلی](local-execution.md) است.
 
-### نقطهٔ توقف آزمون برنامه
+### وضعیت فعلی آزمون برنامه و کارهای باقی‌مانده
 
-در استودیو برنامه‌ای وجود نداشت. از «ایجاد از قالب»، `Chatflow Basic: Chatbot` ساخته شد. گرهٔ LLM قالب به `langgenius/openai/openai` و مدل `gpt-5.4-mini` اشاره می‌کرد؛ خطای `Provider langgenius/openai/openai does not exist` دیده شد. این افزونه با افزونهٔ نصب‌شدهٔ OpenAI-API-compatible متفاوت است. قدم بعد، انتخاب مدل/ارائه‌دهندهٔ سازگار با اتصال شخصی موجود در گرهٔ LLM است؛ نصب مجدد کل محیط یا نصب افزونهٔ OpenAI صرفاً به دلیل پیش‌فرض قالب لازم نیست. هنوز نتیجهٔ انتخاب مدل و اجرای واقعی دریافت نشده است. Chatbot ساده، آزمون دسترسی به سورس نیست؛ آن را جداگانه با ابزار/مرحلهٔ مناسب و اجرای واقعی بررسی کنید.
+برنامهٔ `Chatflow Basic: Chatbot` ابتدا به provider نصب‌نشدهٔ `langgenius/openai/openai` و `gpt-5.4-mini` اشاره می‌کرد. بعداً اشکال انتخابگر مدل شخصی رفع شد: هر دو مدل دیده شدند، Assist انتخاب شد و پیام ناسازگاری اشتباه رفع شد. patch رسمی در `infra/web/personal-model-selector.patch` است و با آماده‌سازی سورس تازه اعمال می‌شود؛ overlay دستی قدیمی انتخابگر را برنگردانید. مسیر summary اعتبارات مشترک عمداً 403 می‌دهد و نباید برای عبور از UI باز شود؛ سایر مصرف‌کنندگان احتمالی آن نیاز به مرور دارند.
+
+دو مانع مستقل باقی است:
+
+1. پیش‌نمایش این برنامه از نوع `advanced-chat`، پیش از فراخوانی مدل در `local_dispatch.submit` رد می‌شود؛ مسیر فعلی فقط `workflow` را می‌پذیرد و خطا به 500 تبدیل می‌شود. پشتیبانی chatflow باید با حفظ مرز اجرای محلی اضافه شود؛ حذف guard یا fallback اجرای سروری راه‌حل پذیرفته‌شده نیست.
+2. اعتبارسنجی اتصال شخصی از مسیر local RPC نیز آخرین بار `BadGateway` و `model_request_failed` داد. اتصال Assist به `https://aifa-chatbot.sandpod.ir/v1` با نام سرویس `assistance-model` تنظیم شده بود. DNS در VDI آدرس `79.132.215.248` داد؛ curl به `/v1/models` با و بدون `--noproxy '*'`، پورت 443 را با `Connection refused` و `HTTP=000` رد کرد. هنوز TLS/توکن بررسی نشده بود؛ صحت IP یا علت رد شبکه/سرویس قطعی نیست. کاربر دسترسی دستگاه مقایسه را نداشت و آزمون را به بعد موکول کرد.
+
+همگام‌سازی دو کاربر پس از اصلاح WebSocket/app context و origin تأیید شد. این پذیرش یا تست موفق کلاینت بعد از ارتقا، اجرای واقعی مدل و خواندن سورس را ثابت نمی‌کند. پیگیری‌ها: انتشار و دریافت اصلاح‌های محلی، اعتماد runtime CA بعد از stash، نسخه و دسترسی Runner پس از ارتقا، رفع دو مانع بالا، خواندن واقعی سورس/اجرای کد با مجوز Docker، جست‌وجوی جیرا، reboot/اجرای دائمی Runner، restore واقعی و نصب VDI دوم. جزئیات و ترتیب در [سند تحویل](vdi-handoff-2026-10-31.fa.md) است.
 
 مراجع: [راهنمای عمومی Docker پروژه](docker-quickstart.md)، [Docker image رسمی Weaviate](https://hub.docker.com/r/semitechnologies/weaviate)، [اتصال مدل](company-model-connection.md).
