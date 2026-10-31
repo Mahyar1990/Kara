@@ -4,7 +4,7 @@
 
 ## هدف و روش ادامه
 
-Kara روی VDI لینوکسی کاربر نصب شده است. دو آزمون مستقل مدل و اجرای کد Docker برای خواندن سورس هشت‌مخزنی موفق شدند. گام‌های عملیاتی بعدی، حفظ وضعیت محلی و پایداری Runner هستند؛ نصب یا آزمون‌های موفق را از ابتدا تکرار نکنید.
+Kara روی VDI لینوکسی کاربر نصب شده است. دو آزمون مستقل مدل و اجرای کد Docker برای خواندن سورس هشت‌مخزنی موفق شدند. Runner اکنون سرویس کاربری systemd است و آزمون خواندن سورس پس از بستن ترمینال‌ها نیز موفق شد. logout/reboot واقعی و بازیابی backup هنوز آزموده نشده‌اند؛ نصب یا آزمون‌های موفق را از ابتدا تکرار نکنید.
 
 - به فارسی و مرحله‌به‌مرحله راهنمایی کنید: در هر پاسخ فقط یک دستور کامل قابل کپی یا یک اقدام مشخص رابط، سپس منتظر تصویر/نتیجه بمانید.
 - shell محلی Codex روی مک است؛ با ترمینال VDI یکی نیست. دستورهای `$HOME/Kara` باید در خود VDI اجرا شوند. از تغییر سورس محلی مک، تغییر VDI را نتیجه نگیرید.
@@ -22,13 +22,13 @@ Runner با همان pairing قبلی و آدرس loopback دوباره online �
 
 | بخش | نتیجه و محدودیت |
 | --- | --- |
-| ارتقای Kara | سورس VDI روی `9e88cc4`؛ تنظیمات محلی CA و loopback در Compose؛ تصاویر API طبق doctor جاری |
+| ارتقای Kara | آخرین pull تأییدشدهٔ VDI تا `fd51bfa`؛ تنظیمات محلی CA و loopback در Compose؛ تصاویر API طبق doctor جاری |
 | بانک و API | migration و init_permissions با کد صفر؛ API و PostgreSQL healthy؛ ping شبکه pong |
 | شبکه و همکاری | آدرس canonical شبکه تنظیم شد؛ ایراد token ناشی از اختلاف host و خطای application context رفع شدند؛ کاربر رفع همگام‌سازی دو طرف را تأیید کرد |
 | پروژه | کلاسور، `81fc0c17-ba88-496f-a95d-ff1dc910e5d0` |
 | جیرا | آزمون احراز هویت تاریخی موفق؛ درخواست واقعی گسترده تأیید نشده |
 | گیت‌لب و سورس | هر ۸ مخزن نسخهٔ ۶ آماده؛ خواندن یک فایل از هر مخزن در Workflow و Docker با mount فقط‌خواندنی موفق |
-| Runner | `Mahyar-VDI-Linux` با همان pairing و URL؛ کاربر عضو گروه docker شد و Runner با sg docker اجرا شد؛ آزمون مدل و کد موفق |
+| Runner | `Mahyar-VDI-Linux` با همان pairing و URL؛ سرویس کاربری enabled و active با sg docker؛ خواندن هشت مخزن پس از بستن ترمینال‌ها موفق؛ logout/reboot آزموده نشده |
 | مدل در ویرایشگر | هر دو مدل شخصی نمایش داده شدند؛ Assist انتخاب شد و هشدار کاذب ناسازگار به CHAT تغییر کرد |
 | آزمون واقعی مدل | Workflow با Assist، temperature صفر و max_tokens برابر ۱۲۸ موفق؛ خروجی answer برابر 12؛ علت شکست قبلی با ۰٫۷ قطعی نیست |
 | برنامهٔ فعلی | Workflow «آزمون مدل روی VDI»، شناسهٔ `607685e4-3657-46c6-a853-f58669341ec7`؛ پیش‌نویس، منتشر نشده؛ Chatflow قبلی همچنان پشتیبانی نمی‌شود |
@@ -58,20 +58,20 @@ http://10.20.168.117:8080/app/c6501f4d-79ed-4447-abf4-bb20b1cd064c/workflow
 
 - VDI: Ubuntu 22.04.5 LTS amd64، ۵ CPU، ۲۳ GiB RAM؛ ارقام فضای آزاد ابتدای نصب‌اند و اکنون باید دوباره بررسی شوند.
 - Docker 29.1.3، Compose 2.40.3؛ فرمان‌های Docker نصب با sudo انجام شدند.
-- مخزن Kara روی VDI: `$HOME/Kara`، از `https://github.com/Mahyar1990/Kara.git`، شاخهٔ نصب `feat/program-team-settings`. آخرین SHA کوتاه دریافت‌شده `9e88cc4` است؛ تغییرات محلی Compose نیز جداگانه حفظ شوند.
+- مخزن Kara روی VDI: `$HOME/Kara`، از `https://github.com/Mahyar1990/Kara.git`، شاخهٔ نصب `feat/program-team-settings`. آخرین SHA کوتاه دریافت‌شده `fd51bfa` است؛ تغییرات محلی Compose نیز جداگانه حفظ شوند.
 - مخزن محلی مک: `/Users/mahyar/Documents/Other Projects/CompanyAgentPlatform/company-agent-platform`؛ این checkout مستقل از VDI است.
 - مبنای Dify: 1.17.1، commit `8387590ace4a094de812b7847fc6a4c3a27cd52b`. `.runtime/dify` را تغییر ندهید.
 - Runner: `$HOME/kara-runner`، venv همان پوشه، Python میزبان ۳.۱۰؛ دادهٔ pairing خصوصی `~/.config/kara-source-runner/device.json`.
 - مسیر سورس Runner: `$HOME/KaraSourceWorkspaces`؛ سورس روی VDI است، نه در filesystem مک.
 - آدرس canonical برنامه: `http://10.20.168.117:8080` برای مدیر و همکاران. در ادامهٔ همین روز، binding اضافی `127.0.0.1:8080` برای Runner همان VDI تنظیم و ping آن موفق شد؛ پورت ۸۴۴۳ همچنان روی IP شبکه است. کوکی میزبان‌ها مستقل است؛ localhost مک به VDI اشاره نمی‌کند.
 
-اگر Runner متوقف بود، اجرای مجدد بدون pairing و بدون sudo:
+اگر سرویس Runner متوقف بود، اجرای مجدد بدون pairing و بدون sudo:
 
 ```bash
-sg docker -c 'cd "$HOME/kara-runner" && REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt .venv/bin/python -m kara_source_runner run'
+systemctl --user start kara-source-runner.service
 ```
 
-باید `Runner online` دیده شود؛ ترمینال را باز نگه دارید. یک‌بار Ctrl+C زده شد و Runner متوقف شد؛ بعد دوباره اجرا و آماده‌سازی نهایی موفق شد. اجرای دائمی/systemd تنظیم نشده است.
+سرویس مستقل از ترمینال است؛ نسخهٔ دستی دیگری هم‌زمان اجرا نکنید. مسیر unit، تنظیمات و شواهد در بخش سرویس کاربری همین سند ثبت شده‌اند.
 
 قالب فرمان Compose روی VDI:
 
@@ -175,11 +175,11 @@ vdi-before-remote-update-2026-10-30
 
 ## کارهای باقی‌مانده، به ترتیب
 
-1. آزمون مستقل خواندن فایل‌های worktree نسخهٔ ۶ در Docker موفق شد؛ تکرار لازم نیست. نوشتن/push/merge و اجرای تست مخزن‌ها مجاز یا تأییدشده فرض نشود. گام بعدی، موجودی نهایی تغییرات Git روی VDI و سپس پایداری Runner در دامنهٔ درخواست کاربر است.
-2. انتشار شش کامیت، دریافت روی VDI، جایگزینی دو اصلاح دستی و آزمون اولیهٔ مدل انجام شدند. تنظیمات محلی CA/loopback، دو stash و backupها را حفظ کنید؛ stash قدیمی و overlay انتخابگر را کامل برنگردانید. وضعیت نهایی Git پس از تغییرهای محلی Compose هنوز خوانده نشده است.
+1. آزمون مستقل خواندن فایل‌های worktree نسخهٔ ۶ در Docker، با Runner دستی و سپس سرویس کاربری، موفق شد؛ تکرار لازم نیست. نوشتن/push/merge و اجرای تست مخزن‌ها مجاز یا تأییدشده فرض نشود.
+2. انتشار شش کامیت، جایگزینی دو اصلاح دستی و دریافت مستندات تا `fd51bfa` روی VDI انجام شدند. موجودی Git دو تغییر محلی `M compose.yaml` و `?? infra/compose.vdi-ca.yaml` و دو stash را نشان داد؛ pull بعدی مستندات نیز موفق شد. تنظیمات محلی CA/loopback، stashها و backupها را حفظ کنید؛ آن‌ها را یکجا apply/pop یا وارد سورس عمومی نکنید.
 3. علت `model_request_failed` اجرای اول با temperature برابر ۰٫۷ قطعی نیست؛ اجرای بعدی با صفر موفق شد. در صورت نیاز به تشخیص بیشتر، فقط خطای غیرمحرمانهٔ HTTP/پاسخ را بررسی کنید؛ نتیجهٔ موفق را بی‌دلیل دوباره اجرا نکنید.
 4. پشتیبانی advanced-chat مستقل باقی است؛ Workflow موفق به معنی رفع محدودیت Chatflow نیست. انتشار Workflow آزمایشی نیز انجام نشده است.
-5. پایداری Runner پس از بسته‌شدن ترمینال، logout و reboot، و تطبیق کامل بستهٔ نصب‌شده با سورس جدید هنوز بررسی نشده است. pairing مجدد را بی‌علت انجام ندهید.
+5. سرویس کاربری Runner فعال و enabled است؛ استقلال از ترمینال با اجرای واقعی خواندن سورس تأیید شد. logout/reboot واقعی، بازیابی پس از خرابی و تطبیق کامل بستهٔ نصب‌شده با سورس جدید هنوز بررسی نشده‌اند. pairing مجدد را بی‌علت انجام ندهید.
 6. restore واقعی در محیط مجزا و پشتیبان داده‌های جانبی باقی است؛ backup بانک انجام شده را دوباره «انجام‌نشده» گزارش نکنید.
 7. doctor سمت سرور روی VDI پس از اصلاح CA و پیش از افزودن loopback موفق شد؛ پس از تغییر Nginx فقط Compose و ping loopback بررسی شدند. درخواست واقعی Jira، GitLab فراتر از خواندن، VDI دوم و پذیرش گستردهٔ چندحسابی/بار فقط در دامنهٔ درخواست بعدی بررسی شوند.
 
@@ -217,9 +217,55 @@ DOCKERFILE
 - اجرای بعدی ساعت ۱۴:۰۱ محلی موفق شد: `source_job_id` برابر `d95ed254-6dc4-4f39-acae-4f8d92439693`، `source_read_only: true`، `repositories_read: 8`، ۳ گام، ۲۰٫۹۹۴ ثانیه و صفر توکن. تصویر نتیجه نام فایل‌ها، تعداد بایت خوانده‌شده و هش‌های نمونه را نشان داد؛ همهٔ هش‌ها جداگانه از تصویر رونویسی یا با manifest مقایسه نشدند.
 - این پذیرش، اجرای کد تعریف‌شده در Workflow و خواندن نمونه از هر هشت مخزن را ثابت می‌کند؛ اجرای اسکریپت/تست خود مخزن‌ها، تغییردادن سورس، درک سورس توسط مدل، اجرای تیمی یا انتشار برنامه‌ها را ثابت نمی‌کند. تصاویر تأییدشده منبع شواهدند؛ Codex به filesystem زندهٔ VDI متصل نبود.
 
+## ادامهٔ تأییدشدهٔ ۳۱ اکتبر؛ سرویس کاربری Runner
+
+- روی VDI، وضعیت Git دو تغییر محلی Compose بالا و دو stash با نام‌های `vdi-manual-ca-migration-before-update-2026-10-31` و `vdi-before-remote-update-2026-10-30` را نشان داد. سپس pull مستندات از `9e88cc4` تا `fd51bfa` با fast-forward موفق شد؛ تنظیمات محلی حفظ شدند و stash حذف نشد.
+- پیش از ایجاد سرویس، هیچ unit با نام kara موجود نبود. `loginctl show-user` وضعیت `State=active` و `Linger=yes` داد؛ linger از قبل فعال بود و در این مرحله تغییر نکرد.
+- فایل زیر با ایجاد انحصاری و مجوز ۶۰۰ در `$HOME/.config/systemd/user/kara-source-runner.service` ساخته شد. secret در unit ذخیره نشده است؛ همان تنظیمات خصوصی pairing استفاده می‌شوند. sg گروه docker را برای پردازش فعال می‌کند و UID همان کاربر می‌ماند:
+
+```ini
+[Unit]
+Description=Kara Source Runner
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=%h/kara-runner
+Environment=REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+Environment=SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/sg docker -c "exec %h/kara-runner/.venv/bin/python -m kara_source_runner run"
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=30
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+```
+
+- `systemd-analyze --user verify` برای همین فایل بدون خطا پایان یافت. Runner دستی با Ctrl+C متوقف شد؛ سپس daemon-reload و enable --now اجرا شدند. وضعیت ساعت ۱۴:۳۶، unit را enabled و active (running) و لاگ `Code execution backend: docker` و `Runner online` نشان داد.
+- پس از بستن ترمینال‌ها، همان Workflow خواندن سورس در ساعت ۱۴:۳۸ دوباره موفق شد: job نسخهٔ ۶، `source_read_only: true`، `repositories_read: 8`، سه گام، ۲۷٫۲۵۵ ثانیه و صفر توکن. این پذیرش استقلال از ترمینال و اجرای واقعی کد در زمینهٔ سرویس است؛ آزمون مدل دوباره انجام نشد.
+- شروع خودکار و restart در unit تنظیم شده‌اند؛ logout/reboot یا خرابی عمدی انجام نشد و پذیرش آن‌ها باقی است. این سرویس روی خود VDI نصب شده، نه مک و نه کانتینر API.
+
+برای مشاهدهٔ وضعیت، بدون اجرای Runner دوم:
+
+```bash
+systemctl --user status kara-source-runner.service --no-pager -l
+```
+
+لاگ محدود سرویس:
+
+```bash
+journalctl --user -u kara-source-runner.service -n 40 --no-pager
+```
+
 ## بررسی همین به‌روزرسانی مستندات
 
-هر دو سند با وضعیت سورس محلی و شواهد همین گفتگو تطبیق داده شدند؛ `make check` با ۷۹ آزمون و بررسی پروژه/لینک‌ها موفق بود. نحو ۳۳ بلوک shell با bash -n، بسته‌بودن code fenceها و `git diff --check` بررسی شدند. بررسی محلی این ویرایش فقط مستندسازی بود؛ شواهد اجرای مدل، Docker و سورس روی VDI از تصاویر کاربر در مراحل جداگانهٔ بالا آمده‌اند. برای بررسی مستندات، مدل، build یا تست کلاینت دوباره اجرا نشد.
+هر دو سند با وضعیت سورس محلی و شواهد همین گفتگو تطبیق داده شدند؛ `make check` با ۷۹ آزمون و بررسی پروژه/لینک‌ها موفق بود. نحو ۳۶ بلوک shell با bash -n، بسته‌بودن code fenceها و `git diff --check` بررسی شدند. بررسی محلی این ویرایش فقط مستندسازی بود؛ شواهد اجرای مدل، Docker و سورس روی VDI از تصاویر کاربر در مراحل جداگانهٔ بالا آمده‌اند. برای بررسی مستندات، مدل، build یا تست کلاینت دوباره اجرا نشد.
 
 ## مراجع چت جدید
 
